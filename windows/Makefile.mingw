@@ -1,0 +1,29 @@
+
+
+#
+# Toplevel Makefile for libxc/Windows
+#
+#
+
+# Before compilation you need to put in the full path to your
+# mingw32-w64 installation here
+MINGW_LOCATION?=/mingw/mingw-w64/x86_64/mingw64
+SHELL=cmd.exe /c
+MAKESHELL=cmd.exe /c
+
+CFLAGS+=-D__USE_MINGW_ANSI_STDIO=1
+LDFLAGS=-lws2_32
+LDFLAGS+= -L$(MINGW_LOCATION)/opt/lib -lregex
+
+# Should already be set, doesn't hurt to do it twice.
+PLATFORM=$(shell windows/platform_name.bat)
+RM=deltree.bat
+CAT=type
+MKDIR=mkdir
+DS=\\
+
+include Makefile.inc
+
+all: $(OUTPUT_LIBS) $(MAINPROGS) $(INCDIR)
+	copy_headers $(subst /,$(DS),$(HEADERS))
+

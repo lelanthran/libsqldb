@@ -1,0 +1,26 @@
+
+#
+# Toplevel Makefile for libxc/Linux
+#
+#
+
+# Harmless in Linux, needed for Windows
+MINGW_LOCATION?=/
+
+# Should already be set, doesn't hurt to do it twice.
+PLATFORM=$(shell posix/platform_name.sh)
+RM=rm -rfv
+CAT=cat
+MKDIR=mkdir -p
+DS=/
+
+CFLAGS+=-fPIC
+LDFLAGS+= -ldl
+include Makefile.inc
+
+# This is rule is different between sh and cmd.exe
+all: $(OUTPUT_LIBS) $(MAINPROGS) $(INCDIR)
+	for X in $(HEADERS); do\
+		$(MKDIR) $(INCDIR)/`dirname $$X` && cp -v $$X $(INCDIR)/`dirname $$X`;\
+			done
+
