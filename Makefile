@@ -12,20 +12,23 @@ MAKEPROGRAM_MINGW=$(findstring mingw,$(MAKE))
 
 ifneq ($(MAKEPROGRAM_EXE),)
 	# We are running on Windows for certain - not sure if cygwin or not
-	PLATFORM=$(shell windows/platform_name.bat)
-	INCFILE=windows/Makefile.mingw
+	SHELL=cmd.exe /c
+	MAKESHELL=cmd.exe /c
+	PLATFORM=$(shell windows\platform_name.bat)
+include windows/Makefile.mingw
 endif
 
-ifneq ($(MAKEPROGRAM_EXE),)
+ifneq ($(MAKEPROGRAM_MINGW),)
 	# We are running on Windows/Mingw
-	PLATFORM=$(shell windows/platform_name.bat)
+	SHELL=cmd.exe /c
+	MAKESHELL=cmd.exe /c
+	PLATFORM=$(shell windows\platform_name.bat)
+include windows/Makefile.mingw
 endif
 
 # If neither of the above are true then we assume a posix platform
 ifeq ($(PLATFORM),)
 	PLATFORM=$(shell posix/platform_name.sh)
-	INCFILE=posix/Makefile.posix
+include posix/Makefile.posix
 endif
-
-include $(INCFILE)
 

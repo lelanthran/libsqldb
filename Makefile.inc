@@ -64,9 +64,9 @@ LIBEXT_DLL=so
 LIBEXT_STATIC=a
 EXEEXT=elf
 
-MAINPROGNAMES=$(patsubst %.o,%.elf,$(MAINOBJECTS))
-MAINPROGS_D=$(patsubst %main.elf,%main-d.elf,$(MAINPROGNAMES))
-MAINPROGS_R=$(patsubst %main.elf,%main-r.elf,$(MAINPROGNAMES))
+MAINPROGNAMES=$(patsubst %.o,%.$(EXEEXT),$(MAINOBJECTS))
+MAINPROGS_D=$(patsubst %main.$(EXEEXT),%main-d.$(EXEEXT),$(MAINPROGNAMES))
+MAINPROGS_R=$(patsubst %main.$(EXEEXT),%main-r.$(EXEEXT),$(MAINPROGNAMES))
 
 # The above changes when we are on Windows
 ifeq ($(OSTYPE), Windows)
@@ -151,7 +151,7 @@ CFLAGS+=$(DEBUG_FLAG)
 OUTPUT_LIB_DLL=$(LIBFILE_DLL_D)
 OUTPUT_LIB_STATIC=$(LIBFILE_STATIC_D)
 OUTPUT_LIBS=$(LIBFILE_DLL_D) $(LIBFILE_STATIC_D)
-MAINPROGS=$(patsubst %main.elf,%main-d.elf,$(MAINPROGNAMES))
+MAINPROGS=$(patsubst %main.$(EXEEXT),%main-d.$(EXEEXT),$(MAINPROGNAMES))
 endif
 
 ifneq (,$(findstring release,$(MAKECMDGOALS)))
@@ -159,7 +159,7 @@ CFLAGS+=$(RELEASE_FLAG)
 OUTPUT_LIB_DLL=$(LIBFILE_DLL_R)
 OUTPUT_LIB_STATIC=$(LIBFILE_STATIC_R)
 OUTPUT_LIBS=$(LIBFILE_DLL_R) $(LIBFILE_STATIC_R)
-MAINPROGS=$(patsubst %main.elf,%main-r.elf,$(MAINPROGNAMES))
+MAINPROGS=$(patsubst %main.$(EXEEXT),%main-r.$(EXEEXT),$(MAINPROGNAMES))
 endif
 
 # Default target is the debug target
@@ -226,10 +226,10 @@ $(LIBFILE_DLL_D) $(LIBFILE_DLL_R): $(OUTPUT_DIR) all_objects
 $(LIBFILE_STATIC_D) $(LIBFILE_STATIC_R): $(OUTPUT_DIR) all_objects
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
-%-r.elf: %.o $(OUTPUT_LIB_STATIC)
+%-r.$(EXEEXT): %.o $(OUTPUT_LIB_STATIC)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDFLAGS)
 
-%-d.elf: %.o $(OUTPUT_LIB_STATIC)
+%-d.$(EXEEXT): %.o $(OUTPUT_LIB_STATIC)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDFLAGS)
 
 
@@ -245,20 +245,7 @@ clean:
 
 # This rule will not work under Windows
 documentation:	$(DOCDIR)
-	[ ! -z "`which doxygen`" ] || echo doxygen not installed exit -1
-	[ ! -z "`which doxy2man`" ] || echo doxy2man not installed exit -1
-	doxygen && \
-	   $(MAKE) -C latex && \
-	   cd xml && \
-	   for X in *[1-9]c.xml libxc*.xml; do doxy2man --novalidate $$X; done && \
-		mv -v out ../man
-	mv html $(DOCDIR)/html
-	mv latex $(DOCDIR)/latex
-	mv man $(DOCDIR)/man
-	mv xml $(DOCDIR)/xml
-	$(MKDIR) $(DOCDIR)/pdf
-	cp $(DOCDIR)/latex/refman.pdf $(DOCDIR)/pdf/libxc.pdf
-	tar -zcvf libxc-`$(CAT) VERSION`-doc.tar.gz docs
+	@echo No documentation rules are specified. Target 'documentation' is empty
 
 
 # This rule is different between sh and cmd.exe

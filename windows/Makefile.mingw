@@ -16,8 +16,8 @@ LDFLAGS=-lws2_32
 LDFLAGS+= -L$(MINGW_LOCATION)/opt/lib -lregex
 
 # Should already be set, doesn't hurt to do it twice.
-PLATFORM=$(shell windows/platform_name.bat)
-RM=deltree.bat
+PLATFORM=$(shell windows\platform_name.bat)
+RM=windows\deltree.bat
 CAT=type
 MKDIR=mkdir
 DS=\\
@@ -25,5 +25,5 @@ DS=\\
 include Makefile.inc
 
 all: $(OUTPUT_LIBS) $(MAINPROGS) $(INCDIR)
-	copy_headers $(subst /,$(DS),$(HEADERS))
+	windows\copy_headers $(subst /,$(DS),$(HEADERS))
 
