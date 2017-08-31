@@ -48,3 +48,32 @@ before every release as it is included in the output filenames. You may
 choose to have this file generated using the command-line svn/git client
 and some grepping/cutting to grab the field containing the most recent
 version number of the current repository.
+
+The targets are:
+all
+   Does nothing interesting.
+
+debug
+   Links existing .o files into the library output files. If the .o
+   files do not exist they are created using the debug flags. Note:
+   you may want to do a 'clean' to ensure that the objects from a
+   previous 'release' build are not lying around.
+
+release
+   Links the existing .o files into the library output files.
+   If the .o files do not exist they are created using the release
+   flags. Note: you may need to do a 'clean' for the same reasons
+   given in 'debug' above.
+
+clean
+   Remove all the object files. Libraries and executables are not
+   removed.
+
+veryclean
+   Perform a 'clean' and also remove the library files and executables.
+
+documentation
+   Probably not implemented - this is for future development and
+   will, when implemented, run the automated documentation
+   generation tools.
+
