@@ -2,13 +2,6 @@
 # Toplevel build file for libxc
 #
 
-# All the subprojects that make up this library
-#
-SUBPROJS=\
-	one\
-	two\
-	three
-
 # Generate a list of header files - not worried about non-dependency
 HEADERPATS= $(patsubst %,%/*.h,$(SUBPROJS))
 HEADERS=$(wildcard $(HEADERPATS))

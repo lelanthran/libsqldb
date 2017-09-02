@@ -1,6 +1,13 @@
 
 LIBNAME=my_library_name
 
+# All the subprojects that make up this library
+#
+SUBPROJS=\
+	one\
+	two\
+	three
+
 #############################################################
 # You should not need to modify anything below this comment #
 #############################################################
