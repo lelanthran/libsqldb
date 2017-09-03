@@ -15,7 +15,6 @@ MKDIR=mkdir -p
 DS=/
 
 CFLAGS+=-fPIC
-LDFLAGS+= -ldl
 include Makefile.inc
 
 # This is rule is different between sh and cmd.exe

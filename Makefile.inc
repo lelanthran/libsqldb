@@ -34,20 +34,31 @@ OSTYPE="None"
 OSTYPE_LINUX=$(findstring Linux,$(PLATFORM))
 OSTYPE_FREEBSD=$(findstring FreeBSD,$(PLATFORM))
 OSTYPE_WINDOWS=$(findstring Windows,$(PLATFORM))
+
+MACHINETYPE="None"
+PLATFORMINFO:=$(subst :, ,$(PLATFORM))
+MACHINETYPE=$(word 3,$(PLATFORMINFO))
+
 VERSION=$(shell $(CAT) VERSION)
 
 ifeq ($(VERSION), "")
 	$(error Version file does not exist)
 endif
 
+ifeq ($(OSTYPE_FREEBSD),FreeBSD)
+	OSTYPE=FreeBSD
+	PLATFORM=POSIX
+endif
+
 ifeq ($(OSTYPE_LINUX),Linux)
 	OSTYPE=Linux
-	PLATFORM=PLATFORM_POSIX
+	LDFLAGS+= -ldl
+	PLATFORM=POSIX
 endif
 
 ifeq ($(OSTYPE_WINDOWS),Windows)
 	OSTYPE=Windows
-	PLATFORM=PLATFORM_WINDOWS
+	PLATFORM=WINDOWS
 endif
 
 
@@ -99,21 +110,27 @@ LD=gcc
 LDXX=gcc
 AR=ar
 
+MYINCLUDEDIRS=\
+	-I$(CURRENTDIR)\
+	-I$(MINGW_LOCATION)/opt/include\
+
+MYDEFINES=\
+	-DOSTYPE=$(OSTYPE)\
+	-DOSTYPE_$(OSTYPE)\
+	-DPLATFORM=$(PLATFORM)\
+	-DPLATFORM_$(PLATFORM)\
+	-DMACHINE_TYPE=$(MACHINETYPE)\
+	-DMACHINE_TYPE_$(MACHINETYPE)
+
 # Sub-makes must always use += to add to variables, and not simply
 # overwrite the existing variables.
 CFLAGS+= -c -W -Wall -std=c99 \
-	-I$(CURRENTDIR)\
-	-I$(MINGW_LOCATION)/opt/include\
-	-DOSTYPE=$(OSTYPE)\
-	-DPLATFORM=$(PLATFORM)\
-	-D$(PLATFORM)\
-	-DBYTE_ORDER=LITTLE_ENDIAN
+	$(MYINCLUDEDIRS)\
+	$(MYDEFINES)
 
-CXXFLAGS+= -c -W -Wall -std=c++11 -fPIC -I$(CURRENTDIR)\
-	-DOSTYPE=$(OSTYPE)
-	-DPLATFORM=$(PLATFORM)\
-	-D$(PLATFORM)\
-	-DBYTE_ORDER=LITTLE_ENDIAN
+CXXFLAGS+= -c -W -Wall -std=c++11\
+	$(MYINCLUDEDIRS)\
+	$(MYDEFINES)
 
 LDFLAGS+=-lpthread
 
@@ -175,6 +192,8 @@ show:
 	@echo "CURRENTDIR:        $(CURRENTDIR)"
 	@echo "PLATFORM:          $(PLATFORM)"
 	@echo "OSTYPE:            $(OSTYPE)"
+	@echo "PLATFORMINFO:      $(PLATFORMINFO)"
+	@echo "MACHINETYPE:       $(MACHINETYPE)"
 	@echo "LIBFILE_DLL_R:     $(LIBFILE_DLL_R)"
 	@echo "LIBFILE_STATIC_R:  $(LIBFILE_STATIC_R)"
 	@echo "LIBFILE_DLL_D:     $(LIBFILE_DLL_D)"
