@@ -1,12 +1,21 @@
 
+# Your library name - this must follow all the rules for filenames on your
+# platform, when those filenames are being passed to gcc/ld
 LIBNAME=my_library_name
 
-# All the subprojects that make up this library
+# All the subprojects that make up this library. Ideally each one of the
+# subdirectories will have a main.c file that runs a test on that module.
 #
 SUBPROJS=\
 	one\
 	two\
 	three
+
+# Your extra include directories, for headers that are not in the path.
+MYINCLUDEDIRS+= -I$(HOME)/include
+
+# Your extra libararies, for libraries that are not in the path.
+MYLIBS+= -L$(HOME)/lib -lxc
 
 #############################################################
 # You should not need to modify anything below this comment #
