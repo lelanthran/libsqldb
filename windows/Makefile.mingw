@@ -23,7 +23,6 @@ CAT=type
 MKDIR=mkdir
 DS=\\
 LN=windows/ln.bat
-CP=xopy /S /E /Y /F
 
 include Makefile.inc
 

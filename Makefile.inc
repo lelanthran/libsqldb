@@ -267,3 +267,9 @@ veryclean:	clean
 		$(MAINPROGS_D) $(MAINPROGS_R)\
 		$(INCDIR) $(DOCDIR))
 
+# Run only after veryclean, debug, clean, release
+namelibs:
+	$(CP) $(LIBFILE_DLL_D) $(OUTPUT_DIR)/lib$(LIBNAME)d.$(LIBEXT_DLL)
+	$(CP) $(LIBFILE_DLL_R) $(OUTPUT_DIR)/lib$(LIBNAME).$(LIBEXT_DLL)
+	$(CP) $(LIBFILE_STATIC_D) $(OUTPUT_DIR)/lib$(LIBNAME)d.$(LIBEXT_STATIC)
+	$(CP) $(LIBFILE_STATIC_R) $(OUTPUT_DIR)/lib$(LIBNAME).$(LIBEXT_STATIC)
