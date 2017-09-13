@@ -12,8 +12,9 @@ SHELL=cmd.exe /c
 MAKESHELL=cmd.exe /c
 
 CFLAGS+=-D__USE_MINGW_ANSI_STDIO=1
-LDFLAGS=-lws2_32
-LDFLAGS+= -L$(MINGW_LOCATION)/opt/lib -lregex
+LDEXTRAFLAGS=\
+	-lws2_32
+	-L$(MINGW_LOCATION)/opt/lib -lregex
 
 # Should already be set, doesn't hurt to do it twice.
 PLATFORM=$(shell windows\platform_name.bat)
@@ -21,6 +22,8 @@ RM=windows\deltree.bat
 CAT=type
 MKDIR=mkdir
 DS=\\
+LN=windows/ln.bat
+CP=xopy /S /E /Y /F
 
 include Makefile.inc
 

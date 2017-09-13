@@ -52,7 +52,6 @@ endif
 
 ifeq ($(OSTYPE_LINUX),Linux)
 	OSTYPE=Linux
-	LDFLAGS+= -ldl
 	PLATFORM=POSIX
 endif
 
@@ -132,7 +131,7 @@ CXXFLAGS+= -c -W -Wall -std=c++11\
 	$(MYINCLUDEDIRS)\
 	$(MYDEFINES)
 
-LDFLAGS+=-lpthread $(MYLIBS)
+LDEXTRAFLAGS+=-lpthread $(MYLIBS)
 
 DEBUG_FLAG= -ggdb
 RELEASE_FLAG= -O3
@@ -207,6 +206,7 @@ show:
 	@echo "CXXFLAGS:          $(CXXFLAGS)"
 	@echo "LD:                $(LD)"
 	@echo "LDFLAGS:           $(LDFLAGS)"
+	@echo "LDEXTRAFLAGS:      $(LDEXTRAFLAGS)"
 	@echo "DEBUG_FLAG:        $(DEBUG_FLAG)"
 	@echo "RELEASE_FLAG:      $(RELEASE_FLAG)"
 	@echo "TARGET:            $(TARGET)"
@@ -233,16 +233,16 @@ $(OUTPUT_DIR) $(EXEDIR):
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(LIBFILE_DLL_D) $(LIBFILE_DLL_R): $(OUTPUT_DIR) all_objects
-	$(LD) -shared $(LDFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
+	$(LD) -shared $(LDFLAGS) -o $@ $(OBJECTS) $(LDEXTRAFLAGS)
 
 $(LIBFILE_STATIC_D) $(LIBFILE_STATIC_R): $(OUTPUT_DIR) all_objects
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
 %-r.$(EXEEXT): %.o $(OUTPUT_LIB_STATIC)
-	$(LD) $(LDFLAGS) -o $@ $^ $(LDFLAGS)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LDEXTRAFLAGS)
 
 %-d.$(EXEEXT): %.o $(OUTPUT_LIB_STATIC)
-	$(LD) $(LDFLAGS) -o $@ $^ $(LDFLAGS)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LDEXTRAFLAGS)
 
 
 # This rule is different between sh and cmd.exe
