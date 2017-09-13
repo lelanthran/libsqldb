@@ -13,16 +13,17 @@ MAKESHELL=cmd.exe /c
 
 CFLAGS+=-D__USE_MINGW_ANSI_STDIO=1
 LDEXTRAFLAGS=\
-	-lws2_32
+	-lws2_32\
 	-L$(MINGW_LOCATION)/opt/lib -lregex
 
 # Should already be set, doesn't hurt to do it twice.
 PLATFORM=$(shell windows\platform_name.bat)
+HOME=$(HOMEPATH)
 RM=windows\deltree.bat
 CAT=type
 MKDIR=mkdir
 DS=\\
-LN=windows/ln.bat
+CP=windows\cp.bat
 
 include Makefile.inc
 
