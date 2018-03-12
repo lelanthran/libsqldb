@@ -8,16 +8,24 @@ HEADERS=$(wildcard $(HEADERPATS))
 
 # Generate two lists of sources - one for non-main source files and
 # another for main source files
-SRCPATS= $(patsubst %,%/*.c,$(SUBPROJS)) $(patsubst %,%/*.cpp,$(SUBPROJS))
-ALLSOURCES=$(wildcard $(SRCPATS))
-SOURCES=$(patsubst %/main.c,,$(ALLSOURCES))
-SOURCEMAINS= $(filter %/main.c,$(ALLSOURCES))
+SRCPATS:=\
+	$(patsubst %,%/*.c,$(SUBPROJS))\
+	$(patsubst %,%/*.cpp,$(SUBPROJS))\
+	$(patsubst %,%/*.cxx,$(SUBPROJS))
+
+ALLSOURCES:=$(wildcard $(SRCPATS))
+SOURCES:=$(patsubst %/main.c,,$(ALLSOURCES))
+SOURCEMAINS:= $(filter %/main.c,$(ALLSOURCES))
 
 # Generate two list of target objects - one for non-main object files and
 # another for main object files. We generate one more list of files
 # (see below for list of executables)
-OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
-MAINOBJECTS=$(patsubst %.c,%.o,$(SOURCEMAINS))
+OBJECTS:=$(patsubst %.c,%.o,$(SOURCES))
+MAINOBJECTS:=$(patsubst %.c,%.o,$(SOURCEMAINS))
+OBJECTS:=$(patsubst %.cpp,%.o,$(OBJECTS))
+MAINOBJECTS:=$(patsubst %.cpp,%.o,$(MAINOBJECTS))
+OBJECTS:=$(patsubst %.cxx,%.o,$(OBJECTS))
+MAINOBJECTS:=$(patsubst %.cxx,%.o,$(MAINOBJECTS))
 
 # Work out the platform we are on. At the moment we are only compiling for
 # gnu platforms, testing on Linux and Windows/Mingw32-W64.
@@ -213,11 +221,13 @@ show:
 	@echo "OUTPUT_DIR:        $(OUTPUT_DIR)"
 	@echo "OUTPUT_LIBS:       $(OUTPUT_LIBS)"
 	@echo "HEADERS:           $(HEADERS)"
+	@echo "ALLSOURCES:        $(ALLSOURCES)"
 	@echo "SOURCES:           $(SOURCES)"
 	@echo "SOURCEMAINS:       $(SOURCEMAINS)"
 	@echo "OBJECTS:           $(OBJECTS)"
 	@echo "MAINOBJECTS:       $(MAINOBJECTS)"
 	@echo "MAINPROGS:         $(MAINPROGS)"
+	@echo "MAINPROGNAMES:     $(MAINPROGNAMES)"
 
 
 help: show
@@ -231,6 +241,12 @@ $(OUTPUT_DIR) $(EXEDIR):
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ $<
+
+%.o: %.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+%.o: %.cxx $(HEADERS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
 $(LIBFILE_DLL_D) $(LIBFILE_DLL_R): $(OUTPUT_DIR) all_objects
 	$(LD) -shared $(LDFLAGS) -o $@ $(OBJECTS) $(LDEXTRAFLAGS)
