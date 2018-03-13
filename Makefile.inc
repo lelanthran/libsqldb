@@ -135,7 +135,7 @@ CFLAGS+= -c -W -Wall -std=c99 \
 	$(MYINCLUDEDIRS)\
 	$(MYDEFINES)
 
-CXXFLAGS+= -c -W -Wall -std=c++11\
+CXXFLAGS+= -c -W -Wall -std=c++11 -fPIC\
 	$(MYINCLUDEDIRS)\
 	$(MYDEFINES)
 
