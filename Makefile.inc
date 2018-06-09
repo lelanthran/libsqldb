@@ -39,8 +39,9 @@ MAINOBJECTS:=$(patsubst %.cxx,%.o,$(MAINOBJECTS))
 # depending on which platform Makefile is being used.
 
 OSTYPE="None"
-OSTYPE_LINUX=$(findstring Linux,$(PLATFORM))
-OSTYPE_FREEBSD=$(findstring FreeBSD,$(PLATFORM))
+OSTYPE_LINUX=$(findstring linux,$(PLATFORM))
+OSTYPE_FREEBSD=$(findstring freebsd,$(PLATFORM))
+OSTYPE_DARWIN=$(findstring darwin,$(PLATFORM))
 OSTYPE_WINDOWS=$(findstring Windows,$(PLATFORM))
 
 MACHINETYPE="None"
@@ -53,13 +54,18 @@ ifeq ($(VERSION), "")
 	$(error Version file does not exist)
 endif
 
-ifeq ($(OSTYPE_FREEBSD),FreeBSD)
+ifeq ($(OSTYPE_FREEBSD),freebsd)
 	OSTYPE=FreeBSD
 	PLATFORM=POSIX
 endif
 
-ifeq ($(OSTYPE_LINUX),Linux)
+ifeq ($(OSTYPE_LINUX),linux)
 	OSTYPE=Linux
+	PLATFORM=POSIX
+endif
+
+ifeq ($(OSTYPE_DARWIN),darwin)
+	OSTYPE=Darwin
 	PLATFORM=POSIX
 endif
 
