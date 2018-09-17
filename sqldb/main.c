@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "xerror/xerror.h"
-
 #include "sqldb/sqldb.h"
 
 #define TESTDB    ("/tmp/testdb.sql")

@@ -5,13 +5,11 @@
 
 // TODO: The blob type was not tested!
 
-#include "xerror/xerror.h"
-#include "xstring/xstring.h"
-#include "util/util.h"
-
 #include "sqlite3/sqlite3.h"
 
 #include "sqldb/sqldb.h"
+
+#define XERROR(fmt,...)    fprintf (stderr, fmt, __VAR_ARGS__);
 
 bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
 {
