@@ -1,0 +1,28 @@
+SQLITE            |  POSTGRES
+
+sqlite3_open      |  PQconnectdb
+sqlite3_prepare   |  PQexecParams
+sqlite3_bind      |  PQexecParams
+sqlite3_step      |  PQgetvalue
+sqlite3_column    |  PQgetvalue
+sqlite3_finalize  |  PQclear
+sqlite3_close     |  PQfinish
+
+_open    => sqldb_t
+sqlite3_open      |  PQconnectdb
+
+_exec    => sqlres_t
+sqlite3_prepare   |  PQexecParams
+sqlite3_bind
+
+_step (sqlres_t)
+sqlite3_step      |  currentRow++
+
+_column (type) => type
+sqlite3_column    |  PQgetvalue (col, currentRow)
+
+_end (sqlres_t)
+sqlite3_finalize  |  PQclear
+
+_close (sqldb_t)
+

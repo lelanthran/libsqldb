@@ -1,5 +1,5 @@
 #
-# Toplevel build file for libxc
+# Toplevel build file for libsqldb
 #
 
 # Generate a list of header files - not worried about non-dependency

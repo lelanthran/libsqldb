@@ -1,15 +1,14 @@
 
 # Your library name - this must follow all the rules for filenames on your
 # platform, when those filenames are being passed to gcc/ld
-LIBNAME=my_library_name
+LIBNAME=sqldb
 
 # All the subprojects that make up this library. Ideally each one of the
 # subdirectories will have a main.c file that runs a test on that module.
 #
 SUBPROJS=\
-	one\
-	two\
-	three
+	sqldb\
+	sqlite3
 
 # Your extra include directories, for headers that are not in the path.
 MYINCLUDEDIRS+= -I$(HOME)/include
