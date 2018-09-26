@@ -9,7 +9,19 @@
 
 #include "sqldb/sqldb.h"
 
-#define XERROR(fmt,...)    fprintf (stderr, fmt, __VAR_ARGS__);
+static char *lstr_dup (const char *src)
+{
+   if (!src)
+      return NULL;
+
+   size_t len = strlen (src) + 1;
+
+   char *ret = malloc (len);
+   if (!ret)
+      return NULL;
+
+   return strcpy (ret, src);
+}
 
 bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
 {
@@ -25,7 +37,7 @@ bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
    int mode = (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
    int rc = sqlite3_open_v2 (dbname, &newdb, mode, NULL);
    if (rc!=SQLITE_OK) {
-      XERROR ("(%s) Unable to create sqlite file - %s [%m]\n",
+      SQLDB_ERR ("(%s) Unable to create sqlite file - %s [%m]\n",
                dbname, sqlite3_errstr (rc));
       goto errorexit;
    }
@@ -55,7 +67,7 @@ static void db_seterr (sqldb_t *db, const char *msg)
       return;
 
    free (db->lasterr);
-   db->lasterr = xstr_dup (msg);
+   db->lasterr = lstr_dup (msg);
 }
 
 // A lot of the following functions will be refactored only when working
@@ -65,7 +77,7 @@ static sqldb_t *sqlitedb_open (const char *dbname)
    bool error = true;
    sqldb_t *ret = malloc (sizeof *ret);
    if (!ret) {
-      MALLOC_ERROR (dbname);
+      SQLDB_OOM (dbname);
       goto errorexit;
    }
    memset (ret, 0, sizeof *ret);
@@ -77,7 +89,7 @@ static sqldb_t *sqlitedb_open (const char *dbname)
    if (rc!=SQLITE_OK) {
       const char *tmp =  sqlite3_errstr (rc);
       db_seterr (ret, tmp);
-      XERROR ("(%s) Unable to open database: %s\n", dbname, tmp);
+      SQLDB_ERR ("(%s) Unable to open database: %s\n", dbname, tmp);
       goto errorexit;
    }
 
@@ -98,7 +110,7 @@ sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
 
    switch (type) {
       case sqldb_SQLITE:   return sqlitedb_open (dbname);
-      default:             XERROR ("Error: dbtype [%u] is unknown\n", type);
+      default:             SQLDB_ERR ("Error: dbtype [%u] is unknown\n", type);
                            return NULL;
    }
    return NULL;
@@ -111,7 +123,7 @@ void sqldb_close (sqldb_t *db)
 
    switch (db->type) {
       case sqldb_SQLITE:   sqlite3_close (db->sqlite_db);            break;
-      default:             XERROR ("Unknown type %i\n", db->type);   break;
+      default:             SQLDB_ERR ("Unknown type %i\n", db->type);   break;
    }
 
    free (db->lasterr);
@@ -144,13 +156,13 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
    }
 
    if (!r) {
-      XERROR ("(%i) Unknown type\n", type);
+      SQLDB_ERR ("(%i) Unknown type\n", type);
       return NULL;
    }
 
-   ret = xstr_dup (string);
+   ret = lstr_dup (string);
    if (!ret) {
-      MALLOC_ERROR (string);
+      SQLDB_OOM (string);
       return NULL;
    }
 
@@ -182,7 +194,7 @@ static void res_seterr (sqldb_res_t *res, const char *msg)
       return;
 
    free (res->lasterr);
-   res->lasterr = xstr_dup (msg);
+   res->lasterr = lstr_dup (msg);
 }
 
 const char *sqldb_res_lasterr (sqldb_res_t *res)
@@ -236,8 +248,8 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
    if (rc!=SQLITE_OK) {
       const char *tmp = sqlite3_errstr (rc);
       db_seterr (db, tmp);
-      XERROR ("Fatal error: %s/%i\n", tmp, rc);
-      XERROR ("[%s]\n", qstring);
+      SQLDB_ERR ("Fatal error: %s/%i\n", tmp, rc);
+      SQLDB_ERR ("[%s]\n", qstring);
       goto errorexit;
    }
 
@@ -255,7 +267,7 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
 
       switch (coltype) {
          case sqldb_col_UNKNOWN:
-            XERROR ("Impossible error\n");
+            SQLDB_ERR ("Impossible error\n");
             goto errorexit;
 
          case sqldb_col_UINT32:
@@ -291,12 +303,12 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
             break;
 
          default:
-            XERROR ("Unknown column type: %u\n", coltype);
+            SQLDB_ERR ("Unknown column type: %u\n", coltype);
             break;
       }
 
       if (err!=SQLITE_OK) {
-         XERROR ("Unable to bind %i\n", index);
+         SQLDB_ERR ("Unable to bind %i\n", index);
          goto errorexit;
       }
       counter++;
@@ -336,7 +348,7 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
 
    qstring = fix_string (db->type, query);
    if (!qstring) {
-      MALLOC_ERROR (query);
+      SQLDB_OOM (query);
       goto errorexit;
    }
 
@@ -344,11 +356,11 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
 
    switch (db->type) {
       case sqldb_SQLITE:   ret = sqlitedb_exec (db, qstring, ap);    break;
-      default:             XERROR ("(%i) Unknown type\n", db->type);
+      default:             SQLDB_ERR ("(%i) Unknown type\n", db->type);
                            goto errorexit;
    }
    if (!ret) {
-      XERROR ("Failed to execute stmt\n");
+      SQLDB_ERR ("Failed to execute stmt\n");
       goto errorexit;
    }
 
@@ -402,7 +414,7 @@ bool sqldb_batch (sqldb_t *db, ...)
 
       case sqldb_SQLITE:   ret = sqlitedb_batch (db, ap); break;
 
-      default:             XERROR ("(%i) Format unsupported\n", db->type);
+      default:             SQLDB_ERR ("(%i) Format unsupported\n", db->type);
                            ret = false;
                            break;
    }
@@ -460,7 +472,7 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
       switch (coltype) {
 
          case sqldb_col_UNKNOWN:
-            XERROR ("Possibly corrupt stack");
+            SQLDB_ERR ("Possibly corrupt stack");
             return (uint32_t)-1;
 
          case sqldb_col_UINT32:
@@ -476,9 +488,9 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
 
          case sqldb_col_TEXT:
             *(char **)dst =
-               xstr_dup ((char *)sqlite3_column_text (stmt, ret));
+               lstr_dup ((char *)sqlite3_column_text (stmt, ret));
             if (!(*(char **)dst)) {
-               MALLOC_ERROR (sqlite3_column_text (stmt, ret));
+               SQLDB_OOM (sqlite3_column_text (stmt, ret));
                return (uint32_t)-1;
             }
             break;
@@ -489,14 +501,14 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
             *blen = sqlite3_column_bytes (stmt, ret);
             *(void **)dst = malloc ((*blen));
             if (!dst) {
-               MALLOC_ERROR ("Blob type");
+               SQLDB_OOM ("Blob type");
                return (uint32_t)-1;
             }
             memcpy (*(void **)dst, tmp, *blen);
             break;
 
          case sqldb_col_NULL:
-            XERROR ("Error: NULL type not supported\n");
+            SQLDB_ERR ("Error: NULL type not supported\n");
             return (uint32_t)-1;
 
       }
@@ -543,21 +555,21 @@ uint32_t sqldb_exec_and_fetch (sqldb_t *db, const char *query, ...)
 
    res = sqldb_execv (db, query, &ap);
    if (!res) {
-      XERROR ("[%s] - sql exection failed: %s\n", query, sqldb_lasterr (db));
+      SQLDB_ERR ("[%s] - sql exection failed: %s\n", query, sqldb_lasterr (db));
       goto errorexit;
    }
 
    int step = sqldb_res_step (res);
    if (step==0) {
-      XERROR ("[%s] - No results!\n", query, sqldb_lasterr (db));
+      SQLDB_ERR ("[%s] - No results (%s)!\n", query, sqldb_lasterr (db));
       goto errorexit;
    }
    if (step==-1) {
-      XERROR ("[%s] - Error during fetch\n", query, sqldb_lasterr (db));
+      SQLDB_ERR ("[%s] - Error during fetch (%s)\n", query, sqldb_lasterr (db));
       goto errorexit;
    }
    if (step!=1) {
-      XERROR ("[%s] - Unknown error\n", query, sqldb_lasterr (db));
+      SQLDB_ERR ("[%s] - Unknown error (%s)\n", query, sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -579,7 +591,7 @@ void sqldb_res_del (sqldb_res_t *res)
 
    switch (res->type) {
       case sqldb_SQLITE:   sqlite3_finalize (res->sqlite_stmt);         break;
-      default:             XERROR ("(%i) Unknown type\n", res->type);   break;
+      default:             SQLDB_ERR ("(%i) Unknown type\n", res->type);   break;
    }
    free (res);
 }

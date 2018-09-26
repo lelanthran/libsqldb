@@ -23,38 +23,38 @@ NULL,
    sqldb_res_t *res = NULL;
 
    if (!sqldb_create (TESTDB, sqldb_SQLITE)) {
-      XERROR ("(%s) Could not create database file\n", TESTDB);
+      SQLDB_ERR ("(%s) Could not create database file\n", TESTDB);
       goto errorexit;
    }
 
    db = sqldb_open (TESTDB, sqldb_SQLITE);
    if (!db) {
-      XERROR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      SQLDB_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
    for (size_t i=0; create_stmts[i]; i++) {
       sqldb_res_t *r = sqldb_exec (db, create_stmts[i], sqldb_col_UNKNOWN);
       if (!r) {
-         XERROR ("(%s) Error during _exec [%s]\n", sqldb_lasterr (db),
+         SQLDB_ERR ("(%s) Error during _exec [%s]\n", sqldb_lasterr (db),
                                                    create_stmts[i]);
          goto errorexit;
       }
       switch (sqldb_res_step (r)) {
-         case 1:  XERROR ("Results available\n");                    break;
-         case 0:  XERROR ("Execution complete\n");                   break;
-         case -1: XERROR ("Error (%s)\n", sqldb_res_lasterr (r));    break;
+         case 1:  SQLDB_ERR ("Results available\n");                    break;
+         case 0:  SQLDB_ERR ("Execution complete\n");                   break;
+         case -1: SQLDB_ERR ("Error (%s)\n", sqldb_res_lasterr (r));    break;
       }
       sqldb_res_del (r);
    }
 
    res = sqldb_exec (db, "BEGIN TRANSACTION;", sqldb_col_UNKNOWN);
    if (!res) {
-      XERROR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (sqldb_res_step (res)!=0) {
-      XERROR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+      SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -67,11 +67,11 @@ NULL,
                               sqldb_col_TEXT,   "testing",
                               sqldb_col_UNKNOWN);
       if (!res) {
-         XERROR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+         SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
          goto errorexit;
       }
       if (sqldb_res_step (res)!=0) {
-         XERROR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+         SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
          goto errorexit;
       }
 
@@ -81,34 +81,34 @@ NULL,
    /*
    res = sqldb_exec (db, "ROLLBACK;", sqldb_col_UNKNOWN);
    if (!res) {
-      XERROR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    int rc = sqldb_res_step (res);
    {
-      XERROR ("(%s) Error during _step [%i]\n", sqldb_lasterr (db), rc);
+      SQLDB_ERR ("(%s) Error during _step [%i]\n", sqldb_lasterr (db), rc);
       // goto errorexit;
    }
 
    sqldb_res_del (res); res = NULL;
    */
 
-   XERROR ("Completed parameterised insertion\n");
+   SQLDB_ERR ("Completed parameterised insertion\n");
 
    res = sqldb_exec (db, "select * from one;", sqldb_col_UNKNOWN);
    if (!res) {
-      XERROR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
 #if 0
    int rc = sqldb_res_step (res);
    if (rc==0) {
-      XERROR ("(%s) No results during _step []\n", sqldb_lasterr (db));
+      SQLDB_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (rc==-1) {
-      XERROR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+      SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 #endif
@@ -122,11 +122,11 @@ NULL,
                                            sqldb_col_TEXT,   &stringvar,
                                            sqldb_col_UNKNOWN);
       if (num_scanned!=2) {
-         XERROR ("(%u) Incomplete scanning of columns\n", num_scanned);
+         SQLDB_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
          free (stringvar);
          goto errorexit;
       }
-      XLOG ("Scanned in %u[%s]\n", intvar, stringvar);
+      printf ("Scanned in %u[%s]\n", intvar, stringvar);
       free (stringvar);
    }
 
@@ -145,12 +145,12 @@ NULL,
                sqldb_col_TEXT,      &stringvar,
                sqldb_col_UNKNOWN); // End of dest pointers
       if (num_scanned != 2) {
-         XERROR ("[%u] Unexpected number of columns scanned\n", num_scanned);
+         SQLDB_ERR ("[%u] Unexpected number of columns scanned\n", num_scanned);
          free (stringvar);
          goto errorexit;
       }
-      XLOG ("Successfully scanned in single-step: [%u] : [%s]\n", intvar,
-                                                                  stringvar);
+      printf ("Successfully scanned in single-step: [%u] : [%s]\n", intvar,
+                                                                    stringvar);
       free (stringvar);
    }
 
@@ -159,9 +159,7 @@ errorexit:
 
    sqldb_res_del (res);
    sqldb_close (db);
-   XERROR ("XXX Test: %s XXX\n", ret==EXIT_SUCCESS ? "passed" : "failed");
-
-   xerror_set_logfile (NULL);
+   SQLDB_ERR ("XXX Test: %s XXX\n", ret==EXIT_SUCCESS ? "passed" : "failed");
 
    return ret;
 }

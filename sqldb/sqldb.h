@@ -1,6 +1,6 @@
 
-#ifndef H_BUNKER_SQLDB
-#define H_BUNKER_SQLDB
+#ifndef H_LIBRARY_SQLDB
+#define H_LIBRARY_SQLDB
 
 /* This is an agnostic interface to the sql backend. While it is possible
  * for the caller to use SQL statements that are specific to a single SQL
@@ -16,6 +16,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
+
+#define SQLDB_ERR(...)        fprintf (stderr,  __VA_ARGS__)
+#define SQLDB_OOM(s)          SQLDB_ERR ("OOM [%s]\n", s)
 
 typedef struct sqldb_t sqldb_t;
 typedef struct sqldb_res_t sqldb_res_t;
@@ -54,16 +57,17 @@ extern "C" {
    void sqldb_close (sqldb_t *db);
 
    // Return a description of the last error that occurred. The caller
-   // must not free this string.
+   // must not free this string. NULL will be returned if no
+   // error message is available.
+
    const char *sqldb_lasterr (sqldb_t *db);
    const char *sqldb_res_lasterr (sqldb_res_t *res);
 
-   // Clear the last error message stored. NULL will be returned if no
-   // error message is available.
+   // Clear the last error messages stored.
    void sqldb_clearerr (sqldb_t *db);
    void sqldb_res_clearerr (sqldb_res_t *res);
 
-   // Get the last inserted ID for this result of query was an insert
+   // Get the last inserted ID for this result if query was an insert
    // operation.
    uint64_t sqldb_res_last_id (sqldb_res_t *res);
 
