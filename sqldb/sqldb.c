@@ -258,7 +258,7 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
    while (coltype!=sqldb_col_UNKNOWN) {
       int32_t *v_int;
       int64_t *v_int64;
-      char *v_text;
+      char **v_text;
       void *v_blob;
       void *v_ptr;
       uint32_t *v_bloblen;
@@ -284,8 +284,8 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
             break;
 
          case sqldb_col_TEXT:
-            v_text = va_arg (*ap, char *);
-            err = sqlite3_bind_text (stmt, index, v_text,
+            v_text = va_arg (*ap, char **);
+            err = sqlite3_bind_text (stmt, index, (*v_text),
                                      -1, SQLITE_TRANSIENT);
             break;
 

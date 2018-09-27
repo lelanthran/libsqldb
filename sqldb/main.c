@@ -62,9 +62,11 @@ NULL,
 
    for (uint32_t i=0; i<25; i++) {
       uint32_t u32 = i + 100;
+      const char *string = "Testing";
+
       res = sqldb_exec (db, "insert into one values (#1, #2)",
                               sqldb_col_UINT32, &u32,
-                              sqldb_col_TEXT,   "testing",
+                              sqldb_col_TEXT,   &string,
                               sqldb_col_UNKNOWN);
       if (!res) {
          SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
