@@ -75,6 +75,9 @@ extern "C" {
    // variadic arguments to construct a query that is executed on the
    // database. See explanation of tuple format in scan_columns below.
    //
+   // Parameters in querystring are of the format "#n" where n is the
+   // number of the parameter.
+   //
    // Returns a result object (that may be empty if the query returned no
    // results) on success or NULL on error.
    sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...);
@@ -85,15 +88,16 @@ extern "C" {
    // statement may be composed of multiple statements itself, with each
    // statement separated with a semicolon.
    //
-   // Execution stops on the first error encountered.
+   // Statements must not have parameters. Execution stops on the first
+   // error encountered.
    //
    // Return value is true if no errors were encountered and false if
    // any errors were encountered. The lasterr() function will return
    // the error message.
    bool sqldb_batch (sqldb_t *db, ...);
 
-   // Returns 0 if no rows are available, 1 if row is available and -1 if
-   // an error occurred.
+   // Returns 0 if no rows are available, 1 if a row is available and -1
+   // if an error occurred.
    int sqldb_res_step (sqldb_res_t *res);
 
    // Scans in all the columns in the current row. Returns the number of
@@ -116,7 +120,7 @@ extern "C" {
    // This is a bit of a tricky function. It executes the given query
    // using all the arguments in (...) as pairs of {type,value} until it
    // reaches type_UNKNOWN. It then fetches the results into tuples
-   // *after* type_UNKNOWN using the remainfer of the arguments on the
+   // *after* type_UNKNOWN using the remainder of the arguments on the
    // stack.
    //
    // In short, it first executes sqldb_exec(...), and then
