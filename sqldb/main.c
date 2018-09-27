@@ -140,7 +140,7 @@ NULL,
       char *stringvar = NULL;
 
       uint32_t num_scanned =
-         sqldb_exec_and_fetch (db, "select * from one where col_a=?1;",
+         sqldb_exec_and_fetch (db, "select * from one where col_a=#1;",
                sqldb_col_UINT32,    &intparam,
                sqldb_col_UNKNOWN, // End of SQL parameters
                sqldb_col_UINT32,    &intvar,
