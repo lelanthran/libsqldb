@@ -214,6 +214,23 @@ void sqldb_res_clearerr (sqldb_res_t *res)
    res->lasterr = NULL;
 }
 
+uint64_t sqldb_count_changes (sqldb_t *db)
+{
+   uint64_t ret = 0;
+
+   if (!db)
+      return 0;
+
+   switch (db->type) {
+      case sqldb_SQLITE:   ret = sqlite3_changes (db->sqlite_db);
+                           break;
+      default:             ret = 0;
+                           break;
+   }
+
+   return ret;
+}
+
 uint64_t sqldb_res_last_id (sqldb_res_t *res)
 {
    uint64_t ret = 0;
@@ -229,7 +246,6 @@ uint64_t sqldb_res_last_id (sqldb_res_t *res)
    }
 
    return ret;
-
 }
 
 static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
