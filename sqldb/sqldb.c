@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 // TODO: The blob type was not tested!
 
 #include "sqlite3/sqlite3.h"
+#include <postgresql/libpq-fe.h>
 
 #include "sqldb/sqldb.h"
 
@@ -59,6 +61,7 @@ struct sqldb_t {
    sqlite3 *sqlite_db;
 
    // Used for postgres only
+   PGconn *pg_db;
 };
 
 static void db_seterr (sqldb_t *db, const char *msg)
@@ -66,24 +69,19 @@ static void db_seterr (sqldb_t *db, const char *msg)
    if (!db || !msg)
       return;
 
+   char *tmp = lstr_dup (msg);
+   if (!tmp)
+      return;
+
    free (db->lasterr);
-   db->lasterr = lstr_dup (msg);
+   db->lasterr = tmp;
 }
 
 // A lot of the following functions will be refactored only when working
 // on the postgresql integration
-static sqldb_t *sqlitedb_open (const char *dbname)
+static sqldb_t *sqlitedb_open (sqldb_t *ret, const char *dbname)
 {
    bool error = true;
-   sqldb_t *ret = malloc (sizeof *ret);
-   if (!ret) {
-      SQLDB_OOM (dbname);
-      goto errorexit;
-   }
-   memset (ret, 0, sizeof *ret);
-
-   ret->type = sqldb_SQLITE;
-
    int mode = SQLITE_OPEN_READWRITE;
    int rc = sqlite3_open_v2 (dbname, &ret->sqlite_db, mode, NULL);
    if (rc!=SQLITE_OK) {
@@ -103,16 +101,57 @@ errorexit:
    return ret;
 }
 
+static sqldb_t *pgdb_open (sqldb_t *ret, const char *dbname)
+{
+   bool error = false;
+
+   if (!(ret->pg_db = PQconnectdb (dbname))) {
+      SQLDB_OOM (dbname);
+      goto errorexit;
+   }
+
+   if ((PQstatus (ret->pg_db))==CONNECTION_BAD) {
+      SQLDB_ERR ("[%s] Connection failure: [%s]\n",
+                     dbname,
+                     PQerrorMessage (ret->pg_db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+   if (error) {
+      sqldb_close (ret);
+      ret = NULL;
+   }
+
+   return ret;
+}
+
 sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
 {
+   sqldb_t *ret = malloc (sizeof *ret);
+   if (!ret) {
+      SQLDB_OOM (dbname);
+      goto errorexit;
+   }
+
+   memset (ret, 0, sizeof *ret);
+
+   ret->type = type;
+
    if (!dbname)
-      return NULL;
+      goto errorexit;
 
    switch (type) {
-      case sqldb_SQLITE:   return sqlitedb_open (dbname);
+      case sqldb_SQLITE:   return sqlitedb_open (ret, dbname);
+      case sqldb_POSTGRES: return pgdb_open (ret, dbname);
       default:             SQLDB_ERR ("Error: dbtype [%u] is unknown\n", type);
-                           return NULL;
+                           goto errorexit;
    }
+
+errorexit:
+   free (ret);
    return NULL;
 }
 
@@ -122,11 +161,13 @@ void sqldb_close (sqldb_t *db)
       return;
 
    switch (db->type) {
-      case sqldb_SQLITE:   sqlite3_close (db->sqlite_db);            break;
+      case sqldb_SQLITE:   sqlite3_close (db->sqlite_db);               break;
+      case sqldb_POSTGRES: PQfinish (db->pg_db);                        break;
       default:             SQLDB_ERR ("Unknown type %i\n", db->type);   break;
    }
 
    free (db->lasterr);
+   memset (db, 0, sizeof *db);
    free (db);
 }
 
@@ -185,7 +226,9 @@ struct sqldb_res_t {
    sqlite3_stmt *sqlite_stmt;
 
    // For postgres
+   PGresult *pgr;
    int current_row;
+   int nrows;
 };
 
 static void res_seterr (sqldb_res_t *res, const char *msg)
@@ -224,6 +267,8 @@ uint64_t sqldb_count_changes (sqldb_t *db)
    switch (db->type) {
       case sqldb_SQLITE:   ret = sqlite3_changes (db->sqlite_db);
                            break;
+      case sqldb_POSTGRES: // Do nothing, we get this number after every exec
+                           break;
       default:             ret = 0;
                            break;
    }
@@ -240,6 +285,8 @@ uint64_t sqldb_res_last_id (sqldb_res_t *res)
 
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite3_last_insert_rowid (res->dbcon->sqlite_db);
+                           break;
+      case sqldb_POSTGRES: // Do nothing, we get this value during exec
                            break;
       default:             ret = 0;
                            break;
@@ -341,6 +388,149 @@ errorexit:
    return ret;
 }
 
+static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
+{
+   bool error = true;
+   int nParams = 0;
+   sqldb_res_t *ret = NULL;
+
+   char **paramValues = NULL;
+
+   static const Oid *paramTypes = NULL;
+   static const int *paramLengths = NULL;
+   static const int *paramFormats = NULL;
+
+   va_list ac;
+   va_copy (ac, (*ap));
+   sqldb_coltype_t coltype = va_arg (ac, sqldb_coltype_t);
+   while (coltype!=sqldb_col_UNKNOWN) {
+      nParams++;
+      const void *ignore = va_arg (ac, const void *);
+      ignore = ignore;
+      coltype = va_arg (ac, sqldb_coltype_t);
+   }
+   va_end (ac);
+
+
+   ret = malloc (sizeof *ret);
+   if (!ret)
+      goto errorexit;
+   memset (ret, 0, sizeof *ret);
+
+   paramValues = malloc ((sizeof *paramValues) * (nParams + 1));
+   if (!paramValues)
+      goto errorexit;
+   memset (paramValues, 0, (sizeof *paramValues) * (nParams + 1));
+
+   ret->type = sqldb_POSTGRES;
+
+   size_t index = 0;
+   coltype = va_arg (*ap, sqldb_coltype_t);
+   while (coltype!=sqldb_col_UNKNOWN) {
+      uint32_t *v_uint;
+      uint64_t *v_uint64;
+      int32_t *v_int;
+      int64_t *v_int64;
+      char **v_text;
+      void *v_blob;
+      void *v_ptr;
+      uint32_t *v_bloblen;
+      int err = 0;
+
+      char intstr[42];
+      char *value = intstr;
+
+      switch (coltype) {
+         case sqldb_col_UNKNOWN:
+            SQLDB_ERR ("Impossible error\n");
+            goto errorexit;
+
+         case sqldb_col_UINT32:
+            v_uint = va_arg (*ap, uint32_t *);
+            sprintf (intstr, "%i", *v_uint);
+            break;
+
+         case sqldb_col_INT32:
+            v_int = va_arg (*ap, int32_t *);
+            sprintf (intstr, "%i", *v_int);
+            break;
+
+         case sqldb_col_UINT64:
+            v_uint64 = va_arg (*ap, uint64_t *);
+            sprintf (intstr, "%" PRIu64, *v_uint64);
+            break;
+
+         case sqldb_col_INT64:
+            v_int64 = va_arg (*ap, int64_t *);
+            sprintf (intstr, "%" PRIi64, *v_int64);
+            break;
+
+         case sqldb_col_DATETIME:
+            // TODO: ???
+
+         case sqldb_col_TEXT:
+            v_text = va_arg (*ap, char **);
+            value = *v_text;
+            break;
+
+         case sqldb_col_BLOB:
+            v_blob = va_arg (*ap, void *);
+            v_bloblen = va_arg (*ap, uint32_t *);
+            // TODO: ???
+            value = NULL;
+            break;
+
+         case sqldb_col_NULL:
+            v_ptr = va_arg (*ap, void *); // Discard the next argument
+            value = NULL;
+            break;
+
+         default:
+            SQLDB_ERR ("Unknown column type: %u\n", coltype);
+            break;
+      }
+
+      paramValues[index++] = lstr_dup (value);
+      coltype = va_arg (*ap, sqldb_coltype_t);
+   }
+
+   ret->pgr = PQexecParams (db->pg_db, qstring, nParams,
+                                                paramTypes,
+                                                paramValues,
+                                                paramLengths,
+                                                paramFormats,
+                                                0);
+   if (!ret->pgr) {
+      db_seterr (db, "OOM error (pg)");
+      goto errorexit;
+   }
+
+   ExecStatusType rs = PQresultStatus (ret->pgr);
+   if (rs != PGRES_COMMAND_OK && rs != PGRES_TUPLES_OK) {
+      // db_seterr (db, PQresultErrorMessage (ret->pgr));
+      db_seterr (db, "FAILING!!!!!!!\n");
+      goto errorexit;
+   }
+
+   ret->current_row = 0;
+   ret->nrows = PQntuples (ret->pgr);
+
+   error = false;
+
+errorexit:
+
+   for (int i=0; paramValues && i<nParams; i++) {
+      free (paramValues[i]);
+   }
+   free (paramValues);
+
+   if (error) {
+      sqldb_res_del (ret);
+      ret = NULL;
+   }
+   return ret;
+}
+
 sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...)
 {
    sqldb_res_t *ret = NULL;
@@ -371,12 +561,13 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
    sqldb_clearerr (db);
 
    switch (db->type) {
-      case sqldb_SQLITE:   ret = sqlitedb_exec (db, qstring, ap);    break;
+      case sqldb_SQLITE:   ret = sqlitedb_exec (db, qstring, ap);       break;
+      case sqldb_POSTGRES: ret = pgdb_exec (db, qstring, ap);           break;
       default:             SQLDB_ERR ("(%i) Unknown type\n", db->type);
                            goto errorexit;
    }
    if (!ret) {
-      SQLDB_ERR ("Failed to execute stmt\n");
+      SQLDB_ERR ("Failed to execute stmt [%s]\n", qstring);
       goto errorexit;
    }
 
@@ -453,6 +644,11 @@ static int sqlite_res_step (sqldb_res_t *res)
    return 1;
 }
 
+static int pgdb_res_step (sqldb_res_t *res)
+{
+   return res->nrows - res->current_row ? 1 : 0;
+}
+
 int sqldb_res_step (sqldb_res_t *res)
 {
    int ret = -1;
@@ -461,6 +657,7 @@ int sqldb_res_step (sqldb_res_t *res)
 
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_res_step (res);  break;
+      case sqldb_POSTGRES: ret = pgdb_res_step (res);    break;
       default:             ret = -1;                     break;
    }
    return ret;
@@ -607,6 +804,7 @@ void sqldb_res_del (sqldb_res_t *res)
 
    switch (res->type) {
       case sqldb_SQLITE:   sqlite3_finalize (res->sqlite_stmt);         break;
+      case sqldb_POSTGRES: PQclear (res->pgr);                          break;
       default:             SQLDB_ERR ("(%i) Unknown type\n", res->type);   break;
    }
    free (res);

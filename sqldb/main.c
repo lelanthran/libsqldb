@@ -2,12 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "sqldb/sqldb.h"
 
-#define TESTDB    ("/tmp/testdb.sql")
+#define TESTDB_SQLITE    ("/tmp/testdb.sql3")
+#define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
 
-int main (void)
+int main (int argc, char **argv)
 {
    static const char *create_stmts[] = {
 "create table one (col_a int primary key, col_b varchar (20));",
@@ -17,17 +19,39 @@ int main (void)
 NULL,
    };
 
+   sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
+   const char *dbname = NULL;
 
    int ret = EXIT_FAILURE;
    sqldb_t *db = NULL;
    sqldb_res_t *res = NULL;
 
-   if (!sqldb_create (TESTDB, sqldb_SQLITE)) {
-      SQLDB_ERR ("(%s) Could not create database file\n", TESTDB);
+   if (argc <= 1) {
+      fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
+      return EXIT_FAILURE;
+   }
+
+   if ((strcmp (argv[1], "sqlite"))==0) {
+      dbtype = sqldb_SQLITE;
+      dbname = TESTDB_SQLITE;
+   }
+
+   if ((strcmp (argv[1], "postgres"))==0) {
+      dbtype = sqldb_POSTGRES;
+      dbname = TESTDB_POSTGRES;
+   }
+
+   if (!dbname || dbtype==sqldb_UNKNOWN) {
+      fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
+      return EXIT_FAILURE;
+   }
+
+   if (!sqldb_create (dbname, dbtype)) {
+      SQLDB_ERR ("(%s) Could not create database file\n", dbname);
       goto errorexit;
    }
 
-   db = sqldb_open (TESTDB, sqldb_SQLITE);
+   db = sqldb_open (dbname, dbtype);
    if (!db) {
       SQLDB_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
       goto errorexit;
@@ -43,7 +67,7 @@ NULL,
       switch (sqldb_res_step (r)) {
          case 1:  SQLDB_ERR ("Results available\n");                    break;
          case 0:  SQLDB_ERR ("Execution complete\n");                   break;
-         case -1: SQLDB_ERR ("Error (%s)\n", sqldb_res_lasterr (r));    break;
+         case -1: SQLDB_ERR ("S Error (%s)\n", sqldb_res_lasterr (r));  break;
       }
       sqldb_res_del (r);
    }
@@ -69,16 +93,23 @@ NULL,
                               sqldb_col_TEXT,   &string,
                               sqldb_col_UNKNOWN);
       if (!res) {
-         SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+         SQLDB_ERR ("%u(%s) Error during _exec []\n", i, sqldb_lasterr (db));
          goto errorexit;
       }
       if (sqldb_res_step (res)!=0) {
-         SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+         SQLDB_ERR ("%u(%s) Error during _step []\n", i, sqldb_lasterr (db));
          goto errorexit;
       }
-
+      SQLDB_ERR ("Inserted [%s] into values\n", string);
       sqldb_res_del (res); res = NULL;
    }
+
+   res = sqldb_exec (db, "COMMIT;", sqldb_col_UNKNOWN);
+   if (!res) {
+      SQLDB_ERR ("(%s) Error during commit []\n", sqldb_lasterr (db));
+      goto errorexit;
+   }
+   sqldb_res_del (res); res = NULL;
 
    /*
    res = sqldb_exec (db, "ROLLBACK;", sqldb_col_UNKNOWN);

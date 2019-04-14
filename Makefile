@@ -14,7 +14,7 @@ SUBPROJS=\
 MYINCLUDEDIRS+= -I$(HOME)/include
 
 # Your extra libararies, for libraries that are not in the path.
-MYLIBS+= -L$(HOME)/lib/$(TARGET)
+MYLIBS+= -L$(HOME)/lib/$(TARGET) -lpq
 
 #############################################################
 # You should not need to modify anything below this comment #
