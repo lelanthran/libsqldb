@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <inttypes.h>
+#include <time.h>
 
 // TODO: The blob type was not tested!
 
@@ -62,6 +63,7 @@ struct sqldb_t {
 
    // Used for postgres only
    PGconn *pg_db;
+   uint64_t nchanges;
 };
 
 static void db_seterr (sqldb_t *db, const char *msg)
@@ -229,6 +231,7 @@ struct sqldb_res_t {
    PGresult *pgr;
    int current_row;
    int nrows;
+   uint64_t last_id;
 };
 
 static void res_seterr (sqldb_res_t *res, const char *msg)
@@ -267,8 +270,10 @@ uint64_t sqldb_count_changes (sqldb_t *db)
    switch (db->type) {
       case sqldb_SQLITE:   ret = sqlite3_changes (db->sqlite_db);
                            break;
-      case sqldb_POSTGRES: // Do nothing, we get this number after every exec
+
+      case sqldb_POSTGRES: ret = db->nchanges;
                            break;
+
       default:             ret = 0;
                            break;
    }
@@ -286,8 +291,10 @@ uint64_t sqldb_res_last_id (sqldb_res_t *res)
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite3_last_insert_rowid (res->dbcon->sqlite_db);
                            break;
-      case sqldb_POSTGRES: // Do nothing, we get this value during exec
+
+      case sqldb_POSTGRES: ret = res->last_id;
                            break;
+
       default:             ret = 0;
                            break;
    }
@@ -435,7 +442,6 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
       void *v_blob;
       void *v_ptr;
       uint32_t *v_bloblen;
-      int err = 0;
 
       char intstr[42];
       char *value = intstr;
@@ -477,11 +483,14 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
             v_blob = va_arg (*ap, void *);
             v_bloblen = va_arg (*ap, uint32_t *);
             // TODO: ???
+            v_bloblen = v_bloblen;
+            v_blob = v_blob;
             value = NULL;
             break;
 
          case sqldb_col_NULL:
             v_ptr = va_arg (*ap, void *); // Discard the next argument
+            v_ptr = v_ptr;
             value = NULL;
             break;
 
@@ -496,7 +505,7 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
 
    ret->pgr = PQexecParams (db->pg_db, qstring, nParams,
                                                 paramTypes,
-                                                paramValues,
+                           (const char *const *)paramValues,
                                                 paramLengths,
                                                 paramFormats,
                                                 0);
@@ -507,13 +516,21 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
 
    ExecStatusType rs = PQresultStatus (ret->pgr);
    if (rs != PGRES_COMMAND_OK && rs != PGRES_TUPLES_OK) {
-      // db_seterr (db, PQresultErrorMessage (ret->pgr));
-      db_seterr (db, "FAILING!!!!!!!\n");
+      db_seterr (db, PQresultErrorMessage (ret->pgr));
       goto errorexit;
    }
 
    ret->current_row = 0;
    ret->nrows = PQntuples (ret->pgr);
+   const char *tmp = PQcmdTuples (ret->pgr);
+   if (tmp) {
+      sscanf (tmp, "%" PRIu64, &db->nchanges);
+   } else {
+      db->nchanges = 0;
+   }
+
+   Oid last_id = PQoidValue (ret->pgr);
+   ret->last_id = last_id == InvalidOid ? (uint64_t)-1 : last_id;
 
    error = false;
 
@@ -663,6 +680,26 @@ int sqldb_res_step (sqldb_res_t *res)
    return ret;
 }
 
+static uint64_t convert_ISO8601_to_uint64 (const char *src)
+{
+   struct tm tm;
+
+   memset (&tm, 0, sizeof tm);
+
+   if ((sscanf (src, "%i-%i-%i%i:%i:%i", &tm.tm_year,
+                                          &tm.tm_mon,
+                                          &tm.tm_mday,
+                                          &tm.tm_hour,
+                                          &tm.tm_min,
+                                          &tm.tm_sec)) != 6)
+      return (uint64_t)-1;
+
+   tm.tm_year -= 1900;
+   tm.tm_mon -= 1;
+
+   return mktime (&tm);
+}
+
 uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
 {
    uint32_t ret = 0;
@@ -694,6 +731,12 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
             break;
 
          case sqldb_col_DATETIME:
+            tmp = sqlite3_column_text (stmt, ret);
+            *(uint64_t *)dst = convert_ISO8601_to_uint64 (tmp);
+            if ((*(uint64_t *)dst) == (uint64_t)-1)
+               return (uint32_t)-1;
+            break;
+
          case sqldb_col_UINT64:
          case sqldb_col_INT64:
             *(uint64_t *)dst = sqlite3_column_int (stmt, ret);
@@ -732,6 +775,89 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
    return ret;
 }
 
+uint32_t pgdb_scan (sqldb_res_t *res, va_list *ap)
+{
+   uint32_t ret = 0;
+
+   if (!res)
+      return (uint32_t)-1;
+
+   sqldb_coltype_t coltype = va_arg (*ap, sqldb_coltype_t);
+
+   int numcols = PQnfields (res->pgr);
+   int index = 0;
+
+   while (coltype!=sqldb_col_UNKNOWN && numcols--) {
+
+      void *dst = va_arg (*ap, void *);
+
+      int32_t  i32;
+      uint32_t u32;
+      int64_t  i64;
+      uint64_t u64;
+
+      const char *value = PQgetvalue (res->pgr, res->current_row, index++);
+      if (!value)
+         return (uint32_t)-1;
+
+      switch (coltype) {
+
+         case sqldb_col_UNKNOWN:
+            SQLDB_ERR ("Possibly corrupt stack");
+            return (uint32_t)-1;
+
+         case sqldb_col_UINT32:
+            if ((sscanf (value, "%u", &u32))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = u32;
+            break;
+
+         case sqldb_col_INT32:
+            if ((sscanf (value, "%i", &i32))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = i32;
+            break;
+
+         case sqldb_col_UINT64:
+            if ((sscanf (value, "%" PRIu64, &u64))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = u64;
+            break;
+
+         case sqldb_col_INT64:
+            if ((sscanf (value, "%" PRIu64, &i64))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = i64;
+            break;
+
+         case sqldb_col_TEXT:
+            if ((*(char **)dst = lstr_dup (value))==NULL)
+               return (uint32_t)-1;
+            break;
+
+         case sqldb_col_DATETIME:
+            *(uint64_t *)dst = convert_ISO8601_to_uint64 (value);
+            if ((*(uint64_t *)dst) == (uint64_t)-1)
+               return (uint32_t)-1;
+            break;
+
+         case sqldb_col_BLOB:
+            SQLDB_ERR ("Error: BLOB type not supported\n");
+            return (uint32_t)-1;
+
+         case sqldb_col_NULL:
+            SQLDB_ERR ("Error: NULL type not supported\n");
+            return (uint32_t)-1;
+
+      }
+      coltype = va_arg (*ap, sqldb_coltype_t);
+      ret++;
+   }
+
+   res->current_row++;
+   return ret;
+}
+
 uint32_t sqldb_scan_columns (sqldb_res_t *res, ...)
 {
    uint32_t ret = 0;
@@ -750,6 +876,7 @@ uint32_t sqldb_scan_columnsv (sqldb_res_t *res, va_list *ap)
 
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_scan (res, ap);  break;
+      case sqldb_POSTGRES: ret = pgdb_scan (res, ap);    break;
       default:             ret = (uint32_t)-1;           break;
    }
 

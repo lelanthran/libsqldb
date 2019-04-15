@@ -30,13 +30,13 @@ typedef enum {
 } sqldb_dbtype_t;
 
 typedef enum {
-   sqldb_col_UNKNOWN = 0,
-   sqldb_col_INT32,
-   sqldb_col_INT64,
-   sqldb_col_UINT32,
-   sqldb_col_UINT64,
-   sqldb_col_DATETIME,
-   sqldb_col_TEXT,
+   sqldb_col_UNKNOWN = 0,  // Mark end of list
+   sqldb_col_INT32,        // int32_t
+   sqldb_col_INT64,        // int64_t
+   sqldb_col_UINT32,       // uint32_t
+   sqldb_col_UINT64,       // uint64_t
+   sqldb_col_DATETIME,     // int64_t
+   sqldb_col_TEXT,         // char *
    sqldb_col_BLOB,
    sqldb_col_NULL
 } sqldb_coltype_t;

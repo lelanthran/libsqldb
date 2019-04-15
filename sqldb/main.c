@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <inttypes.h>
+#include <time.h>
 
 #include "sqldb/sqldb.h"
 
@@ -16,6 +18,8 @@ int main (int argc, char **argv)
 "create table two (col_1 int primary key, col_2 int references one (col_a));",
 "insert into one values (41, '42');",
 "insert into two values (51, 41);",
+"create table three (col_a int primary key, col_b timestamp);",
+"insert into three values (99, CURRENT_TIMESTAMP);",
 NULL,
    };
 
@@ -134,7 +138,7 @@ NULL,
       goto errorexit;
    }
 
-#if 0
+#if 1
    int rc = sqldb_res_step (res);
    if (rc==0) {
       SQLDB_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
@@ -146,8 +150,7 @@ NULL,
    }
 #endif
 
-   // TODO: scan in all the results in a loop and print them
-   while (sqldb_res_step (res)==1) {
+   while (rc==1) {
       uint32_t intvar;
       char *stringvar = NULL;
       uint32_t num_scanned =
@@ -161,6 +164,12 @@ NULL,
       }
       printf ("Scanned in %u[%s]\n", intvar, stringvar);
       free (stringvar);
+
+      rc = sqldb_res_step (res);
+      if (rc==-1) {
+         SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+         goto errorexit;
+      }
    }
 
    sqldb_res_del (res); res = NULL;
@@ -186,6 +195,49 @@ NULL,
                                                                     stringvar);
       free (stringvar);
    }
+   sqldb_res_del (res); res = NULL;
+
+   // Get the timestamp
+   res = sqldb_exec (db, "select * from three;", sqldb_col_UNKNOWN);
+   if (!res) {
+      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+#if 1
+   rc = sqldb_res_step (res);
+   if (rc==0) {
+      SQLDB_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
+      goto errorexit;
+   }
+   if (rc==-1) {
+      SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+      goto errorexit;
+   }
+#endif
+
+   while (rc==1) {
+      uint32_t intvar;
+      uint64_t datevar;
+      uint32_t num_scanned =
+                  sqldb_scan_columns (res, sqldb_col_UINT32,   &intvar,
+                                           sqldb_col_DATETIME, &datevar,
+                                           sqldb_col_UNKNOWN);
+      if (num_scanned!=2) {
+         SQLDB_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
+         goto errorexit;
+      }
+      printf ("Scanned in %u[%" PRIu64 "] [%s]\n", intvar, datevar,
+                                                           ctime (&datevar));
+
+      rc = sqldb_res_step (res);
+      if (rc==-1) {
+         SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+         goto errorexit;
+      }
+   }
+
+   sqldb_res_del (res); res = NULL;
 
    ret = EXIT_SUCCESS;
 errorexit:
