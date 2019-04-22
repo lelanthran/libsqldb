@@ -30,6 +30,8 @@ NULL,
    sqldb_t *db = NULL;
    sqldb_res_t *res = NULL;
 
+   char **colnames = NULL;
+
    if (argc <= 1) {
       fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;
@@ -138,6 +140,18 @@ NULL,
       goto errorexit;
    }
 
+   printf ("Counted [%" PRIu64 "] columns in results\n",
+            sqldb_res_num_columns (res));
+
+   if (!(colnames = sqldb_res_column_names (res))) {
+      SQLDB_ERR ("Failed to get the column names\n");
+      goto errorexit;
+   }
+
+   for (size_t i=0; colnames[i]; i++) {
+      printf ("%zu [%s]\n", i, colnames[i]);
+   }
+
 #if 1
    int rc = sqldb_res_step (res);
    if (rc==0) {
@@ -241,6 +255,11 @@ NULL,
 
    ret = EXIT_SUCCESS;
 errorexit:
+
+   for (size_t i=0; colnames && colnames[i]; i++) {
+      free (colnames[i]);
+   }
+   free (colnames);
 
    sqldb_res_del (res);
    sqldb_close (db);

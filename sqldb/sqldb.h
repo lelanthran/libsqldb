@@ -68,12 +68,23 @@ extern "C" {
    void sqldb_res_clearerr (sqldb_res_t *res);
 
    // Get the number of rows affect by the last operation executed on this
-   // database
+   // database. Only applies to insert/update/delete operations.
    uint64_t sqldb_count_changes (sqldb_t *db);
 
    // Get the last inserted ID for this result if query was an insert
-   // operation.
+   // operation. If query was NOT an insert operation then the return
+   // value is not defined.
    uint64_t sqldb_res_last_id (sqldb_res_t *res);
+
+   // Get the number of columns in this result-set.
+   uint64_t sqldb_res_num_columns (sqldb_res_t *res);
+
+   // Get the column name in this result-set. The return value is an array
+   // of strings (char pointers) terminated with a NULL pointer that the
+   // caller must free. The caller must also free the array itself.
+   //
+   // On error NULL is returned.
+   char **sqldb_res_column_names (sqldb_res_t *res);
 
    // Uses the specified parameterised querystring and tuples in the
    // variadic arguments to construct a query that is executed on the

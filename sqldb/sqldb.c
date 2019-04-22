@@ -302,6 +302,68 @@ uint64_t sqldb_res_last_id (sqldb_res_t *res)
    return ret;
 }
 
+uint64_t sqldb_res_num_columns (sqldb_res_t *res)
+{
+   if (!res)
+      return 0;
+
+   uint64_t ret = 0;
+
+   switch (res->type) {
+      case  sqldb_SQLITE:  ret = sqlite3_column_count (res->sqlite_stmt);
+                           break;
+
+      case sqldb_POSTGRES: ret = PQnfields (res->pgr);
+                           break;
+   }
+
+   return ret;
+}
+
+char **sqldb_res_column_names (sqldb_res_t *res)
+{
+   bool error = true;
+   char **ret = NULL;
+   uint64_t ncols = 0;
+
+   if (!res)
+      goto errorexit;
+
+   if (!(ncols = sqldb_res_num_columns (res)))
+      goto errorexit;
+
+   if (!(ret = malloc ((sizeof *ret) * (ncols + 1))))
+      goto errorexit;
+
+   memset (ret, 0, (sizeof *ret) * (ncols + 1));
+
+   for (uint64_t i=0; i<ncols; i++) {
+      char *tmp = NULL;
+      switch (res->type) {
+         case  sqldb_SQLITE:  tmp = sqlite3_column_name (res->sqlite_stmt, i);
+                              break;
+
+         case sqldb_POSTGRES: tmp = PQfname (res->pgr, i);
+                              break;
+      }
+      if (!(ret[i] = lstr_dup (tmp)))
+         goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+   if (error) {
+      for (size_t i=0; ret && ret[i]; i++)
+         free (ret[i]);
+
+      free (ret);
+      ret = NULL;
+   }
+
+   return ret;
+}
+
 static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
 {
    int counter = 0;
