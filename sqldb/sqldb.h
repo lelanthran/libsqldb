@@ -77,7 +77,7 @@ extern "C" {
    uint64_t sqldb_res_last_id (sqldb_res_t *res);
 
    // Get the number of columns in this result-set.
-   uint64_t sqldb_res_num_columns (sqldb_res_t *res);
+   uint32_t sqldb_res_num_columns (sqldb_res_t *res);
 
    // Get the column name in this result-set. The return value is an array
    // of strings (char pointers) terminated with a NULL pointer that the
