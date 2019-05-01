@@ -32,6 +32,7 @@ NULL,
 
    char **colnames = NULL;
 
+   printf ("Testing sqldb version [%s]\n", SQLDB_VERSION);
    if (argc <= 1) {
       fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;
