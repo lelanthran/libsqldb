@@ -714,6 +714,12 @@ bool sqldb_batch (sqldb_t *db, ...)
    return ret;
 }
 
+bool sqldb_batchfile (sqldb_t *db, FILE *inf)
+{
+
+   return false;
+}
+
 static int sqlite_res_step (sqldb_res_t *res)
 {
    int rc = sqlite3_step (res->sqlite_stmt);

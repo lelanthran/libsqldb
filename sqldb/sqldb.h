@@ -111,6 +111,20 @@ extern "C" {
    // the error message.
    bool sqldb_batch (sqldb_t *db, ...);
 
+   // This is similar to the sqldb_batch() function, with the exception
+   // being that:
+   // a) The sql statements are all read from the FILE * passed in.
+   // b) No parameterisation is possible, hence no parameters need to be
+   //    passed in.
+   //
+   // Other than the two exceptions listed above all the other behaviour,
+   // including return value and error messages, remains the same as
+   // sqldb_batch().
+   //
+   // This is a dangerous function to use on unknown input, so use with
+   // care.
+   bool sqldb_batchfile (sqldb_t *db, FILE *inf);
+
    // Returns 0 if no rows are available, 1 if a row is available and -1
    // if an error occurred.
    int sqldb_res_step (sqldb_res_t *res);

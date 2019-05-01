@@ -10,7 +10,12 @@
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
-#define TEST_INPUT       ("test-file.sql")
+#define TEST_BATCHFILE   ("test-file.sql")
+
+#define PROG_ERR(...)      do {\
+      fprintf (stderr, "%s: ", argv[1]);\
+      fprintf (stderr, __VA_ARGS__);\
+} while (0)
 
 int main (int argc, char **argv)
 {
@@ -26,6 +31,7 @@ NULL,
 
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
    const char *dbname = NULL;
+   FILE *inf = NULL;
 
    int ret = EXIT_FAILURE;
    sqldb_t *db = NULL;
@@ -55,38 +61,38 @@ NULL,
    }
 
    if (!sqldb_create (dbname, dbtype)) {
-      SQLDB_ERR ("(%s) Could not create database file\n", dbname);
+      PROG_ERR ("(%s) Could not create database file\n", dbname);
       goto errorexit;
    }
 
    db = sqldb_open (dbname, dbtype);
    if (!db) {
-      SQLDB_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
    for (size_t i=0; create_stmts[i]; i++) {
       sqldb_res_t *r = sqldb_exec (db, create_stmts[i], sqldb_col_UNKNOWN);
       if (!r) {
-         SQLDB_ERR ("(%s) Error during _exec [%s]\n", sqldb_lasterr (db),
+         PROG_ERR ("(%s) Error during _exec [%s]\n", sqldb_lasterr (db),
                                                    create_stmts[i]);
          goto errorexit;
       }
       switch (sqldb_res_step (r)) {
-         case 1:  SQLDB_ERR ("Results available\n");                    break;
-         case 0:  SQLDB_ERR ("Execution complete\n");                   break;
-         case -1: SQLDB_ERR ("S Error (%s)\n", sqldb_res_lasterr (r));  break;
+         case 1:  PROG_ERR ("Results available\n");                    break;
+         case 0:  PROG_ERR ("Execution complete\n");                   break;
+         case -1: PROG_ERR ("S Error (%s)\n", sqldb_res_lasterr (r));  break;
       }
       sqldb_res_del (r);
    }
 
    res = sqldb_exec (db, "BEGIN TRANSACTION;", sqldb_col_UNKNOWN);
    if (!res) {
-      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (sqldb_res_step (res)!=0) {
-      SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -101,20 +107,20 @@ NULL,
                               sqldb_col_TEXT,   &string,
                               sqldb_col_UNKNOWN);
       if (!res) {
-         SQLDB_ERR ("%u(%s) Error during _exec []\n", i, sqldb_lasterr (db));
+         PROG_ERR ("%u(%s) Error during _exec []\n", i, sqldb_lasterr (db));
          goto errorexit;
       }
       if (sqldb_res_step (res)!=0) {
-         SQLDB_ERR ("%u(%s) Error during _step []\n", i, sqldb_lasterr (db));
+         PROG_ERR ("%u(%s) Error during _step []\n", i, sqldb_lasterr (db));
          goto errorexit;
       }
-      SQLDB_ERR ("Inserted [%s] into values\n", string);
+      PROG_ERR ("Inserted [%s] into values\n", string);
       sqldb_res_del (res); res = NULL;
    }
 
    res = sqldb_exec (db, "COMMIT;", sqldb_col_UNKNOWN);
    if (!res) {
-      SQLDB_ERR ("(%s) Error during commit []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during commit []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    sqldb_res_del (res); res = NULL;
@@ -122,23 +128,35 @@ NULL,
    /*
    res = sqldb_exec (db, "ROLLBACK;", sqldb_col_UNKNOWN);
    if (!res) {
-      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    int rc = sqldb_res_step (res);
    {
-      SQLDB_ERR ("(%s) Error during _step [%i]\n", sqldb_lasterr (db), rc);
+      PROG_ERR ("(%s) Error during _step [%i]\n", sqldb_lasterr (db), rc);
       // goto errorexit;
    }
 
    sqldb_res_del (res); res = NULL;
    */
 
-   SQLDB_ERR ("Completed parameterised insertion\n");
+   PROG_ERR ("Completed parameterised insertion\n");
+
+   if (!(inf = fopen (TEST_BATCHFILE, "r"))) {
+      PROG_ERR ("Cannot open batchfile [%s] for reading: %m\n",
+                  TEST_BATCHFILE);
+      goto errorexit;
+   }
+
+   if (!(sqldb_batchfile (db, inf))) {
+      PROG_ERR ("Batchfile [%s] failed with error [%s]\n",
+                  TEST_BATCHFILE, sqldb_lasterr (db));
+      goto errorexit;
+   }
 
    res = sqldb_exec (db, "select * from one;", sqldb_col_UNKNOWN);
    if (!res) {
-      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -146,7 +164,7 @@ NULL,
             sqldb_res_num_columns (res));
 
    if (!(colnames = sqldb_res_column_names (res))) {
-      SQLDB_ERR ("Failed to get the column names\n");
+      PROG_ERR ("Failed to get the column names\n");
       goto errorexit;
    }
 
@@ -157,11 +175,11 @@ NULL,
 #if 1
    int rc = sqldb_res_step (res);
    if (rc==0) {
-      SQLDB_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (rc==-1) {
-      SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 #endif
@@ -174,7 +192,7 @@ NULL,
                                            sqldb_col_TEXT,   &stringvar,
                                            sqldb_col_UNKNOWN);
       if (num_scanned!=2) {
-         SQLDB_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
+         PROG_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
          free (stringvar);
          goto errorexit;
       }
@@ -183,7 +201,7 @@ NULL,
 
       rc = sqldb_res_step (res);
       if (rc==-1) {
-         SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+         PROG_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
          goto errorexit;
       }
    }
@@ -203,7 +221,7 @@ NULL,
                sqldb_col_TEXT,      &stringvar,
                sqldb_col_UNKNOWN); // End of dest pointers
       if (num_scanned != 2) {
-         SQLDB_ERR ("[%u] Unexpected number of columns scanned\n", num_scanned);
+         PROG_ERR ("[%u] Unexpected number of columns scanned\n", num_scanned);
          free (stringvar);
          goto errorexit;
       }
@@ -216,18 +234,18 @@ NULL,
    // Get the timestamp
    res = sqldb_exec (db, "select * from three;", sqldb_col_UNKNOWN);
    if (!res) {
-      SQLDB_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
 #if 1
    rc = sqldb_res_step (res);
    if (rc==0) {
-      SQLDB_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) No results during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (rc==-1) {
-      SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+      PROG_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
       goto errorexit;
    }
 #endif
@@ -240,7 +258,7 @@ NULL,
                                            sqldb_col_DATETIME, &datevar,
                                            sqldb_col_UNKNOWN);
       if (num_scanned!=2) {
-         SQLDB_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
+         PROG_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
          goto errorexit;
       }
       printf ("Scanned in %u[%" PRIu64 "] [%s]\n", intvar, datevar,
@@ -248,7 +266,7 @@ NULL,
 
       rc = sqldb_res_step (res);
       if (rc==-1) {
-         SQLDB_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
+         PROG_ERR ("(%s) Error during _step []\n", sqldb_lasterr (db));
          goto errorexit;
       }
    }
@@ -265,7 +283,7 @@ errorexit:
 
    sqldb_res_del (res);
    sqldb_close (db);
-   SQLDB_ERR ("XXX Test: %s XXX\n", ret==EXIT_SUCCESS ? "passed" : "failed");
+   PROG_ERR ("XXX Test: %s XXX\n", ret==EXIT_SUCCESS ? "passed" : "failed");
 
    return ret;
 }

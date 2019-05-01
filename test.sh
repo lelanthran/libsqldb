@@ -3,8 +3,10 @@
 # NOTE: A different test script must be written for Windows.
 #
 
-export SQLITE_TEST="SQLite test passed"
-export PSQL_TEST="PSQL test passed"
+function die () {
+   echo $*
+   exit 127
+}
 
 echo "Set environment variable VGRIND to valgring with args to run valgrind"
 
@@ -18,6 +20,12 @@ echo "drop table two cascade;"   | psql
 echo "drop table three cascade;" | psql
 echo Done.
 
-$VGRIND sqldb/main-d.elf sqlite     || export SQLITE_TEST="SQLITE test failed"
-$VGRIND sqldb/main-d.elf postgres   || export PSQL_TEST="PSQL test failed"
+echo Starting sqlite tests
+$VGRIND sqldb/main-d.elf sqlite   || die "SQLITE test failed"
+echo Sqlite tests passed.
 
+echo Starting postgres tests
+$VGRIND sqldb/main-d.elf postgres || die "PSQL test failed"
+echo Postgres tests passed.
+
+exit 0;
