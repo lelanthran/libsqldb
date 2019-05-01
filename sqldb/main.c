@@ -10,6 +10,7 @@
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
+#define TEST_INPUT       ("test-file.sql")
 
 int main (int argc, char **argv)
 {

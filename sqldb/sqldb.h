@@ -67,8 +67,8 @@ extern "C" {
    void sqldb_clearerr (sqldb_t *db);
    void sqldb_res_clearerr (sqldb_res_t *res);
 
-   // Get the number of rows affect by the last operation executed on this
-   // database. Only applies to insert/update/delete operations.
+   // Get the number of rows affected by the last operation executed on
+   // this database. Only applies to insert/update/delete operations.
    uint64_t sqldb_count_changes (sqldb_t *db);
 
    // Get the last inserted ID for this result if query was an insert
