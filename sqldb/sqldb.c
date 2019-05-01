@@ -692,6 +692,39 @@ static bool sqlitedb_batch (sqldb_t *db, va_list ap)
    return ret;
 }
 
+static bool pgdb_batch (sqldb_t *db, va_list ap)
+{
+   bool ret = true;
+
+   if (!db->pg_db)
+      return false;
+
+   char *qstring = va_arg (ap, char *);
+
+   while (ret && qstring) {
+      char *errmsg = NULL;
+      PGresult *result = PQexec (db->pg_db, qstring);
+      if (!result) {
+         db_seterr (db, "PGSQL - OOM error");
+         ret = false;
+         break;
+      }
+      ExecStatusType rc = PQresultStatus (result);
+      if (rc == PGRES_BAD_RESPONSE || rc == PGRES_FATAL_ERROR) {
+         db_seterr (db, PQresStatus (rc));
+         ret = false;
+         PQclear (result);
+         break;
+      }
+
+      PQclear (result);
+      qstring =  va_arg (ap, char *);
+   }
+
+   return ret;
+}
+
+
 bool sqldb_batch (sqldb_t *db, ...)
 {
    bool ret;
@@ -704,7 +737,9 @@ bool sqldb_batch (sqldb_t *db, ...)
 
    switch (db->type) {
 
-      case sqldb_SQLITE:   ret = sqlitedb_batch (db, ap); break;
+      case sqldb_SQLITE:   ret = sqlitedb_batch (db, ap);   break;
+
+      case sqldb_POSTGRES: ret = pgdb_batch (db, ap);       break;
 
       default:             SQLDB_ERR ("(%i) Format unsupported\n", db->type);
                            ret = false;
@@ -714,10 +749,79 @@ bool sqldb_batch (sqldb_t *db, ...)
    return ret;
 }
 
+static char *push_char (char **dst, size_t *len, char c)
+{
+   char *tmp = realloc ((*dst), (*len)+2);
+   if (!tmp) {
+      return NULL;
+   }
+   (*dst) = tmp;
+   (*dst)[(*len)] = c & 0xff;
+   (*dst)[(*len)+1] = 0;
+   (*len)++;
+
+   return (*dst);
+}
+
+static char *read_stmt (FILE *inf)
+{
+   char *ret = NULL;
+   size_t len = 0;
+   int c = 0;
+   int pc = 0;
+   char cquote = 0;
+   bool comment = false;
+
+   while (!feof (inf) && !ferror (inf) && ((c = fgetc (inf))!=EOF)) {
+
+      if (c=='\n')
+         comment = false;
+
+      if (c=='-' && pc=='-')
+         comment = true;
+
+      if (!cquote) {
+         if (c == '\'') cquote = '\'';
+         if (c == '"')  cquote = '"';
+         if (c == ';' && !comment) {
+            // We can probably do without the terminating ';' here, we are
+            // returning a full statement anyway and the caller will
+            // execute if immediately, hence there is no reason to free
+            // ret and return NULL.
+            ret = push_char (&ret, &len, c);
+            break;
+         }
+      } else {
+         if (c == '\'' || c == '"')
+            cquote = 0;
+      }
+
+      if (!(ret = push_char (&ret, &len, c))) {
+         free (ret);
+         return NULL;
+      }
+
+      pc = c;
+   }
+
+   return ret;
+}
+
 bool sqldb_batchfile (sqldb_t *db, FILE *inf)
 {
+   char *stmt = NULL;
 
-   return false;
+   while ((stmt = read_stmt (inf))) {
+      printf ("FOUND STATEMENT: [%s]\n", stmt);
+      if (!(sqldb_batch (db, stmt, NULL))) {
+         SQLDB_ERR ("Batchfile statement failed: \n%s\n", stmt);
+         free (stmt);
+         return false;
+      }
+
+      free (stmt);
+   }
+   return true;
 }
 
 static int sqlite_res_step (sqldb_res_t *res)

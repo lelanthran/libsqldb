@@ -276,6 +276,9 @@ NULL,
    ret = EXIT_SUCCESS;
 errorexit:
 
+   if (inf)
+      fclose (inf);
+
    for (size_t i=0; colnames && colnames[i]; i++) {
       free (colnames[i]);
    }

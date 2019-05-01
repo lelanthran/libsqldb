@@ -109,16 +109,19 @@ extern "C" {
    // Return value is true if no errors were encountered and false if
    // any errors were encountered. The lasterr() function will return
    // the error message.
+   //
+   // This is a dangerous function to use on unknown input, so use with
+   // care.
    bool sqldb_batch (sqldb_t *db, ...);
 
    // This is similar to the sqldb_batch() function, with the exception
-   // being that:
-   // a) The sql statements are all read from the FILE * passed in.
-   // b) No parameterisation is possible, hence no parameters need to be
-   //    passed in.
+   // being that the sql statements are all read from the FILE * passed in.
    //
-   // Other than the two exceptions listed above all the other behaviour,
-   // including return value and error messages, remains the same as
+   // NOTE: No parameterisation is possible, hence no parameters can be
+   // passed in.
+   //
+   // Other than the exception listed above all the other behaviour,
+   // including return value and error messages, remain the same as
    // sqldb_batch().
    //
    // This is a dangerous function to use on unknown input, so use with
