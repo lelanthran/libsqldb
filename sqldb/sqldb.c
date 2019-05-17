@@ -66,17 +66,32 @@ struct sqldb_t {
    uint64_t nchanges;
 };
 
-static void db_seterr (sqldb_t *db, const char *msg)
+static void db_err_printf (sqldb_t *db, const char *fmts, ...)
 {
-   if (!db || !msg)
+   va_list ap;
+   char *tmp = NULL;
+   size_t len = 0;
+
+   if (!db || !fmts)
       return;
 
-   char *tmp = lstr_dup (msg);
-   if (!tmp)
+   va_start (ap, fmts);
+
+   if (!(len = vsnprintf (tmp, 0, fmts, ap)))
       return;
 
+   if (!(tmp = malloc (len + 1))) {
+      fprintf (stderr, "FATAL ERROR: Out of memory in db_err_printf()\n");
+      return;
+   }
+
+   memset (tmp, 0, len + 1);
+
+   vsnprintf (tmp, len, fmts, ap);
    free (db->lasterr);
    db->lasterr = tmp;
+
+   va_end (ap);
 }
 
 // A lot of the following functions will be refactored only when working
@@ -88,8 +103,7 @@ static sqldb_t *sqlitedb_open (sqldb_t *ret, const char *dbname)
    int rc = sqlite3_open_v2 (dbname, &ret->sqlite_db, mode, NULL);
    if (rc!=SQLITE_OK) {
       const char *tmp =  sqlite3_errstr (rc);
-      db_seterr (ret, tmp);
-      SQLDB_ERR ("(%s) Unable to open database: %s\n", dbname, tmp);
+      db_err_printf (ret, "(%s) Unable to open database: %s\n", dbname, tmp);
       goto errorexit;
    }
 
@@ -385,9 +399,7 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
                                 &ret->sqlite_stmt, NULL);
    if (rc!=SQLITE_OK) {
       const char *tmp = sqlite3_errstr (rc);
-      db_seterr (db, tmp);
-      SQLDB_ERR ("Fatal error: %s/%i\n", tmp, rc);
-      SQLDB_ERR ("[%s]\n", qstring);
+      db_err_printf (db, "Fatal error: %s/%i\n[%s]\n", tmp, rc, qstring);
       goto errorexit;
    }
 
@@ -578,13 +590,15 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
                                                 paramFormats,
                                                 0);
    if (!ret->pgr) {
-      db_seterr (db, "OOM error (pg)");
+      db_err_printf (db, "Possible OOM error (pg)\n[%s]\n", qstring);
       goto errorexit;
    }
 
    ExecStatusType rs = PQresultStatus (ret->pgr);
    if (rs != PGRES_COMMAND_OK && rs != PGRES_TUPLES_OK) {
-      db_seterr (db, PQresultErrorMessage (ret->pgr));
+      db_err_printf (db, "Bad postgres return status [%s]\n[%s]\n",
+                          PQresultErrorMessage (ret->pgr),
+                          qstring);
       goto errorexit;
    }
 
@@ -682,7 +696,7 @@ static bool sqlitedb_batch (sqldb_t *db, va_list ap)
 
       if (rc!=SQLITE_OK) {
          ret = false;
-         db_seterr (db, errmsg);
+         db_err_printf (db, "DB exec failure [%s]\n[%s]\n", qstring, errmsg);
       }
 
       sqlite3_free (errmsg);
@@ -702,16 +716,25 @@ static bool pgdb_batch (sqldb_t *db, va_list ap)
    char *qstring = va_arg (ap, char *);
 
    while (ret && qstring) {
-      char *errmsg = NULL;
       PGresult *result = PQexec (db->pg_db, qstring);
       if (!result) {
-         db_seterr (db, "PGSQL - OOM error");
+         db_err_printf (db, "PGSQL - OOM error\n[%s]\n", qstring);
          ret = false;
          break;
       }
       ExecStatusType rc = PQresultStatus (result);
       if (rc == PGRES_BAD_RESPONSE || rc == PGRES_FATAL_ERROR) {
-         db_seterr (db, PQresStatus (rc));
+         printf ("rc=%i\n", rc);
+         printf ("msg1=[%s]\n", PQresStatus (rc));
+         printf ("msg2=[%s]\n", PQresultErrorMessage (result));
+         printf ("qstring=[%s]\n", qstring);
+         const char *rc_msg = PQresStatus (rc),
+                    *res_msg = PQresultErrorMessage (result);
+
+         db_err_printf (db, "pgdb_batch: Bad postgres result[%s]\n[%s]\n[%s]\n",
+                            rc_msg,
+                            res_msg,
+                            qstring);
          ret = false;
          PQclear (result);
          break;

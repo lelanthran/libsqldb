@@ -117,10 +117,18 @@ MAKEFILE_INC=$(CURRENTDIR)/Makefile.inc
 # to set the correct compilation/linkage flags.
 #
 
-CC=gcc
-CXX=g++
-LD=gcc
-LDXX=gcc
+ifndef GCC
+	GCC=gcc
+endif
+
+ifndef GXX
+	GXX=gcc
+endif
+
+CC=$(GCC)
+CXX=$(GXX)
+LD=$(GCC)
+LDXX=$(GCC)
 AR=ar
 
 MYINCLUDEDIRS+=\
