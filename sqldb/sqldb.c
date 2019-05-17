@@ -68,7 +68,7 @@ struct sqldb_t {
 
 static void db_err_printf (sqldb_t *db, const char *fmts, ...)
 {
-   va_list ap;
+   va_list ap, apc;
    char *tmp = NULL;
    size_t len = 0;
 
@@ -76,8 +76,9 @@ static void db_err_printf (sqldb_t *db, const char *fmts, ...)
       return;
 
    va_start (ap, fmts);
+   va_copy (apc, ap);
 
-   if (!(len = vsnprintf (tmp, 0, fmts, ap)))
+   if (!(len = vsnprintf (tmp, 0, fmts, apc)))
       return;
 
    if (!(tmp = malloc (len + 1))) {
@@ -92,6 +93,7 @@ static void db_err_printf (sqldb_t *db, const char *fmts, ...)
    db->lasterr = tmp;
 
    va_end (ap);
+   va_end (apc);
 }
 
 // A lot of the following functions will be refactored only when working
@@ -724,10 +726,6 @@ static bool pgdb_batch (sqldb_t *db, va_list ap)
       }
       ExecStatusType rc = PQresultStatus (result);
       if (rc == PGRES_BAD_RESPONSE || rc == PGRES_FATAL_ERROR) {
-         printf ("rc=%i\n", rc);
-         printf ("msg1=[%s]\n", PQresStatus (rc));
-         printf ("msg2=[%s]\n", PQresultErrorMessage (result));
-         printf ("qstring=[%s]\n", qstring);
          const char *rc_msg = PQresStatus (rc),
                     *res_msg = PQresultErrorMessage (result);
 
