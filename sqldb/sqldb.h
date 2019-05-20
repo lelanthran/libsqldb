@@ -98,6 +98,12 @@ extern "C" {
    sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...);
    sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap);
 
+   // Same as the exec functions above, with the difference being that
+   // results are ignored and only a success or failure is indicated with
+   // true or false respectively.
+   bool sqldb_exec_ignore (sqldb_t *db, const char *query, ...);
+   bool sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap);
+
    // Executes a batch of statements and returns no results. Multiple
    // statements can be specified, ending with a NULL pointer. Each
    // statement may be composed of multiple statements itself, with each

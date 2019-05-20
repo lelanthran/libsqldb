@@ -273,6 +273,17 @@ NULL,
 
    sqldb_res_del (res); res = NULL;
 
+   // Test the _ignore() functions
+   const char *qstr = "insert into one values (#1, #2);";
+   uint64_t ione = 6464;
+   const char *stwo = "Two Value";
+   if (!(sqldb_exec_ignore (db, qstr, sqldb_col_UINT64,  &ione,
+                                      sqldb_col_TEXT,    &stwo,
+                                      sqldb_col_UNKNOWN))) {
+      fprintf (stderr, "Failed to execute the _ignore() statement\n");
+      goto errorexit;
+   }
+
    ret = EXIT_SUCCESS;
 errorexit:
 

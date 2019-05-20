@@ -684,6 +684,39 @@ errorexit:
    return ret;
 }
 
+bool sqldb_exec_ignore (sqldb_t *db, const char *query, ...)
+{
+   va_list ap;
+
+   va_start (ap, query);
+   bool ret = sqldb_exec_ignorev (db, query, &ap);
+   va_end (ap);
+
+   return ret;
+}
+
+bool sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap)
+{
+   bool error = true;
+
+   sqldb_res_t *res = NULL;
+
+   if (!(res = sqldb_execv (db, query, ap)))
+      goto errorexit;
+
+   if ((sqldb_res_step (res))==-1)
+      goto errorexit;
+
+   error = false;
+
+errorexit:
+   sqldb_res_del (res);
+
+   return !error;
+
+}
+
+
 static bool sqlitedb_batch (sqldb_t *db, va_list ap)
 {
    bool ret = true;

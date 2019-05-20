@@ -8,7 +8,7 @@ function die () {
    exit 127
 }
 
-echo "Set environment variable VGRIND to valgring with args to run valgrind"
+echo "Set environment variable VGRIND to valgrind with args to run valgrind"
 
 echo Removing sqlite test database...
 rm -rf /tmp/testdb.sql3
