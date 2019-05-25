@@ -160,7 +160,7 @@ NULL,
       goto errorexit;
    }
 
-   printf ("Counted [%" PRIu64 "] columns in results\n",
+   printf ("Counted [%" PRIu32 "] columns in results\n",
             sqldb_res_num_columns (res));
 
    if (!(colnames = sqldb_res_column_names (res))) {

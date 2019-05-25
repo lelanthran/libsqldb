@@ -17,9 +17,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define SQLDB_ERR(...)        fprintf (stderr,  __VA_ARGS__)
-#define SQLDB_OOM(s)          SQLDB_ERR ("OOM [%s]\n", s)
-
 typedef struct sqldb_t sqldb_t;
 typedef struct sqldb_res_t sqldb_res_t;
 
