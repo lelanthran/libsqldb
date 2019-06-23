@@ -1,4 +1,4 @@
-## 0.1.2 - ???
+## 0.1.2 - Sun Jun 23 10:01:33 SAST 2019
 Feature additions.
 1. Added support for Postgres; unfortunately this requires libpq at
    compile time as well as at runtime (even if the caller never uses it)
@@ -6,7 +6,7 @@ Feature additions.
 
 2. Added a batchfile function to read and execute SQL statements directly
    from a file; this is for SQL batch commands that are too large to fit
-   in memory (such as a datbase dump).
+   in memory (such as a database dump).
 
 3. Added a test script to run the tests for both postgres and sqlite, with
    optional valgrind support.
