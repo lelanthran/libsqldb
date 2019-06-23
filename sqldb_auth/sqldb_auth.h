@@ -34,7 +34,7 @@ extern "C" {
 
    // Initialises the database by creating the schema needed to support
    // authorisation access.
-   bool sqldb_auth_initdb (sqldb_t *db, sqldb_dbtype_t dbtype);
+   bool sqldb_auth_initdb (sqldb_t *db);
 
    ///////////////////////////////////////////////////////////////////////
 

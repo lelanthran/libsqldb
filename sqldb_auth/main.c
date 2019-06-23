@@ -11,9 +11,99 @@
 #define TEST_BATCHFILE   ("test-file.sql")
 
 #define PROG_ERR(...)      do {\
-      fprintf (stderr, "%s:%s:%d: ", argv[1], __FILE__, __LINE__);\
+      fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
+
+static bool create_users (sqldb_t *db)
+{
+   bool error = true;
+
+   static const struct {
+      const char *email;
+      const char *nick;
+   } users[] = {
+      { "one@email.com",   "ONE"    },
+      { "two@email.com",   "TWO"    },
+      { "three@email.com", "THREE"  },
+      { "four@email.com",  "FOUR"   },
+      { "five@email.com",  "FIVE"   },
+      { "six@email.com",   "SIX"    },
+      { "seven@email.com", "SEVEN"  },
+      { "eight@email.com", "EIGHT"  },
+      { "nine@email.com",  "NINE"   },
+      { "ten@email.com",   "TEN"    },
+   };
+
+   for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
+      if (!(sqldb_auth_user_create (db, users[i].email,
+                                        users[i].nick,
+                                        "123456"))) {
+         PROG_ERR ("Failed to create user [%s]\n", users[i].email);
+         goto errorexit;
+      }
+
+      printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
+   }
+
+   for (size_t i=0; i<sizeof users/sizeof users[0]; i+=3) {
+      if (!(sqldb_auth_user_rm (db, users[i].email))) {
+         PROG_ERR ("Failed to create user [%s]\n", users[i].email);
+         goto errorexit;
+      }
+
+      printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
+static bool create_groups (sqldb_t *db)
+{
+   bool error = true;
+
+   static const struct {
+      const char *name;
+      const char *descr;
+   } groups[] = {
+      { "Group-1", "GROUP description: ONE"    },
+      { "Group-2", "GROUP description: TWO"    },
+      { "Group-3", "GROUP description: THREE"  },
+      { "Group-4", "GROUP description: FOUR"   },
+      { "Group-5", "GROUP description: FIVE"   },
+      { "Group-6", "GROUP description: SIX"    },
+   };
+
+   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
+      if (!(sqldb_auth_user_create (db, groups[i].name,
+                                        groups[i].descr,
+                                        "123456"))) {
+         PROG_ERR ("Failed to create group [%s]\n", groups[i].name);
+         goto errorexit;
+      }
+
+      printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
+   }
+
+   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
+      if (!(sqldb_auth_group_rm (db, groups[i].name))) {
+         PROG_ERR ("Failed to create group [%s]\n", groups[i].name);
+         goto errorexit;
+      }
+
+      printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
 
 int main (int argc, char **argv)
 {
@@ -50,11 +140,27 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
+   if (!(sqldb_auth_initdb (db))) {
+      PROG_ERR ("Failed to initialise the db for auth module [%s]\n",
+                  sqldb_lasterr (db));
+      goto errorexit;
+   }
 
+   if (!(create_users (db))) {
+      PROG_ERR ("Failed to create users, aborting\n");
+      goto errorexit;
+   }
+
+   if (!(create_groups (db))) {
+      PROG_ERR ("Failed to create groups, aborting\n");
+      goto errorexit;
+   }
 
    ret = EXIT_SUCCESS;
 
 errorexit:
+
+   sqldb_close (db);
 
    return ret;
 }
