@@ -1,8 +1,6 @@
 
 #include <string.h>
-
-#include "xerror/xerror.h"
-#include "xstring/xstring.h"
+#include <stdio.h>
 
 #include "sqldb_auth/sqldb_auth_query.h"
 
@@ -157,19 +155,18 @@ static const struct {
 
 static size_t stmts_len = sizeof stmts / sizeof stmts[0];
 
-const char *sqldb_auth_query (const char *qname);
+const char *sqldb_auth_query (const char *qname)
 {
    for (size_t i=0; i<stmts_len; i++) {
-      if (strcmp (stmts[i].name, name)==0) {
+      if (strcmp (stmts[i].name, qname)==0) {
          return stmts[i].stmt;
       }
    }
 
 #ifdef DEBUG
-    fprintf (stderr, "[%s] Statement not found\n", name);
+    fprintf (stderr, "[%s] Statement not found\n", qname);
 #endif
 
    return "error"; // Invalid statement forces an error to occur.
 }
-
 
