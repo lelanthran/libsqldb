@@ -15,6 +15,7 @@
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
+#if 0
 static bool create_users (sqldb_t *db)
 {
    bool error = true;
@@ -104,6 +105,7 @@ errorexit:
 
    return !error;
 }
+#endif
 
 int main (int argc, char **argv)
 {
@@ -146,6 +148,7 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
+   /*
    if (!(create_users (db))) {
       PROG_ERR ("Failed to create users, aborting\n");
       goto errorexit;
@@ -155,6 +158,7 @@ int main (int argc, char **argv)
       PROG_ERR ("Failed to create groups, aborting\n");
       goto errorexit;
    }
+   */
 
    ret = EXIT_SUCCESS;
 

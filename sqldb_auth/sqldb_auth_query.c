@@ -167,6 +167,7 @@ const char *sqldb_auth_query (const char *qname)
     fprintf (stderr, "[%s] Statement not found\n", qname);
 #endif
 
-   return "error"; // Invalid statement forces an error to occur.
+   // Invalid statement forces an error to occur.
+   return "SQL statement not found";
 }
 
