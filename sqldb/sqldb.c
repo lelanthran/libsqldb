@@ -222,6 +222,11 @@ errorexit:
    return NULL;
 }
 
+sqldb_dbtype_t sqldb_type (sqldb_t *db)
+{
+   return db ? db->type : sqldb_UNKNOWN;
+}
+
 void sqldb_close (sqldb_t *db)
 {
    if (!db)

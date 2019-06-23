@@ -49,6 +49,10 @@ extern "C" {
    // NULL on error.
    sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type);
 
+   // Get the database type of the specified database object. Returns
+   // sqldb_UNKNOWN on error.
+   sqldb_dbtype_t sqldb_type (sqldb_t *db);
+
    // Close the connection to the database. All resources will be freed
    // except existing sqldb_res_t objects.
    void sqldb_close (sqldb_t *db);
