@@ -10,132 +10,39 @@
 
 #define create_tables \
 "BEGIN TRANSACTION;" \
- \
-/* Database and application admin  */\
-"create table tbl_version (" \
-"  element  TEXT PRIMARY KEY, " \
-"  version  INTEGER);" \
 \
-"create table tbl_config (" \
-"  cname    TEXT PRIMARY KEY, " \
-"  cvalue   TEXT," \
-"  cdescr   TEXT);" \
-\
-"create table tbl_staged (" \
-"  operation   TEXT, " \
-"  parent_path TEXT," \
-"  path        TEXT," \
-"  hash        TEXT," \
-"  PRIMARY KEY (operation, parent_path, path, hash));"\
-\
-/* Files and Dirs  */\
-"create table tbl_path (" \
-"  id          INTEGER PRIMARY KEY," \
-"  revision    INTEGER NOT NULL," \
-"  version     INTEGER NOT NULL," \
-"  path        TEXT NOT NULL);" \
-\
-"create table tbl_dir (" \
-"  id          INTEGER PRIMARY KEY," \
-"  revision    INTEGER NOT NULL," \
-"  version     INTEGER NOT NULL," \
-"  dir_path    INTEGER NOT NULL," \
-"  parent_path INTEGER NOT NULL," \
-"  flags       INTEGER NOT NULL," \
-"     foreign key (dir_path) references tbl_path(id),"\
-"     foreign key (parent_path) references tbl_path(id));"\
-\
-"create table tbl_file (" \
-"  id          INTEGER PRIMARY KEY," \
-"  revision    INTEGER NOT NULL," \
-"  version     INTEGER NOT NULL," \
-"  file_path   INTEGER NOT NULL," \
-"  real_path   TEXT NOT NULL," \
-"  phase       TEXT NOT NULL," \
-"  state       TEXT NOT NULL," \
-"  flags       INTEGER NOT NULL," \
-"     foreign key (file_path) references tbl_path(id));"\
-\
-/* Users and groups  */\
-"create table tbl_uuser (" \
-"  id       INTEGER PRIMARY KEY," \
-"  email    TEXT UNIQUE NOT NULL," \
-"  version  INTEGER NOT NULL);" \
-\
-"create table tbl_uuser_perm ("\
-"  resource TEXT," \
-"  uuser    INTEGER NOT NULL," \
-"  flags    INTEGER NOT NULL," \
-"  version  INTEGER NOT NULL," \
-"     PRIMARY KEY (resource, uuser),"\
-"     foreign key (uuser) references tbl_uuser(id));"\
-\
-\
-"create table tbl_ugroup (" \
-"  id       INTEGER PRIMARY KEY," \
-"  name     TEXT UNIQUE NOT NULL," \
-"  owner    INTEGER NOT NULL," \
-"  descr    TEXT," \
-"  version  INTEGER NOT NULL," \
-"     foreign key (owner) references tbl_uuser(id));"\
-\
-\
-"create table tbl_uuser_ugroup_map (" \
-"  uuser    INTEGER NOT NULL," \
-"  ugroup   INTEGER NOT NULL," \
-"  version  INTEGER NOT NULL," \
-"     foreign key (uuser) references tbl_uuser(id),"\
-"     foreign key (ugroup) references tbl_ugroup(id));"\
-\
-\
-/* Permissions  */\
-"create table tbl_ugroup_perm ("\
-"  resource TEXT," \
-"  ugroup   INTEGER NOT NULL," \
-"  flags    INTEGER NOT NULL," \
-"  version  INTEGER NOT NULL," \
-"     PRIMARY KEY (resource, ugroup),"\
-"     foreign key (ugroup) references tbl_ugroup(id));"\
-\
-\
-/* Create the default values */\
-" INSERT INTO tbl_version values ('repo_version',         0);"\
-" INSERT INTO tbl_version values ('tbl_config',           0);"\
-" INSERT INTO tbl_version values ('tbl_path',             0);"\
-" INSERT INTO tbl_version values ('tbl_dir',              0);"\
-" INSERT INTO tbl_version values ('tbl_file',             0);"\
-" INSERT INTO tbl_version values ('tbl_uuser',            0);"\
-" INSERT INTO tbl_version values ('tbl_uuser_perm',       0);"\
-" INSERT INTO tbl_version values ('tbl_ugroup',           0);"\
-" INSERT INTO tbl_version values ('tbl_uuser_ugroup_map', 0);"\
-" INSERT INTO tbl_version values ('tbl_ugroup_perm',      0);"\
-\
-" INSERT INTO tbl_config values ('email', '', "\
-"  'The email address you use to login to this repository');"\
-\
-" INSERT INTO tbl_config values ('password', '', "\
-"  'The password you use to login to this repository."\
-" Note that this must only be set with the password command');"\
-\
-" INSERT INTO tbl_config values ('salt', '', "\
-"  'The salt used to hash the password."\
-" Note that this must only be set with the password command');"\
-\
-" INSERT INTO tbl_config values ('remote', '', "\
-"  'The server url in the form of \"protocol://domain:port/path\".');"\
-\
-" INSERT INTO tbl_config values ('proxy', '', "\
-"  'The proxy url in the form of ip-address:port.');"\
-\
-" INSERT INTO tbl_config values ('proxy-credentials', '', "\
-"  'The credentials for the proxy in the form of username:password.');"\
-\
-" INSERT INTO tbl_config values ('proxy-auth', '', "\
-"  'The authentication for the proxy: basic, digest, ntlm or negotiate.');"\
-\
-" INSERT INTO tbl_config values ('proxy-type', '', "\
-"  'The type of proxy: none, http or socks4.');"\
-\
+"CREATE TABLE t_user (" \
+"   c_id         INTEGER PRIMARY KEY," \
+"   c_session    TEXT UNIQUE," \
+"   c_expiry     INTEGER," \
+"   c_email      TEXT UNIQUE," \
+"   c_nick       TEXT," \
+"   c_salt       TEXT," \
+"   c_hash       TEXT);" \
+"" \
+"CREATE TABLE t_group (" \
+"   c_id            INTEGER PRIMARY KEY," \
+"   c_name          TEXT UNIQUE," \
+"   c_description   TEXT);" \
+"" \
+"CREATE TABLE t_group_membership (" \
+"   c_user    INTEGER," \
+"   c_group   INTEGER," \
+"      FOREIGN KEY (c_user) REFERENCES t_user(c_id)," \
+"      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
+"" \
+"CREATE TABLE t_user_perm (" \
+"   c_user       INTEGER," \
+"   c_perms      INTEGER," \
+"   c_resource   TEXT," \
+"      FOREIGN KEY (c_user) REFERENCES t_user(c_id));" \
+"" \
+"CREATE TABLE t_group_perm (" \
+"   c_group      INTEGER," \
+"   c_perms      INTEGER," \
+"   c_resource   TEXT," \
+"      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
+"" \
 "COMMIT;"
 
 
