@@ -1,15 +1,17 @@
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "sqldb/sqldb.h"
-#include "sqldb/sqldb_auth.h"
+#include "sqldb_auth/sqldb_auth.h"
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
 #define TEST_BATCHFILE   ("test-file.sql")
 
 #define PROG_ERR(...)      do {\
-      fprintf (stderr, "%s: ", argv[1]);\
+      fprintf (stderr, "%s:%s:%d: ", argv[1], __FILE__, __LINE__);\
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
@@ -22,9 +24,9 @@ int main (int argc, char **argv)
 
    sqldb_t *db = NULL;
 
-   printf ("Testing sqldb_auth version [%s]\n", SQLDB_VERSION);
+   PROG_ERR ("Testing sqldb_auth version [%s]\n", SQLDB_VERSION);
    if (argc <= 1) {
-      fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
+      PROG_ERR ("Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;
    }
 
@@ -39,9 +41,15 @@ int main (int argc, char **argv)
    }
 
    if (!dbname || dbtype==sqldb_UNKNOWN) {
-      fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
+      PROG_ERR ("Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;
    }
+
+   if (!(db = sqldb_open (dbname, dbtype))) {
+      PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      goto errorexit;
+   }
+
 
 
    ret = EXIT_SUCCESS;

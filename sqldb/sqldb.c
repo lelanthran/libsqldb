@@ -14,6 +14,16 @@
 
 #define SQLDB_OOM(s)          fprintf (stderr, "OOM [%s]\n", s)
 
+#ifdef DEBUG
+#define PROG_ERR(...)      do {\
+      fprintf (stderr, "%s:%d: ", __FILE__, __LINE__);\
+      fprintf (stderr, __VA_ARGS__);\
+} while (0)
+#else
+#define PROG_ERR(...)
+#endif
+
+
 static char *lstr_dup (const char *src)
 {
    if (!src)
@@ -42,7 +52,7 @@ bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
    int mode = (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
    int rc = sqlite3_open_v2 (dbname, &newdb, mode, NULL);
    if (rc!=SQLITE_OK) {
-      fprintf (stderr, "(%s) Unable to create sqlite file - %s [%m]\n",
+      PROG_ERR ("(%s) Unable to create sqlite file - %s [%m]\n",
                dbname, sqlite3_errstr (rc));
       goto errorexit;
    }
@@ -99,7 +109,7 @@ static void err_printf (char **dst, const char *fmts, va_list ap)
       return;
 
    if (!(tmp = malloc (len + 1))) {
-      fprintf (stderr, "FATAL ERROR: Out of memory in err_printf()\n");
+      PROG_ERR ("FATAL ERROR: Out of memory in err_printf()\n");
       return;
    }
 
@@ -143,7 +153,7 @@ static sqldb_t *sqlitedb_open (sqldb_t *ret, const char *dbname)
    int rc = sqlite3_open_v2 (dbname, &ret->sqlite_db, mode, NULL);
    if (rc!=SQLITE_OK) {
       const char *tmp =  sqlite3_errstr (rc);
-      fprintf (stderr, "(%s) Unable to open database: %s\n", dbname, tmp);
+      PROG_ERR ("(%s) Unable to open database: %s\n", dbname, tmp);
       goto errorexit;
    }
 
@@ -167,7 +177,7 @@ static sqldb_t *pgdb_open (sqldb_t *ret, const char *dbname)
    }
 
    if ((PQstatus (ret->pg_db))==CONNECTION_BAD) {
-      fprintf (stderr, "[%s] Connection failure: [%s]\n",
+      PROG_ERR ("[%s] Connection failure: [%s]\n",
                        dbname,
                        PQerrorMessage (ret->pg_db));
       goto errorexit;
@@ -202,7 +212,7 @@ sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
    switch (type) {
       case sqldb_SQLITE:   return sqlitedb_open (ret, dbname);
       case sqldb_POSTGRES: return pgdb_open (ret, dbname);
-      default:             fprintf (stderr, "Error: dbtype [%u] is unknown\n",
+      default:             PROG_ERR ("Error: dbtype [%u] is unknown\n",
                                             type);
                            goto errorexit;
    }
@@ -255,7 +265,7 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
    }
 
    if (!r) {
-      fprintf (stderr, "(%i) Unknown type\n", type);
+      PROG_ERR ("(%i) Unknown type\n", type);
       return NULL;
    }
 
@@ -1214,12 +1224,12 @@ void sqldb_print (sqldb_t *db, FILE *outf)
    }
 
    if (!db) {
-      fprintf (outf, "sqldb_t obvject is NULL\n");
+      PROG_ERR ("sqldb_t obvject is NULL\n");
       return;
    }
 
-   fprintf (outf, "%30s: %s\n", "type", db->type==sqldb_SQLITE ?
+   PROG_ERR ("%30s: %s\n", "type", db->type==sqldb_SQLITE ?
                                         "SQLITE" : "POSTGRES");
-   fprintf (outf, "%30s: %s\n", "lasterr", db->lasterr);
+   PROG_ERR ("%30s: %s\n", "lasterr", db->lasterr);
 }
 

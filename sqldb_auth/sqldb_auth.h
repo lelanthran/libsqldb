@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "sqldb_db.h"
+#include "sqldb/sqldb.h"
 
 /* ********************************************************************
  * This is the authentication and authorization module. This module provides
@@ -34,7 +34,7 @@ extern "C" {
 
    // Initialises the database by creating the schema needed to support
    // authorisation access.
-   bool sqldb_auth_initdb (sqldb_db_t *db, sqldb_db_dbtype_t dbtype);
+   bool sqldb_auth_initdb (sqldb_t *db, sqldb_dbtype_t dbtype);
 
    ///////////////////////////////////////////////////////////////////////
 
@@ -46,7 +46,7 @@ extern "C" {
    // regardless of the return value. This function will first free the
    // strings stored at that location before populating them with new
    // values.
-   bool sqldb_auth_user_session (sqldb_db_t *db,
+   bool sqldb_auth_user_session (sqldb_t *db,
                                  const char   session_id[65],
                                  char       **email_dst,
                                  char       **nick_dst,
@@ -54,31 +54,31 @@ extern "C" {
 
    // Creates a new session, returns the session ID in the sess_id_dst
    // array. Returns true on success and false on error.
-   bool sqldb_auth_user_login (sqldb_db_t *db,
+   bool sqldb_auth_user_login (sqldb_t *db,
                                const char *email, const char *password,
                                char sess_id_dst[65]);
 
    // Invalidates the session for user specified by email.
-   void sqldb_auth_user_logout (sqldb_db_t *db,
+   void sqldb_auth_user_logout (sqldb_t *db,
                                 const char *email);
 
    ///////////////////////////////////////////////////////////////////////
 
    // Create a new user, returns the user ID.
-   uint64_t sqldb_auth_user_create (sqldb_db_t *db,
+   uint64_t sqldb_auth_user_create (sqldb_t *db,
                                     const char *email,
                                     const char *nick,
                                     const char *password);
 
    // Removes a user from the database.
-   bool sqldb_auth_user_rm (sqldb_db_t *db, const char *email);
+   bool sqldb_auth_user_rm (sqldb_t *db, const char *email);
 
    // Gets the user account information for the specified user. Returns
    // true on success and false on failure. The string destinations nick
    // and session must be freed by the caller regardless of the return
    // value. If they are not-NULL on entry to this function, this function
    // will free them before allocation storage for the output parameters.
-   bool sqldb_auth_user_info (sqldb_db_t *db,
+   bool sqldb_auth_user_info (sqldb_t *db,
                               const char *email,
                               uint64_t   *id_dst,
                               char      **nick_dst,
@@ -87,7 +87,7 @@ extern "C" {
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the old_email parameter to find the
    // record to update.
-   bool sqldb_auth_user_mod (sqldb_db_t *db,
+   bool sqldb_auth_user_mod (sqldb_t *db,
                              const char *old_email,
                              const char *new_email,
                              const char *nick,
@@ -97,19 +97,19 @@ extern "C" {
    ///////////////////////////////////////////////////////////////////////
 
    // Create a new group, returns the group ID.
-   uint64_t sqldb_auth_group_create (sqldb_db_t *db,
+   uint64_t sqldb_auth_group_create (sqldb_t *db,
                                      const char *name,
                                      const char *description);
 
    // Removes a group from the database.
-   bool sqldb_auth_group_rm (sqldb_db_t *db, const char *name);
+   bool sqldb_auth_group_rm (sqldb_t *db, const char *name);
 
    // Gets the group account information for the specified group. Returns
    // true on success and false on failure. The string destination
    // 'description' must be freed by the caller regardless of the return
    // value. If it is not NULL on entry to this function, this function will
    // free it before allocation storage for the description.
-   bool sqldb_auth_group_info (sqldb_db_t *db,
+   bool sqldb_auth_group_info (sqldb_t *db,
                                const char *name,
                                uint64_t   *id_dst,
                                char      **description);
@@ -117,7 +117,7 @@ extern "C" {
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the name parameter to find the
    // record to update.
-   bool sqldb_auth_group_mod (sqldb_db_t *db,
+   bool sqldb_auth_group_mod (sqldb_t *db,
                               const char *name,
                               const char *description);
 
@@ -125,12 +125,12 @@ extern "C" {
 
    // Add the specified user to the specified group. Returns true on
    // success and false on failure.
-   bool sqldb_auth_group_adduser (sqldb_db_t *db,
+   bool sqldb_auth_group_adduser (sqldb_t *db,
                                   const char *name, const char *email);
 
    // Remove the specified user from the specified group. Returns true on
    // success and false on failure.
-   bool sqldb_auth_group_rmuser (sqldb_db_t *db,
+   bool sqldb_auth_group_rmuser (sqldb_t *db,
                                  const char *name, const char *email);
 
 
@@ -153,7 +153,7 @@ extern "C" {
    //
    // The ids array stores each ID and the entire array (but not each
    // element) must be freed by the caller.
-   bool sqldb_auth_user_find (sqldb_db_t *db,
+   bool sqldb_auth_user_find (sqldb_t *db,
                               const char *email_pattern,
                               const char *nick_pattern,
                               uint64_t   *nitems,
@@ -178,7 +178,7 @@ extern "C" {
    //
    // The ids array stores each ID and the entire array (but not each
    // element) must be freed by the caller.
-   bool sqldb_auth_group_find (sqldb_db_t *db,
+   bool sqldb_auth_group_find (sqldb_t *db,
                                const char *name_pattern,
                                uint64_t   *nitems,
                                char     ***names,
@@ -201,7 +201,7 @@ extern "C" {
    //
    // The ids array stores each ID and the entire array (but not each
    // element) must be freed by the caller.
-   bool sqldb_auth_group_members (sqldb_db_t *db,
+   bool sqldb_auth_group_members (sqldb_t *db,
                                   const char *name,
                                   uint64_t   *nitems,
                                   char     ***emails,
@@ -212,25 +212,25 @@ extern "C" {
 
    // Grant the specified permissions to the specified user for the
    // specified resource. Returns true on success and false on failure.
-   bool sqldb_auth_perms_grant_user (sqldb_db_t *db,
+   bool sqldb_auth_perms_grant_user (sqldb_t *db,
                                      uint64_t perms, const char *resource,
                                      const char *email);
 
    // Revoke the specified permissions to the specified user for the
    // specified resource. Returns true on success and false on failure.
-   bool sqldb_auth_perms_revoke_user (sqldb_db_t *db,
+   bool sqldb_auth_perms_revoke_user (sqldb_t *db,
                                      uint64_t perms, const char *resource,
                                      const char *email);
 
    // Retrieve the group's permissions for the specified resource and
    // stores in in 'perms'. Returns true on success and false on failure.
-   bool sqldb_auth_perms_get_group (sqldb_db_t *db,
+   bool sqldb_auth_perms_get_group (sqldb_t *db,
                                     uint64_t *perms, const char *resource,
                                     const char *name);
 
    // Retrieve the user's permissions for the specified resource and
    // stores in in 'perms'. Returns true on success and false on failure.
-   bool sqldb_auth_perms_get_user (sqldb_db_t *db,
+   bool sqldb_auth_perms_get_user (sqldb_t *db,
                                    uint64_t *perms, const char *resource,
                                    const char *email);
 
@@ -241,7 +241,7 @@ extern "C" {
    // The effective permissions is the bitwise 'OR' of all the permission
    // bits of the user as well as all of the groups that the user belongs
    // to.
-   bool sqldb_auth_perms_get_all (sqldb_db_t *db,
+   bool sqldb_auth_perms_get_all (sqldb_t *db,
                                   uint64_t *perms, const char *resource,
                                   const char *email);
 #ifdef __cplusplus
