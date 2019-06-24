@@ -81,9 +81,14 @@ bool sqldb_auth_user_mod (sqldb_t *db,
 {
    bool error = true;
    const char *qstring = NULL;
-   char  salt[255];
-   char  hash[65];
+   char     sz_salt[256];
+   char     sz_hash[65];
+   uint8_t  hash[32];
 
+   // TODO:
+   // 1. Write a rand() function,
+   // 2. Write the stringify function for raw bytes
+   // 3. Write the salt-creation function
    if (!db ||
        !old_email    || !new_email    || !nick    || !password ||
        !old_email[0] || !new_email[0] || !nick[0] || !password[0])
