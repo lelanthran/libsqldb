@@ -64,7 +64,8 @@ extern "C" {
 
    ///////////////////////////////////////////////////////////////////////
 
-   // Create a new user, returns the user ID.
+   // Create a new user, returns the user ID. Returns (uint64_t)-1 on
+   // error.
    uint64_t sqldb_auth_user_create (sqldb_t *db,
                                     const char *email,
                                     const char *nick,

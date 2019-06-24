@@ -101,9 +101,12 @@ extern "C" {
 
    // Same as the exec functions above, with the difference being that
    // results are ignored and only a success or failure is indicated with
-   // true or false respectively.
-   bool sqldb_exec_ignore (sqldb_t *db, const char *query, ...);
-   bool sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap);
+   // the return value, which is:
+   //    error (any):                     (uint64_t)-1
+   //    success (insert):                Last inserted ID
+   //    success (non-insert statements): 0
+   uint64_t sqldb_exec_ignore (sqldb_t *db, const char *query, ...);
+   uint64_t sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap);
 
    // Executes a batch of statements and returns no results. Multiple
    // statements can be specified, ending with a NULL pointer. Each

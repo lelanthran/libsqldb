@@ -38,3 +38,67 @@ errorexit:
    return !error;
 }
 
+uint64_t sqldb_auth_user_create (sqldb_t *db,
+                                 const char *email,
+                                 const char *nick,
+                                 const char *password)
+{
+   bool error = true;
+   uint64_t ret = (uint64_t)-1;
+   const char *qstring = NULL;
+
+   if (!db ||
+       !email     || !nick    || !password ||
+       !email[0]  || !nick[0] || !password[0])
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("user_create")))
+      goto errorexit;
+
+   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, email,
+                                         sqldb_col_UNKNOWN);
+   if (ret==(uint64_t)-1 || ret==0)
+      goto errorexit;
+
+   if (!(sqldb_auth_user_mod (db, email, email, nick, password)))
+      goto errorexit;
+
+   error = false;
+
+errorexit:
+
+   return error ? (uint64_t)-1 : ret;
+}
+
+
+bool sqldb_auth_user_rm (sqldb_t *db, const char *email);
+
+bool sqldb_auth_user_mod (sqldb_t *db,
+                          const char *old_email,
+                          const char *new_email,
+                          const char *nick,
+                          const char *password)
+{
+   bool error = true;
+   const char *qstring = NULL;
+   char  salt[255];
+   char  hash[65];
+
+   if (!db ||
+       !old_email    || !new_email    || !nick    || !password ||
+       !old_email[0] || !new_email[0] || !nick[0] || !password[0])
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("user_mod")))
+      goto errorexit;
+
+   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, email,
+                                         sqldb_col_UNKNOWN);
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
+

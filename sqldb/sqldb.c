@@ -724,20 +724,20 @@ errorexit:
    return ret;
 }
 
-bool sqldb_exec_ignore (sqldb_t *db, const char *query, ...)
+uint64_t sqldb_exec_ignore (sqldb_t *db, const char *query, ...)
 {
    va_list ap;
 
    va_start (ap, query);
-   bool ret = sqldb_exec_ignorev (db, query, &ap);
+   uint64_t ret = sqldb_exec_ignorev (db, query, &ap);
    va_end (ap);
 
    return ret;
 }
 
-bool sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap)
+uint64_t sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap)
 {
-   bool error = true;
+   uint64_t ret = (uint64_t)-1;
 
    sqldb_res_t *res = NULL;
 
@@ -747,12 +747,12 @@ bool sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap)
    if ((sqldb_res_step (res))==-1)
       goto errorexit;
 
-   error = false;
+   ret = sqldb_res_last_id (res);
 
 errorexit:
    sqldb_res_del (res);
 
-   return !error;
+   return ret;
 
 }
 

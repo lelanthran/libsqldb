@@ -45,7 +45,16 @@
 "" \
 "COMMIT;"
 
+#define user_create \
+" INSERT INTO t_user (c_email, c_hash) VALUES (#1, '00000000');"
 
+#define user_mod \
+" UPDATE t_user SET c_email = #2, "\
+"                   c_nick = #3, "\
+"                   c_salt = #4, "\
+"                   c_hash = #5, "\
+"                   c_expiry = 0 "\
+" WHERE c_email = #1"
 
 #define STMT(x)      {#x, x }
 static const struct {
@@ -56,6 +65,9 @@ static const struct {
    STMT (init_sqlite),
 
    STMT (create_tables),
+
+   STMT (user_create),
+   STMT (user_mod),
 
 };
 #undef STMT
