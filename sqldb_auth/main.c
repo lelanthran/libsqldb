@@ -148,6 +148,12 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
+
+   for (size_t i=0; i<1; i++) {
+      uint32_t rseed = sqldb_auth_random_seed ();
+      printf ("%u\n", rseed);
+   }
+
    /*
    if (!(create_users (db))) {
       PROG_ERR ("Failed to create users, aborting\n");

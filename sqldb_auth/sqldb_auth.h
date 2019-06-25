@@ -32,9 +32,14 @@
 extern "C" {
 #endif
 
+   ///////////////////////////////////////////////////////////////////////
+
    // Initialises the database by creating the schema needed to support
    // authorisation access.
    bool sqldb_auth_initdb (sqldb_t *db);
+
+   // Return a random seed.
+   uint32_t sqldb_auth_random_seed (void);
 
    ///////////////////////////////////////////////////////////////////////
 
