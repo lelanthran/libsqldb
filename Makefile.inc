@@ -156,7 +156,7 @@ CXXFLAGS+= -c -W -Wall -std=c++11 -fPIC\
 
 LDEXTRAFLAGS+=-lpthread $(MYLIBS)
 
-DEBUG_FLAG= -ggdb -DDEBUG
+DEBUG_FLAG= -ggdb -DDEBUG -pg
 RELEASE_FLAG= -O3
 ARFLAGS= rcs
 
@@ -180,6 +180,7 @@ endif
 # Because OUTPUT_LIBS is not available dynamically
 ifneq (,$(findstring debug,$(MAKECMDGOALS)))
 CFLAGS+=$(DEBUG_FLAG)
+LDFLAGS+=$(DEBUG_FLAG)
 OUTPUT_LIB_DLL=$(LIBFILE_DLL_D)
 OUTPUT_LIB_STATIC=$(LIBFILE_STATIC_D)
 OUTPUT_LIBS=$(LIBFILE_DLL_D) $(LIBFILE_STATIC_D)

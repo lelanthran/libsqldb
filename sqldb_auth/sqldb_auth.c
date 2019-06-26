@@ -183,7 +183,6 @@ uint64_t sqldb_auth_user_create (sqldb_t *db,
 
    if (!(sqldb_auth_user_mod (db, email, email, nick, password)))
       goto errorexit;
-
    error = false;
 
 errorexit:
