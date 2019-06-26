@@ -109,6 +109,12 @@ errorexit:
 
 int main (int argc, char **argv)
 {
+   for (size_t i=0; i<1; i++) {
+      uint32_t rseed = sqldb_auth_random_seed ();
+      printf ("%u\n", rseed);
+   }
+   return 0;
+
    int ret = EXIT_FAILURE;
 
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
@@ -148,11 +154,6 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
-
-   for (size_t i=0; i<1; i++) {
-      uint32_t rseed = sqldb_auth_random_seed ();
-      printf ("%u\n", rseed);
-   }
 
    /*
    if (!(create_users (db))) {

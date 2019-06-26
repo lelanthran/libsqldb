@@ -50,7 +50,7 @@ static uint32_t hash_buffer (uint32_t current, void *buf, size_t len)
 {
    uint8_t *b = buf;
    for (size_t i=0; i<len; i++) {
-      current = (current * 31) + b[i];
+      current ^= (current * 31) + b[i];
    }
    current = current ^ (current >> 15);
    current = current ^ (current * 0x4e85ca7d);
