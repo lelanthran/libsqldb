@@ -156,7 +156,7 @@ CXXFLAGS+= -c -W -Wall -std=c++11 -fPIC\
 
 LDEXTRAFLAGS+=-lpthread $(MYLIBS)
 
-DEBUG_FLAG= -ggdb -DDEBUG -pg
+DEBUG_FLAG= -ggdb -DDEBUG
 RELEASE_FLAG= -O3
 ARFLAGS= rcs
 

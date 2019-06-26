@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "sqldb/sqldb.h"
 #include "sqldb_auth/sqldb_auth.h"
@@ -54,6 +55,39 @@ static bool create_users (sqldb_t *db)
 
       printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
    }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
+static bool list_users (sqldb_t *db)
+{
+   bool error = true;
+   uint64_t nitems = 0;
+   char **emails = NULL;
+   char **nicks = NULL;
+   uint64_t *ids = NULL;
+
+   if (!(sqldb_auth_user_find (db, "t%", NULL,
+                               &nitems, &emails, &nicks, &ids))) {
+      PROG_ERR ("Failed to execute patterns for user searching\n");
+      goto errorexit;
+   }
+
+   printf ("Found %" PRIu64 " users\n", nitems);
+
+   for (uint64_t i=0; i<nitems; i++) {
+      printf ("[%" PRIu64 "][%s][%s]\n", ids[i], emails[i], nicks[i]);
+      free (emails[i]);
+      free (nicks[i]);
+   }
+
+   free (ids);
+   free (emails);
+   free (nicks);
 
    error = false;
 
@@ -151,6 +185,11 @@ int main (int argc, char **argv)
 
    if (!(create_users (db))) {
       PROG_ERR ("Failed to create users, aborting\n");
+      goto errorexit;
+   }
+
+   if (!(list_users (db))) {
+      PROG_ERR ("Failed to list users, aborting\n");
       goto errorexit;
    }
 

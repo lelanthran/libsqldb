@@ -301,3 +301,151 @@ errorexit:
 }
 
 
+bool sqldb_auth_user_find (sqldb_t *db,
+                           const char *email_pattern,
+                           const char *nick_pattern,
+                           uint64_t   *nitems,
+                           char     ***emails,
+                           char     ***nicks,
+                           uint64_t  **ids)
+{
+#define BASE_QS      "SELECT c_email, c_nick, c_id FROM t_user "
+   bool error = true;
+   const char *qstrings[] = {
+      BASE_QS ";",
+      BASE_QS " WHERE c_email like #1;",
+      BASE_QS " WHERE c_nick like #1;",
+      BASE_QS " WHERE c_email like #1 OR c_nick like #2;",
+   };
+#undef BASE_QS
+
+   const char *qstring = NULL;
+
+   const char *p1 = NULL,
+              *p2 = NULL;
+
+   sqldb_coltype_t col1 = sqldb_col_UNKNOWN,
+                   col2 = sqldb_col_UNKNOWN,
+                   col3 = sqldb_col_UNKNOWN;
+
+   sqldb_res_t *res = NULL;
+
+#define SVALID(s)   ((s && s[0]))
+   if (!(SVALID (email_pattern)) && !(SVALID (nick_pattern))) {
+      qstring = qstrings[0];
+   }
+
+   if (SVALID (email_pattern) && !(SVALID (nick_pattern))) {
+      qstring = qstrings[1];
+      p1 = email_pattern;
+      col1 = sqldb_col_TEXT;
+   }
+
+   if (!(SVALID (email_pattern)) && SVALID (nick_pattern)) {
+      qstring = qstrings[2];
+      p1 = nick_pattern;
+      col1 = sqldb_col_TEXT;
+   }
+
+   if (SVALID (email_pattern) && SVALID (nick_pattern)) {
+      qstring = qstrings[3];
+      p2 = nick_pattern;
+      col2 = sqldb_col_TEXT;
+      p1 = email_pattern;
+      col1 = sqldb_col_TEXT;
+   }
+#undef SVALID
+
+   if (!(res = sqldb_exec (db, qstring, col1, &p1, col2, &p2, col3)))
+      goto errorexit;
+
+   *nitems = 0;
+
+   if (emails) {
+      free (*emails); *emails = NULL;
+   }
+   if (nicks) {
+      free (*nicks); *nicks = NULL;
+   }
+   if (ids) {
+      free (*ids); *ids = NULL;
+   }
+
+   while (sqldb_res_step (res) == 1) {
+      char *email, *nick;
+      uint64_t id;
+
+      uint64_t newlen = *nitems + 1;
+      if (emails) {
+         char **tmp = realloc (*emails, (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         *emails = tmp;
+      }
+      if (nicks) {
+         char **tmp = realloc (*nicks, (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         *nicks = tmp;
+      }
+      if (ids) {
+         uint64_t *tmp = realloc ((*ids), (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         *ids = tmp;
+      }
+
+      if ((sqldb_scan_columns (res, sqldb_col_TEXT,   &email,
+                                    sqldb_col_TEXT,   &nick,
+                                    sqldb_col_UINT64, &id,
+                                    sqldb_col_UNKNOWN))!=3)
+         goto errorexit;
+
+      if (emails) {
+         (*emails)[newlen - 1] = email;
+      } else {
+         free (email);
+      }
+
+      if (nicks) {
+         (*nicks)[newlen - 1] = nick;
+      } else {
+         free (email);
+      }
+
+      if (ids) {
+         (*ids)[newlen - 1] = id;
+      }
+
+      *nitems = newlen;
+   }
+
+   error = false;
+
+errorexit:
+
+   if (error) {
+      if (emails) {
+         for (size_t i=0; emails && *emails[i]; i++) {
+            free (*emails[i]);
+         }
+         free (*emails); *emails = NULL;
+      }
+
+      if (nicks) {
+         for (size_t i=0; nicks && *nicks[i]; i++) {
+            free (*nicks[i]);
+         }
+         free (*nicks); *nicks = NULL;
+      }
+   }
+
+   sqldb_res_del (res);
+
+   return !error;
+}
+

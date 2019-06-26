@@ -91,7 +91,7 @@ extern "C" {
                               const char *email,
                               uint64_t   *id_dst,
                               char      **nick_dst,
-                              char      session_dst[65]);
+                              char        session_dst[65]);
 
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the old_email parameter to find the
