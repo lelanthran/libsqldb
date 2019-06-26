@@ -15,7 +15,6 @@
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
-#if 0
 static bool create_users (sqldb_t *db)
 {
    bool error = true;
@@ -63,6 +62,7 @@ errorexit:
    return !error;
 }
 
+#if 0
 static bool create_groups (sqldb_t *db)
 {
    bool error = true;
@@ -109,12 +109,6 @@ errorexit:
 
 int main (int argc, char **argv)
 {
-   for (size_t i=0; i<1; i++) {
-      uint32_t rseed = sqldb_auth_random_seed ();
-      printf ("%u\n", rseed);
-   }
-   return 0;
-
    int ret = EXIT_FAILURE;
 
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
@@ -155,12 +149,12 @@ int main (int argc, char **argv)
    }
 
 
-   /*
    if (!(create_users (db))) {
       PROG_ERR ("Failed to create users, aborting\n");
       goto errorexit;
    }
 
+   /*
    if (!(create_groups (db))) {
       PROG_ERR ("Failed to create groups, aborting\n");
       goto errorexit;

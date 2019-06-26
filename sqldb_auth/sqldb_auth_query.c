@@ -54,7 +54,10 @@
 "                   c_salt = #4, "\
 "                   c_hash = #5, "\
 "                   c_expiry = 0 "\
-" WHERE c_email = #1"
+" WHERE c_email = #1;"
+
+#define user_rm \
+" DELETE FROM t_user WHERE c_email = #1;"
 
 #define STMT(x)      {#x, x }
 static const struct {
@@ -68,6 +71,7 @@ static const struct {
 
    STMT (user_create),
    STMT (user_mod),
+   STMT (user_rm),
 
 };
 #undef STMT

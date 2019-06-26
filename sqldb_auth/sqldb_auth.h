@@ -41,6 +41,9 @@ extern "C" {
    // Return a random seed.
    uint32_t sqldb_auth_random_seed (void);
 
+   // Return random bytes
+   void sqldb_auth_random_bytes (void *dst, size_t len);
+
    ///////////////////////////////////////////////////////////////////////
 
    // Authenticates the session specified against the user in the

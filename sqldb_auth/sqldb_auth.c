@@ -9,6 +9,7 @@
 
 #include "sqldb_auth/sqldb_auth.h"
 #include "sqldb_auth/sqldb_auth_query.h"
+#include "sqldb_auth/sha-256.h"
 
 #define LOG_ERR(...)      do {\
       fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
@@ -141,6 +142,23 @@ uint32_t sqldb_auth_random_seed (void)
    return ret;
 }
 
+void sqldb_auth_random_bytes (void *dst, size_t len)
+{
+   static uint64_t seed = 0;
+
+   if (!seed) {
+      seed = sqldb_auth_random_seed ();
+      seed <<= 4;
+      seed |= sqldb_auth_random_seed ();
+      srand ((unsigned int)seed);
+   }
+
+   uint8_t *b = dst;
+   for (size_t i=0; i<len; i++) {
+      b[i] = (rand () >> 8) & 0xff;
+   }
+}
+
 uint64_t sqldb_auth_user_create (sqldb_t *db,
                                  const char *email,
                                  const char *nick,
@@ -158,7 +176,7 @@ uint64_t sqldb_auth_user_create (sqldb_t *db,
    if (!(qstring = sqldb_auth_query ("user_create")))
       goto errorexit;
 
-   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, email,
+   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
                                          sqldb_col_UNKNOWN);
    if (ret==(uint64_t)-1 || ret==0)
       goto errorexit;
@@ -174,7 +192,67 @@ errorexit:
 }
 
 
-bool sqldb_auth_user_rm (sqldb_t *db, const char *email);
+bool sqldb_auth_user_rm (sqldb_t *db, const char *email)
+{
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!db || !email || !email[0])
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("user_rm")))
+      return false;
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
+                                         sqldb_col_UNKNOWN);
+
+   return (rc==(uint64_t)-1) ? false : true;
+}
+
+static bool make_password_hash (char dst[65], const char sz_salt[65],
+                                              const char *new_email,
+                                              const char *nick,
+                                              const char *password)
+{
+   bool error = true;
+
+   uint8_t  hash[32];
+
+   char *tmp = NULL;
+   size_t tmplen = 0;
+
+   tmplen =   strlen (sz_salt)
+            + strlen (new_email)
+            + strlen (nick)
+            + strlen (password)
+            + 1;
+
+   if (!(tmp = malloc (tmplen)))
+      goto errorexit;
+
+   strcpy (tmp, sz_salt);
+   strcat (tmp, new_email);
+   strcat (tmp, nick);
+   strcat (tmp, password);
+
+   calc_sha_256 (hash, tmp, tmplen);
+
+#define STRINGIFY(dst,dstlen,src,srclen)    do {\
+   for (size_t i=0; i<srclen && (i*2)<dstlen; i++) {\
+      sprintf (&dst[i*2], "%02x", src[i]);\
+   }\
+} while (0)
+
+   STRINGIFY (dst, 64, hash, sizeof hash);
+
+   error = false;
+
+errorexit:
+
+   free (tmp);
+
+   return !error;
+}
 
 bool sqldb_auth_user_mod (sqldb_t *db,
                           const char *old_email,
@@ -183,18 +261,18 @@ bool sqldb_auth_user_mod (sqldb_t *db,
                           const char *password)
 {
    bool error = true;
+
    const char *qstring = NULL;
 
-   char     sz_salt[256];
+   uint8_t  salt[32];
+   char     sz_salt[(32 * 2) + 1];
    char     sz_hash[65];
-   uint8_t  hash[32];
+
+   char *ptr_salt = sz_salt,
+        *ptr_hash = sz_hash;
 
    uint64_t ret = (uint64_t)-1;
 
-   // TODO:
-   // 1. Write a rand() function,
-   // 2. Write the stringify function for raw bytes
-   // 3. Write the salt-creation function
    if (!db ||
        !old_email    || !new_email    || !nick    || !password ||
        !old_email[0] || !new_email[0] || !nick[0] || !password[0])
@@ -203,10 +281,18 @@ bool sqldb_auth_user_mod (sqldb_t *db,
    if (!(qstring = sqldb_auth_query ("user_mod")))
       goto errorexit;
 
-   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, old_email,
-                                         sqldb_col_TEXT, new_email,
-                                         sqldb_col_TEXT, sz_salt,
-                                         sqldb_col_TEXT, sz_hash,
+   sqldb_auth_random_bytes (salt, sizeof salt);
+   STRINGIFY (sz_salt, sizeof sz_salt, salt, 32);
+#undef STRINGIFY
+
+
+   if (!(make_password_hash (sz_hash, sz_salt, new_email, nick, password)))
+      goto errorexit;
+
+   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &old_email,
+                                         sqldb_col_TEXT, &new_email,
+                                         sqldb_col_TEXT, &ptr_salt,
+                                         sqldb_col_TEXT, &ptr_hash,
                                          sqldb_col_UNKNOWN);
    error = false;
 
