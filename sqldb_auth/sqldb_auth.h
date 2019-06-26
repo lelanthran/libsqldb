@@ -87,7 +87,7 @@ extern "C" {
    // and session must be freed by the caller regardless of the return
    // value. If they are not-NULL on entry to this function, this function
    // will free them before allocation storage for the output parameters.
-   bool sqldb_auth_user_info (sqldb_t *db,
+   bool sqldb_auth_user_info (sqldb_t    *db,
                               const char *email,
                               uint64_t   *id_dst,
                               char      **nick_dst,

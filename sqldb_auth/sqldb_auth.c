@@ -203,9 +203,60 @@ bool sqldb_auth_user_rm (sqldb_t *db, const char *email)
       return false;
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
-                                         sqldb_col_UNKNOWN);
+                                        sqldb_col_UNKNOWN);
 
    return (rc==(uint64_t)-1) ? false : true;
+}
+
+bool sqldb_auth_user_info (sqldb_t    *db,
+                           const char *email,
+                           uint64_t   *id_dst,
+                           char      **nick_dst,
+                           char        session_dst[65])
+{
+   bool error = true;
+   const char *qstring = NULL;
+   sqldb_res_t *res = NULL;
+   char *tmp_sess = NULL;
+
+   if (!db || !email)
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("user_info"))) {
+      printf ("Qstring failure\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_UNKNOWN))) {
+      printf ("Exec failure\n");
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res))!=1) {
+      printf ("Step failure\n");
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_UINT64, id_dst,
+                                 sqldb_col_TEXT,   nick_dst,
+                                 sqldb_col_TEXT,   &tmp_sess,
+                                 sqldb_col_UNKNOWN))!=3) {
+      printf ("Scan failure\n");
+      goto errorexit;
+   }
+
+   strncpy (session_dst, tmp_sess, 65);
+   session_dst[64] = 0;
+
+   error = false;
+
+errorexit:
+
+   free (tmp_sess);
+   sqldb_res_del (res);
+
+   return !error;
 }
 
 static bool make_password_hash (char dst[65], const char sz_salt[65],

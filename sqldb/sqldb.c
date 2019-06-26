@@ -991,6 +991,7 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
       void *dst = va_arg (*ap, void *);
       uint32_t *blen;
       const void *tmp;
+      char *tmpstring = NULL;
 
       switch (coltype) {
 
@@ -1017,8 +1018,8 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
             break;
 
          case sqldb_col_TEXT:
-            *(char **)dst =
-               lstr_dup ((char *)sqlite3_column_text (stmt, ret));
+            tmpstring = ((char *)sqlite3_column_text (stmt, ret));
+            *(char **)dst = lstr_dup (tmpstring ? tmpstring : "");
             if (!(*(char **)dst)) {
                SQLDB_OOM (sqlite3_column_text (stmt, ret));
                return (uint32_t)-1;

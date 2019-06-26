@@ -80,9 +80,22 @@ static bool list_users (sqldb_t *db)
    printf ("Found %" PRIu64 " users\n", nitems);
 
    for (uint64_t i=0; i<nitems; i++) {
-      printf ("[%" PRIu64 "][%s][%s]\n", ids[i], emails[i], nicks[i]);
+      uint64_t n_id = 0;
+      char *n_nick = NULL;
+      char sess[65];
+
+      if (!(sqldb_auth_user_info (db, emails[i], &n_id, &n_nick, sess))) {
+         PROG_ERR ("Failed to get user info\n");
+         goto errorexit;
+      }
+
+      printf ("L[%" PRIu64 "][%s][%s]\n", ids[i], emails[i], nicks[i]);
+
+      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, n_nick, sess);
+
       free (emails[i]);
       free (nicks[i]);
+      free (n_nick);
    }
 
    free (ids);
