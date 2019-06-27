@@ -16,6 +16,7 @@
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
+#define SVALID(s)   ((s && s[0]))
 
 bool sqldb_auth_initdb (sqldb_t *db)
 {
@@ -223,18 +224,18 @@ bool sqldb_auth_user_info (sqldb_t    *db,
       return false;
 
    if (!(qstring = sqldb_auth_query ("user_info"))) {
-      printf ("Qstring failure\n");
+      LOG_ERR ("Qstring failure: Failed to find user_info qstring\n");
       goto errorexit;
    }
 
    if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
                                         sqldb_col_UNKNOWN))) {
-      printf ("Exec failure\n");
+      LOG_ERR ("Exec failure: [%s]\n", qstring);
       goto errorexit;
    }
 
    if ((sqldb_res_step (res))!=1) {
-      printf ("Step failure\n");
+      LOG_ERR ("Step failure: [%s]\n", qstring);
       goto errorexit;
    }
 
@@ -242,7 +243,7 @@ bool sqldb_auth_user_info (sqldb_t    *db,
                                  sqldb_col_TEXT,   nick_dst,
                                  sqldb_col_TEXT,   &tmp_sess,
                                  sqldb_col_UNKNOWN))!=3) {
-      printf ("Scan failure\n");
+      LOG_ERR ("Scan failure: [%s]\n", qstring);
       goto errorexit;
    }
 
@@ -352,6 +353,33 @@ errorexit:
 }
 
 
+uint64_t sqldb_auth_group_create (sqldb_t *db,
+                                  const char *name,
+                                  const char *description)
+{
+   uint64_t ret = (uint64_t)-1;
+   const char *qstring = NULL;
+
+   if (!db ||
+       !(SVALID (name)) || !(SVALID (description)))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("group_create"))) {
+      LOG_ERR ("Failed to find qstring: group_create\n");
+      goto errorexit;
+   }
+
+   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
+                                         sqldb_col_TEXT, &description,
+                                         sqldb_col_UNKNOWN);
+
+errorexit:
+
+   return ret;
+}
+
+bool sqldb_auth_group_rm (sqldb_t *db, const char *name);
+
 bool sqldb_auth_user_find (sqldb_t *db,
                            const char *email_pattern,
                            const char *nick_pattern,
@@ -381,7 +409,6 @@ bool sqldb_auth_user_find (sqldb_t *db,
 
    sqldb_res_t *res = NULL;
 
-#define SVALID(s)   ((s && s[0]))
    if (!(SVALID (email_pattern)) && !(SVALID (nick_pattern))) {
       qstring = qstrings[0];
    }
@@ -405,7 +432,6 @@ bool sqldb_auth_user_find (sqldb_t *db,
       p1 = email_pattern;
       col1 = sqldb_col_TEXT;
    }
-#undef SVALID
 
    if (!(res = sqldb_exec (db, qstring, col1, &p1, col2, &p2, col3)))
       goto errorexit;

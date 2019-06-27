@@ -45,6 +45,8 @@
 "" \
 "COMMIT;"
 
+///////////////////////////////////////////////////////////////////
+
 #define user_create \
 " INSERT INTO t_user (c_email, c_hash) VALUES (#1, '00000000');"
 
@@ -62,6 +64,13 @@
 #define user_info \
 " SELECT c_id, c_nick, c_session FROM t_user WHERE c_email = #1;"
 
+///////////////////////////////////////////////////////////////////
+
+#define group_create \
+" INSERT INTO t_group (c_name, c_description) VALUES (#1, #2);"
+
+///////////////////////////////////////////////////////////////////
+
 #define STMT(x)      {#x, x }
 static const struct {
    const char *name;
@@ -76,6 +85,8 @@ static const struct {
    STMT (user_mod),
    STMT (user_rm),
    STMT (user_info),
+
+   STMT (group_create),
 
 };
 #undef STMT

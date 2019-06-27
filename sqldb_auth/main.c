@@ -38,10 +38,11 @@ static bool create_users (sqldb_t *db)
 
    sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
    for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
-      if (!(sqldb_auth_user_create (db, users[i].email,
-                                        users[i].nick,
-                                        "123456"))) {
-         PROG_ERR ("Failed to create user [%s]\n", users[i].email);
+      if ((sqldb_auth_user_create (db, users[i].email,
+                                       users[i].nick,
+                                       "123456"))==(uint64_t)-1) {
+         PROG_ERR ("Failed to create user [%s]\n%s\n", users[i].email,
+                                                       sqldb_lasterr (db));
          goto errorexit;
       }
 
@@ -112,7 +113,6 @@ errorexit:
    return !error;
 }
 
-#if 0
 static bool create_groups (sqldb_t *db)
 {
    bool error = true;
@@ -130,16 +130,17 @@ static bool create_groups (sqldb_t *db)
    };
 
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
-      if (!(sqldb_auth_user_create (db, groups[i].name,
-                                        groups[i].descr,
-                                        "123456"))) {
-         PROG_ERR ("Failed to create group [%s]\n", groups[i].name);
+      if ((sqldb_auth_group_create (db, groups[i].name,
+                                        groups[i].descr))==(uint64_t)-1) {
+         PROG_ERR ("Failed to create group [%s]\n%s\n", groups[i].name,
+                                                        sqldb_lasterr (db));
          goto errorexit;
       }
 
       printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
    }
 
+   /*
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
       if (!(sqldb_auth_group_rm (db, groups[i].name))) {
          PROG_ERR ("Failed to create group [%s]\n", groups[i].name);
@@ -148,6 +149,7 @@ static bool create_groups (sqldb_t *db)
 
       printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
    }
+   */
 
    error = false;
 
@@ -155,7 +157,6 @@ errorexit:
 
    return !error;
 }
-#endif
 
 int main (int argc, char **argv)
 {
@@ -209,9 +210,14 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
-   /*
    if (!(create_groups (db))) {
       PROG_ERR ("Failed to create groups, aborting\n");
+      goto errorexit;
+   }
+
+   /*
+   if (!(list_groups (db))) {
+      PROG_ERR ("Failed to list groups, aborting\n");
       goto errorexit;
    }
    */
