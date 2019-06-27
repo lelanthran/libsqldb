@@ -469,6 +469,32 @@ errorexit:
 
 }
 
+bool sqldb_auth_group_adduser (sqldb_t    *db,
+                               const char *name, const char *email)
+{
+   bool error = true;
+
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!(qstring = sqldb_auth_query ("group_adduser"))) {
+      goto errorexit;
+   }
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
+                                        sqldb_col_TEXT, &email,
+                                        sqldb_col_UNKNOWN);
+   if (rc==(uint64_t)-1) {
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
 bool sqldb_auth_user_find (sqldb_t    *db,
                            const char *email_pattern,
                            const char *nick_pattern,
@@ -774,4 +800,13 @@ errorexit:
 
 }
 
+bool sqldb_auth_group_members (sqldb_t    *db,
+                               const char *name,
+                               uint64_t   *nitems,
+                               char     ***emails,
+                               char     ***nicks,
+                               uint64_t  **ids)
+{
+
+}
 

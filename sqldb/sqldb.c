@@ -708,7 +708,7 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
                            goto errorexit;
    }
    if (!ret) {
-      db_err_printf (db, "Failed to execute stmt [%s]\n", qstring);
+      // db_err_printf (db, "Failed to execute stmt [%s]\n", qstring);
       goto errorexit;
    }
 
@@ -950,6 +950,11 @@ int sqldb_res_step (sqldb_res_t *res)
       case sqldb_POSTGRES: ret = pgdb_res_step (res);    break;
       default:             ret = -1;                     break;
    }
+
+   if (ret==-1) {
+      PROG_ERR ("sqldb_res error: %s\n", sqldb_res_lasterr (res));
+   }
+
    return ret;
 }
 

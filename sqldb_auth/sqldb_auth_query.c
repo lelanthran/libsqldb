@@ -26,8 +26,9 @@
 "   c_description   TEXT);" \
 "" \
 "CREATE TABLE t_group_membership (" \
-"   c_user    INTEGER," \
-"   c_group   INTEGER," \
+"   c_user    INTEGER NOT NULL," \
+"   c_group   INTEGER NOT NULL," \
+"      PRIMARY KEY (c_user, c_group),"\
 "      FOREIGN KEY (c_user) REFERENCES t_user(c_id)," \
 "      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
 "" \
@@ -36,7 +37,7 @@
 "   c_perms      INTEGER," \
 "   c_resource   TEXT," \
 "      FOREIGN KEY (c_user) REFERENCES t_user(c_id));" \
-"" \
+ "" \
 "CREATE TABLE t_group_perm (" \
 "   c_group      INTEGER," \
 "   c_perms      INTEGER," \
@@ -82,6 +83,15 @@
 
 ///////////////////////////////////////////////////////////////////
 
+#define group_adduser \
+"INSERT INTO t_group_membership (c_user, c_group) VALUES "\
+"  ((SELECT c_id FROM t_user WHERE c_email=#1), "\
+"   (SELECT c_id FROM t_group WHERE c_name=#2)) "\
+" ;"
+
+
+///////////////////////////////////////////////////////////////////
+
 #define STMT(x)      {#x, x }
 static const struct {
    const char *name;
@@ -101,6 +111,8 @@ static const struct {
    STMT (group_mod),
    STMT (group_rm),
    STMT (group_info),
+
+   STMT (group_adduser),
 
 };
 #undef STMT

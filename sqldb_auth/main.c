@@ -16,25 +16,38 @@
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
+static const struct {
+   const char *email;
+   const char *nick;
+} users[] = {
+   { "one@email.com",   "ONE"    },
+   { "two@email.com",   "TWO"    },
+   { "three@email.com", "THREE"  },
+   { "four@email.com",  "FOUR"   },
+   { "five@email.com",  "FIVE"   },
+   { "six@email.com",   "SIX"    },
+   { "seven@email.com", "SEVEN"  },
+   { "eight@email.com", "EIGHT"  },
+   { "nine@email.com",  "NINE"   },
+   { "ten@email.com",   "TEN"    },
+};
+
+static const struct {
+   const char *name;
+   const char *descr;
+} groups[] = {
+   { "Group-One",    "GROUP description: ONE"    },
+   { "Group-Two",    "GROUP description: TWO"    },
+   { "Group-Three",  "GROUP description: THREE"  },
+   { "Group-Four",   "GROUP description: FOUR"   },
+   { "Group-Five",   "GROUP description: FIVE"   },
+   { "Group-Six",    "GROUP description: SIX"    },
+};
+
+
 static bool create_users (sqldb_t *db)
 {
    bool error = true;
-
-   static const struct {
-      const char *email;
-      const char *nick;
-   } users[] = {
-      { "one@email.com",   "ONE"    },
-      { "two@email.com",   "TWO"    },
-      { "three@email.com", "THREE"  },
-      { "four@email.com",  "FOUR"   },
-      { "five@email.com",  "FIVE"   },
-      { "six@email.com",   "SIX"    },
-      { "seven@email.com", "SEVEN"  },
-      { "eight@email.com", "EIGHT"  },
-      { "nine@email.com",  "NINE"   },
-      { "ten@email.com",   "TEN"    },
-   };
 
    sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
    for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
@@ -118,18 +131,6 @@ static bool create_groups (sqldb_t *db)
 {
    bool error = true;
 
-   static const struct {
-      const char *name;
-      const char *descr;
-   } groups[] = {
-      { "Group-One",    "GROUP description: ONE"    },
-      { "Group-Two",    "GROUP description: TWO"    },
-      { "Group-Three",  "GROUP description: THREE"  },
-      { "Group-Four",   "GROUP description: FOUR"   },
-      { "Group-Five",   "GROUP description: FIVE"   },
-      { "Group-Six",    "GROUP description: SIX"    },
-   };
-
    sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
       if ((sqldb_auth_group_create (db, groups[i].name,
@@ -140,6 +141,15 @@ static bool create_groups (sqldb_t *db)
       }
 
       printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
+
+      for (size_t j=1; j<sizeof users/sizeof users[0]; j+=3) {
+         if (!(sqldb_auth_group_adduser (db, groups[i].name, users[j].email))) {
+            PROG_ERR ("Failed to add [%s] to group [%s]: %s\n",
+                       users[j].email, groups[i].name,
+                       sqldb_lasterr (db));
+            goto errorexit;
+         }
+      }
    }
 
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
@@ -193,7 +203,6 @@ static bool list_groups (sqldb_t *db)
 
    for (uint64_t i=0; i<nitems; i++) {
       uint64_t n_id = 0;
-      char *n_name = NULL;
       char *n_descr = NULL;
 
       if (!(sqldb_auth_group_info (db, names[i], &n_id, &n_descr))) {
@@ -220,6 +229,46 @@ errorexit:
 
    return !error;
 }
+
+static bool list_memberships (sqldb_t *db)
+{
+   bool error = false;
+
+   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
+      uint64_t nitems = 0;
+      char **emails = NULL,
+           **nicks = NULL;
+      uint64_t *ids = NULL;
+
+      if (!(sqldb_auth_group_members (db, groups[i].name, &nitems,
+                                                          &emails,
+                                                          &nicks,
+                                                          &ids))) {
+         PROG_ERR ("Failed to get membership for [%s]: %s\n",
+                   groups[i].name,
+                   sqldb_lasterr (db));
+         goto errorexit;
+      }
+
+      printf ("Group %s has %" PRIu64 " members\n", groups[i].name, nitems);
+      for (uint64_t j=0; j<nitems; j++) {
+         printf ("%" PRIu64 ", %s, %s\n", ids[j],
+                                          emails[j],
+                                          nicks[j]);
+         free (emails[j]);
+         free (nicks[j]);
+      }
+      free (emails);
+      free (nicks);
+      free (ids);
+   }
+
+   error = false;
+
+errorexit:
+   return error;
+}
+
 
 int main (int argc, char **argv)
 {
@@ -280,6 +329,11 @@ int main (int argc, char **argv)
 
    if (!(list_groups (db))) {
       PROG_ERR ("Failed to list groups, aborting\n");
+      goto errorexit;
+   }
+
+   if (!(list_memberships (db))) {
+      PROG_ERR ("Failed to list the group members. aborting\n");
       goto errorexit;
    }
 
