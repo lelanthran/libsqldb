@@ -36,6 +36,7 @@ static bool create_users (sqldb_t *db)
       { "ten@email.com",   "TEN"    },
    };
 
+   sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
    for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
       if (!(sqldb_auth_user_create (db, users[i].email,
                                         users[i].nick,
@@ -55,6 +56,8 @@ static bool create_users (sqldb_t *db)
 
       printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
    }
+
+   sqldb_batch (db, "COMMIT;", NULL);
 
    error = false;
 
