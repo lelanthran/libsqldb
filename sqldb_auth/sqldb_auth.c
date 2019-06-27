@@ -161,7 +161,7 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
    }
 }
 
-uint64_t sqldb_auth_user_create (sqldb_t *db,
+uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                  const char *email,
                                  const char *nick,
                                  const char *password)
@@ -261,7 +261,7 @@ errorexit:
    return !error;
 }
 
-static bool make_password_hash (char dst[65], const char sz_salt[65],
+static bool make_password_hash (char dst[65], const char  sz_salt[65],
                                               const char *new_email,
                                               const char *nick,
                                               const char *password)
@@ -354,7 +354,7 @@ errorexit:
 }
 
 
-uint64_t sqldb_auth_group_create (sqldb_t *db,
+uint64_t sqldb_auth_group_create (sqldb_t    *db,
                                   const char *name,
                                   const char *description)
 {
@@ -469,7 +469,7 @@ errorexit:
 
 }
 
-bool sqldb_auth_user_find (sqldb_t *db,
+bool sqldb_auth_user_find (sqldb_t    *db,
                            const char *email_pattern,
                            const char *nick_pattern,
                            uint64_t   *nitems,
