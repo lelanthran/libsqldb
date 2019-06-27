@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -378,7 +379,18 @@ errorexit:
    return ret;
 }
 
-bool sqldb_auth_group_rm (sqldb_t *db, const char *name);
+bool sqldb_auth_group_rm (sqldb_t *db, const char *name)
+{
+   const char *qstring = sqldb_auth_query ("group_rm");
+
+   if (!db || !(SVALID (name)))
+      return false;
+
+   uint64_t rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
+                                                 sqldb_col_UNKNOWN);
+
+   return rc == (uint64_t)-1 ? false : true;
+}
 
 bool sqldb_auth_user_find (sqldb_t *db,
                            const char *email_pattern,

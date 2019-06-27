@@ -51,18 +51,19 @@ static bool create_users (sqldb_t *db)
 
    for (size_t i=0; i<sizeof users/sizeof users[0]; i+=3) {
       if (!(sqldb_auth_user_rm (db, users[i].email))) {
-         PROG_ERR ("Failed to create user [%s]\n", users[i].email);
+         PROG_ERR ("Failed to remove user [%s]\n%s\n", users[i].email,
+                                                       sqldb_lasterr (db));
          goto errorexit;
       }
 
       printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
    }
 
-   sqldb_batch (db, "COMMIT;", NULL);
-
    error = false;
 
 errorexit:
+
+   sqldb_batch (db, "COMMIT;", NULL);
 
    return !error;
 }
@@ -129,6 +130,7 @@ static bool create_groups (sqldb_t *db)
       { "Group-6", "GROUP description: SIX"    },
    };
 
+   sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
       if ((sqldb_auth_group_create (db, groups[i].name,
                                         groups[i].descr))==(uint64_t)-1) {
@@ -140,16 +142,61 @@ static bool create_groups (sqldb_t *db)
       printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
    }
 
-   /*
-   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
+   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i+=3) {
       if (!(sqldb_auth_group_rm (db, groups[i].name))) {
-         PROG_ERR ("Failed to create group [%s]\n", groups[i].name);
+         PROG_ERR ("Failed to remove group [%s]\n%s\n", groups[i].name,
+                                                        sqldb_lasterr (db));
          goto errorexit;
       }
 
       printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
    }
-   */
+
+   error = false;
+
+errorexit:
+   sqldb_batch (db, "COMMIT;", NULL);
+
+   return !error;
+}
+
+static bool list_groups (sqldb_t *db)
+{
+   bool error = true;
+   uint64_t nitems = 0;
+   char **names = NULL;
+   char **descrs = NULL;
+   uint64_t *ids = NULL;
+
+   if (!(sqldb_auth_group_find (db, "t%",
+                                &nitems, &names, &descrs, &ids))) {
+      PROG_ERR ("Failed to execute patterns for group searching\n");
+      goto errorexit;
+   }
+
+   printf ("Found %" PRIu64 " groups\n", nitems);
+
+   for (uint64_t i=0; i<nitems; i++) {
+      uint64_t n_id = 0;
+      char *n_name = NULL;
+      char *n_descr = NULL;
+
+      if (!(sqldb_auth_group_info (db, names[i], &n_id, &n_descr))) {
+         PROG_ERR ("Failed to get user info\n");
+         goto errorexit;
+      }
+
+      printf ("L[%" PRIu64 "][%s][%s]\n", ids[i], names[i], descrs[i]);
+
+      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, n_name, n_descr);
+
+      free (names[i]);
+      free (descrs[i]);
+   }
+
+   free (ids);
+   free (names);
+   free (descrs);
 
    error = false;
 

@@ -69,6 +69,9 @@
 #define group_create \
 " INSERT INTO t_group (c_name, c_description) VALUES (#1, #2);"
 
+#define group_rm \
+" DELETE FROM t_group WHERE c_name = #1;"
+
 ///////////////////////////////////////////////////////////////////
 
 #define STMT(x)      {#x, x }
@@ -87,6 +90,7 @@ static const struct {
    STMT (user_info),
 
    STMT (group_create),
+   STMT (group_rm),
 
 };
 #undef STMT

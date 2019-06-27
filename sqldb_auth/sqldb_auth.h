@@ -5,6 +5,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* TODO:
+ * What ction should be default on deletion of foreign keys? If we cascade
+ * group deletes all that happens is that sometimes a user will find
+ * themselves in no group at all. If we cascade group_mapping deletes then
+ * a mapping delete is going to remove the user from the database.
+ */
 #include "sqldb/sqldb.h"
 
 /* ********************************************************************
