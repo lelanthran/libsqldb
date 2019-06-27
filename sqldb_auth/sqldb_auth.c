@@ -306,7 +306,7 @@ errorexit:
    return !error;
 }
 
-bool sqldb_auth_user_mod (sqldb_t *db,
+bool sqldb_auth_user_mod (sqldb_t    *db,
                           const char *old_email,
                           const char *new_email,
                           const char *nick,
@@ -432,6 +432,38 @@ bool sqldb_auth_group_info (sqldb_t    *db,
 errorexit:
 
    sqldb_res_del (res);
+
+   return !error;
+
+}
+
+bool sqldb_auth_group_mod (sqldb_t    *db,
+                           const char *oldname,
+                           const char *newname,
+                           const char *description)
+{
+   bool error = true;
+   uint64_t rc = 0;
+   const char *qstring = NULL;
+
+   if (!db ||
+       !SVALID (oldname) || !SVALID (newname) || !SVALID (description))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("group_mod")))
+      goto errorexit;
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &oldname,
+                                        sqldb_col_TEXT, &newname,
+                                        sqldb_col_TEXT, &description,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc==-1)
+      goto errorexit;
+
+   error = false;
+
+errorexit:
 
    return !error;
 

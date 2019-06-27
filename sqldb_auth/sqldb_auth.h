@@ -102,7 +102,7 @@ extern "C" {
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the old_email parameter to find the
    // record to update.
-   bool sqldb_auth_user_mod (sqldb_t *db,
+   bool sqldb_auth_user_mod (sqldb_t    *db,
                              const char *old_email,
                              const char *new_email,
                              const char *nick,
@@ -133,7 +133,8 @@ extern "C" {
    // success and false on error. Uses the name parameter to find the
    // record to update.
    bool sqldb_auth_group_mod (sqldb_t    *db,
-                              const char *name,
+                              const char *oldname,
+                              const char *newname,
                               const char *description);
 
    ///////////////////////////////////////////////////////////////////////

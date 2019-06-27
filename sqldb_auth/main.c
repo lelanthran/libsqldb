@@ -142,6 +142,21 @@ static bool create_groups (sqldb_t *db)
       printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
    }
 
+   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
+      char name[30],
+           descr[100];
+
+      sprintf (name, "%s-%zu", groups[i].name, i);
+      sprintf (descr, "%s-%zu", groups[i].descr, i);
+
+      if (!(sqldb_auth_group_mod (db, groups[i].name, name, descr))) {
+         PROG_ERR ("Failed to modify group [%s][%s]=>[%s][%s]\n",
+                   groups[i].name, groups[i].descr,
+                   name, descr);
+         goto errorexit;
+      }
+   }
+
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i+=3) {
       if (!(sqldb_auth_group_rm (db, groups[i].name))) {
          PROG_ERR ("Failed to remove group [%s]\n%s\n", groups[i].name,

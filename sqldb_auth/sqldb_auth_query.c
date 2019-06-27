@@ -75,6 +75,11 @@
 #define group_info \
 " SELECT c_id, c_description FROM t_group WHERE c_name = #1;"
 
+#define group_mod \
+" UPDATE t_group SET c_name = #2, "\
+"                    c_description = #3 "\
+" WHERE c_name = #1;"
+
 ///////////////////////////////////////////////////////////////////
 
 #define STMT(x)      {#x, x }
@@ -93,6 +98,7 @@ static const struct {
    STMT (user_info),
 
    STMT (group_create),
+   STMT (group_mod),
    STMT (group_rm),
    STMT (group_info),
 
