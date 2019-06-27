@@ -392,6 +392,51 @@ bool sqldb_auth_group_rm (sqldb_t *db, const char *name)
    return rc == (uint64_t)-1 ? false : true;
 }
 
+bool sqldb_auth_group_info (sqldb_t    *db,
+                            const char *name,
+                            uint64_t   *id_dst,
+                            char      **description)
+{
+   bool error = true;
+   const char *qstring = NULL;
+   sqldb_res_t *res = NULL;
+
+   if (!db || !name)
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("group_info"))) {
+      LOG_ERR ("Qstring failure: Failed to find group_info qstring\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &name,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Exec failure: [%s]\n", qstring);
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res))!=1) {
+      LOG_ERR ("Step failure: [%s]\n", qstring);
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_UINT64, id_dst,
+                                 sqldb_col_TEXT,   description,
+                                 sqldb_col_UNKNOWN))!=2) {
+      LOG_ERR ("Scan failure: [%s]\n", qstring);
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   sqldb_res_del (res);
+
+   return !error;
+
+}
+
 bool sqldb_auth_user_find (sqldb_t *db,
                            const char *email_pattern,
                            const char *nick_pattern,
@@ -503,7 +548,7 @@ bool sqldb_auth_user_find (sqldb_t *db,
       if (nicks) {
          (*nicks)[newlen - 1] = nick;
       } else {
-         free (email);
+         free (nick);
       }
 
       if (ids) {
@@ -519,15 +564,15 @@ errorexit:
 
    if (error) {
       if (emails) {
-         for (size_t i=0; emails && *emails[i]; i++) {
-            free (*emails[i]);
+         for (size_t i=0; emails && *emails && (*emails)[i]; i++) {
+            free ((*emails)[i]);
          }
          free (*emails); *emails = NULL;
       }
 
       if (nicks) {
-         for (size_t i=0; nicks && *nicks[i]; i++) {
-            free (*nicks[i]);
+         for (size_t i=0; nicks && *nicks && (*nicks)[i]; i++) {
+            free ((*nicks)[i]);
          }
          free (*nicks); *nicks = NULL;
       }
@@ -537,4 +582,164 @@ errorexit:
 
    return !error;
 }
+
+bool sqldb_auth_group_find (sqldb_t    *db,
+                            const char *name_pattern,
+                            const char *description_pattern,
+                            uint64_t   *nitems,
+                            char     ***names,
+                            char     ***descriptions,
+                            uint64_t  **ids)
+{
+#define BASE_QS      "SELECT c_name, c_description, c_id FROM t_group "
+   bool error = true;
+   const char *qstrings[] = {
+      BASE_QS ";",
+      BASE_QS " WHERE c_name like #1;",
+      BASE_QS " WHERE c_description like #1;",
+      BASE_QS " WHERE c_name like #1 OR c_description like #2;",
+   };
+#undef BASE_QS
+
+   const char *qstring = NULL;
+
+   const char *p1 = NULL,
+              *p2 = NULL;
+
+   sqldb_coltype_t col1 = sqldb_col_UNKNOWN,
+                   col2 = sqldb_col_UNKNOWN,
+                   col3 = sqldb_col_UNKNOWN;
+
+   sqldb_res_t *res = NULL;
+
+   if (!(SVALID (name_pattern)) && !(SVALID (description_pattern))) {
+      qstring = qstrings[0];
+   }
+
+   if (SVALID (name_pattern) && !(SVALID (description_pattern))) {
+      qstring = qstrings[1];
+      p1 = name_pattern;
+      col1 = sqldb_col_TEXT;
+   }
+
+   if (!(SVALID (name_pattern)) && SVALID (description_pattern)) {
+      qstring = qstrings[2];
+      p1 = description_pattern;
+      col1 = sqldb_col_TEXT;
+   }
+
+   if (SVALID (name_pattern) && SVALID (description_pattern)) {
+      qstring = qstrings[3];
+      p2 = description_pattern;
+      col2 = sqldb_col_TEXT;
+      p1 = name_pattern;
+      col1 = sqldb_col_TEXT;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, col1, &p1, col2, &p2, col3))) {
+      LOG_ERR ("Failed to execute [%s]\n", qstring);
+      goto errorexit;
+   }
+
+   *nitems = 0;
+
+   if (names) {
+      free (*names); *names = NULL;
+   }
+   if (descriptions) {
+      free (*descriptions); *descriptions = NULL;
+   }
+   if (ids) {
+      free (*ids); *ids = NULL;
+   }
+
+   while (sqldb_res_step (res) == 1) {
+      char *name, *description;
+      uint64_t id;
+
+      uint32_t ncols = 0;
+
+      uint64_t newlen = *nitems + 1;
+      if (names) {
+         char **tmp = realloc (*names, (newlen + 1) * (sizeof *tmp));
+         if (!tmp) {
+            LOG_ERR ("OOM error\n");
+            goto errorexit;
+         }
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         *names = tmp;
+      }
+      if (descriptions) {
+         char **tmp = realloc (*descriptions, (newlen + 1) * (sizeof *tmp));
+         if (!tmp) {
+            LOG_ERR ("OOM error\n");
+            goto errorexit;
+         }
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         *descriptions = tmp;
+      }
+      if (ids) {
+         uint64_t *tmp = realloc ((*ids), (newlen + 1) * (sizeof *tmp));
+         if (!tmp) {
+            LOG_ERR ("OOM error\n");
+            goto errorexit;
+         }
+         *ids = tmp;
+      }
+
+      if ((ncols = (sqldb_scan_columns (res, sqldb_col_TEXT,   &name,
+                                             sqldb_col_TEXT,   &description,
+                                             sqldb_col_UINT64, &id,
+                                             sqldb_col_UNKNOWN)))!=3) {
+         LOG_ERR ("Scan failure [%u, expected 3]\n", ncols);
+         goto errorexit;
+      }
+
+      if (names) {
+         (*names)[newlen - 1] = name;
+      } else {
+         free (name);
+      }
+
+      if (descriptions) {
+         (*descriptions)[newlen - 1] = description;
+      } else {
+         free (description);
+      }
+
+      if (ids) {
+         (*ids)[newlen - 1] = id;
+      }
+
+      *nitems = newlen;
+   }
+
+   error = false;
+
+errorexit:
+
+   if (error) {
+      if (names) {
+         for (size_t i=0; names && (*names) && (*names)[i]; i++) {
+            free ((*names)[i]);
+         }
+         free (*names); *names = NULL;
+      }
+
+      if (descriptions) {
+         for (size_t i=0; descriptions && (*descriptions) && (*descriptions)[i]; i++) {
+            free ((*descriptions)[i]);
+         }
+         free (*descriptions); *descriptions = NULL;
+      }
+   }
+
+   sqldb_res_del (res);
+
+   return !error;
+
+}
+
 

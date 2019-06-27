@@ -72,6 +72,9 @@
 #define group_rm \
 " DELETE FROM t_group WHERE c_name = #1;"
 
+#define group_info \
+" SELECT c_id, c_description FROM t_group WHERE c_name = #1;"
+
 ///////////////////////////////////////////////////////////////////
 
 #define STMT(x)      {#x, x }
@@ -91,6 +94,7 @@ static const struct {
 
    STMT (group_create),
    STMT (group_rm),
+   STMT (group_info),
 
 };
 #undef STMT

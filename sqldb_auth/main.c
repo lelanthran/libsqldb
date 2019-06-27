@@ -122,12 +122,12 @@ static bool create_groups (sqldb_t *db)
       const char *name;
       const char *descr;
    } groups[] = {
-      { "Group-1", "GROUP description: ONE"    },
-      { "Group-2", "GROUP description: TWO"    },
-      { "Group-3", "GROUP description: THREE"  },
-      { "Group-4", "GROUP description: FOUR"   },
-      { "Group-5", "GROUP description: FIVE"   },
-      { "Group-6", "GROUP description: SIX"    },
+      { "Group-One",    "GROUP description: ONE"    },
+      { "Group-Two",    "GROUP description: TWO"    },
+      { "Group-Three",  "GROUP description: THREE"  },
+      { "Group-Four",   "GROUP description: FOUR"   },
+      { "Group-Five",   "GROUP description: FIVE"   },
+      { "Group-Six",    "GROUP description: SIX"    },
    };
 
    sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
@@ -168,7 +168,7 @@ static bool list_groups (sqldb_t *db)
    char **descrs = NULL;
    uint64_t *ids = NULL;
 
-   if (!(sqldb_auth_group_find (db, "t%",
+   if (!(sqldb_auth_group_find (db, "group-t%", NULL,
                                 &nitems, &names, &descrs, &ids))) {
       PROG_ERR ("Failed to execute patterns for group searching\n");
       goto errorexit;
@@ -182,14 +182,15 @@ static bool list_groups (sqldb_t *db)
       char *n_descr = NULL;
 
       if (!(sqldb_auth_group_info (db, names[i], &n_id, &n_descr))) {
-         PROG_ERR ("Failed to get user info\n");
+         PROG_ERR ("Failed to get group info\n");
          goto errorexit;
       }
 
       printf ("L[%" PRIu64 "][%s][%s]\n", ids[i], names[i], descrs[i]);
 
-      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, n_name, n_descr);
+      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, names[i], n_descr);
 
+      free (n_descr);
       free (names[i]);
       free (descrs[i]);
    }
@@ -262,12 +263,10 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
-   /*
    if (!(list_groups (db))) {
       PROG_ERR ("Failed to list groups, aborting\n");
       goto errorexit;
    }
-   */
 
    ret = EXIT_SUCCESS;
 

@@ -124,7 +124,7 @@ extern "C" {
    // 'description' must be freed by the caller regardless of the return
    // value. If it is not NULL on entry to this function, this function will
    // free it before allocation storage for the description.
-   bool sqldb_auth_group_info (sqldb_t *db,
+   bool sqldb_auth_group_info (sqldb_t    *db,
                                const char *name,
                                uint64_t   *id_dst,
                                char      **description);
@@ -132,7 +132,7 @@ extern "C" {
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the name parameter to find the
    // record to update.
-   bool sqldb_auth_group_mod (sqldb_t *db,
+   bool sqldb_auth_group_mod (sqldb_t    *db,
                               const char *name,
                               const char *description);
 
@@ -193,8 +193,9 @@ extern "C" {
    //
    // The ids array stores each ID and the entire array (but not each
    // element) must be freed by the caller.
-   bool sqldb_auth_group_find (sqldb_t *db,
+   bool sqldb_auth_group_find (sqldb_t    *db,
                                const char *name_pattern,
+                               const char *description_pattern,
                                uint64_t   *nitems,
                                char     ***names,
                                char     ***descriptions,
