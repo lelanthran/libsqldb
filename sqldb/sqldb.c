@@ -750,6 +750,9 @@ uint64_t sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap)
    ret = sqldb_res_last_id (res);
 
 errorexit:
+   if (res && res->lasterr) {
+      db_err_printf (res->dbcon, "Error in [%s]: %s\n", query, res->lasterr);
+   }
    sqldb_res_del (res);
 
    return ret;

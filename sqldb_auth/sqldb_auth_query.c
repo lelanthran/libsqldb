@@ -84,9 +84,12 @@
 ///////////////////////////////////////////////////////////////////
 
 #define group_adduser \
-"INSERT INTO t_group_membership (c_user, c_group) VALUES "\
-"  ((SELECT c_id FROM t_user WHERE c_email=#1), "\
-"   (SELECT c_id FROM t_group WHERE c_name=#2)) "\
+"INSERT INTO t_group_membership (c_user, c_group) "\
+"  SELECT t_user.c_id, t_group.c_id FROM t_user, t_group "\
+"WHERE "\
+"     t_user.c_email=#1 "\
+"AND "\
+"     t_group.c_name=#2 "\
 " ;"
 
 
