@@ -481,8 +481,8 @@ bool sqldb_auth_group_adduser (sqldb_t    *db,
       goto errorexit;
    }
 
-   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
-                                        sqldb_col_TEXT, &email,
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_TEXT, &name,
                                         sqldb_col_UNKNOWN);
    if (rc==(uint64_t)-1) {
       goto errorexit;
@@ -807,6 +807,90 @@ bool sqldb_auth_group_members (sqldb_t    *db,
                                char     ***nicks,
                                uint64_t  **ids)
 {
+   bool error = true;
 
+   const char *qstring = NULL;
+   sqldb_res_t *res = NULL;
+
+   if (!(qstring = sqldb_auth_query ("group_membership"))) {
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &name,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute [%s]: %s\n", qstring, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   *nitems = 0;
+
+   if (emails) {
+      free (*emails); *emails = NULL;
+   }
+   if (nicks) {
+      free (*nicks); *nicks = NULL;
+   }
+   if (ids) {
+      free (*ids); *ids = NULL;
+   }
+
+   while (sqldb_res_step (res) == 1) {
+      char *email, *nick;
+      uint64_t id;
+
+      uint64_t newlen = *nitems + 1;
+      if (emails) {
+         char **tmp = realloc (*emails, (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         *emails = tmp;
+      }
+      if (nicks) {
+         char **tmp = realloc (*nicks, (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         *nicks = tmp;
+      }
+      if (ids) {
+         uint64_t *tmp = realloc ((*ids), (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         *ids = tmp;
+      }
+
+      if ((sqldb_scan_columns (res, sqldb_col_TEXT,   &email,
+                                    sqldb_col_TEXT,   &nick,
+                                    sqldb_col_UINT64, &id,
+                                    sqldb_col_UNKNOWN))!=3)
+         goto errorexit;
+
+      if (emails) {
+         (*emails)[newlen - 1] = email;
+      } else {
+         free (email);
+      }
+
+      if (nicks) {
+         (*nicks)[newlen - 1] = nick;
+      } else {
+         free (nick);
+      }
+
+      if (ids) {
+         (*ids)[newlen - 1] = id;
+      }
+
+      *nitems = newlen;
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
 }
 

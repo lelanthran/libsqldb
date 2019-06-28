@@ -92,6 +92,14 @@
 "     t_group.c_name=#2 "\
 " ;"
 
+#define group_membership \
+"SELECT t_user.c_email, t_user.c_nick, t_user.c_id "\
+"FROM t_user, t_group_membership, t_group "\
+"WHERE "\
+"     t_group.c_name=#1 "\
+"AND  t_user.c_id = t_group_membership.c_user "\
+"AND  t_group_membership.c_group = t_group.c_id  "\
+"ORDER BY t_user.c_email;"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -116,6 +124,7 @@ static const struct {
    STMT (group_info),
 
    STMT (group_adduser),
+   STMT (group_membership),
 
 };
 #undef STMT

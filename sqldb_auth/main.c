@@ -131,7 +131,7 @@ static bool create_groups (sqldb_t *db)
 {
    bool error = true;
 
-   // sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
+   sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
    for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
       if ((sqldb_auth_group_create (db, groups[i].name,
                                         groups[i].descr))==(uint64_t)-1) {
@@ -180,7 +180,7 @@ static bool create_groups (sqldb_t *db)
    error = false;
 
 errorexit:
-   // sqldb_batch (db, "COMMIT;", NULL);
+   sqldb_batch (db, "COMMIT;", NULL);
 
    return !error;
 }
@@ -240,12 +240,16 @@ static bool list_memberships (sqldb_t *db)
            **nicks = NULL;
       uint64_t *ids = NULL;
 
-      if (!(sqldb_auth_group_members (db, groups[i].name, &nitems,
-                                                          &emails,
-                                                          &nicks,
-                                                          &ids))) {
+      char name[30];
+
+      sprintf (name, "%s-%zu", groups[i].name, i);
+
+      if (!(sqldb_auth_group_members (db, name, &nitems,
+                                                &emails,
+                                                &nicks,
+                                                &ids))) {
          PROG_ERR ("Failed to get membership for [%s]: %s\n",
-                   groups[i].name,
+                   name,
                    sqldb_lasterr (db));
          goto errorexit;
       }
