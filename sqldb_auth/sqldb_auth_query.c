@@ -92,6 +92,13 @@
 "     t_group.c_name=#2 "\
 " ;"
 
+#define group_rmuser \
+"DELETE FROM t_group_membership "\
+"WHERE "\
+"     c_group = (SELECT c_id FROM t_group WHERE c_name=#1) "\
+"AND "\
+"     c_user = (SELECT c_id FROM t_user WHERE c_email=#2);"
+
 #define group_membership \
 "SELECT t_user.c_email, t_user.c_nick, t_user.c_id "\
 "FROM t_user, t_group_membership, t_group "\
@@ -124,6 +131,7 @@ static const struct {
    STMT (group_info),
 
    STMT (group_adduser),
+   STMT (group_rmuser),
    STMT (group_membership),
 
 };

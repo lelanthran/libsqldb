@@ -1,6 +1,3 @@
-:sqldb_auth/main.c:281: Testing sqldb_auth version [0.1.3]
-:sqldb_auth/main.c:147: Failed to add [one@email.com] to group [Group-One]
-:sqldb_auth/main.c:325: Failed to create groups, aborting
 Created user [one@email.com,ONE]
 Created user [two@email.com,TWO]
 Created user [three@email.com,THREE]
@@ -16,8 +13,74 @@ Created user [four@email.com,FOUR]
 Created user [seven@email.com,SEVEN]
 Created user [ten@email.com,TEN]
 Found 2 users
-L[2][two@email.com][4a50afd00c38424edcaca02523b109e769d635593ac97251bbf26f671446165e]
-I[2][4a50afd00c38424edcaca02523b109e769d635593ac97251bbf26f671446165e][]
-L[3][three@email.com][97c52fa4fe72f2db1f93004244092aaee060071a297a6be46cda4b802162dfb8]
-I[3][97c52fa4fe72f2db1f93004244092aaee060071a297a6be46cda4b802162dfb8][]
+L[2][two@email.com][101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8]
+I[2][101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8][]
+L[3][three@email.com][624913930bc43a4efc2064d9459b935746a0e9bcfebc7d0041346c2a775123da]
+I[3][624913930bc43a4efc2064d9459b935746a0e9bcfebc7d0041346c2a775123da][]
 Created group [Group-One,GROUP description: ONE]
+Created group [Group-Two,GROUP description: TWO]
+Created group [Group-Three,GROUP description: THREE]
+Created group [Group-Four,GROUP description: FOUR]
+Created group [Group-Five,GROUP description: FIVE]
+Created group [Group-Six,GROUP description: SIX]
+Created group [Group-One,GROUP description: ONE]
+Created group [Group-Four,GROUP description: FOUR]
+Found 2 groups
+L[2][Group-Two-1][GROUP description: TWO-1]
+I[2][Group-Two-1][GROUP description: TWO-1]
+L[3][Group-Three-2][GROUP description: THREE-2]
+I[3][Group-Three-2][GROUP description: THREE-2]
+Group Group-One has 3 members
+8, eight@email.com, 41f7203e9c563f39bd3b1bd92fe12a1934a3f80de240dca423aea531620600a3
+5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+-----------------------------
+Group Group-Two has 3 members
+8, eight@email.com, 41f7203e9c563f39bd3b1bd92fe12a1934a3f80de240dca423aea531620600a3
+5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+-----------------------------
+Group Group-Three has 3 members
+8, eight@email.com, 41f7203e9c563f39bd3b1bd92fe12a1934a3f80de240dca423aea531620600a3
+5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+-----------------------------
+Group Group-Four has 3 members
+8, eight@email.com, 41f7203e9c563f39bd3b1bd92fe12a1934a3f80de240dca423aea531620600a3
+5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+-----------------------------
+Group Group-Five has 3 members
+8, eight@email.com, 41f7203e9c563f39bd3b1bd92fe12a1934a3f80de240dca423aea531620600a3
+5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+-----------------------------
+Group Group-Six has 3 members
+8, eight@email.com, 41f7203e9c563f39bd3b1bd92fe12a1934a3f80de240dca423aea531620600a3
+5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+-----------------------------
+>>Group Group-One has 2 members
+>>5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+>>2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+>>========================================
+>>Group Group-Two has 2 members
+>>5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+>>2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+>>========================================
+>>Group Group-Three has 2 members
+>>5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+>>2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+>>========================================
+>>Group Group-Four has 2 members
+>>5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+>>2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+>>========================================
+>>Group Group-Five has 2 members
+>>5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+>>2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+>>========================================
+>>Group Group-Six has 2 members
+>>5, five@email.com, d26904cc11fac4da5594e84af74e86fb9d7efea9f301f89d7170be330cba90de
+>>2, two@email.com, 101e641a31c2b1a64237e615dc2437b912ab0d92755dd2c00285b76ce843e4f8
+>>========================================

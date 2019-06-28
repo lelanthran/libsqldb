@@ -495,6 +495,30 @@ errorexit:
    return !error;
 }
 
+bool sqldb_auth_group_rmuser (sqldb_t    *db,
+                              const char *name, const char *email)
+{
+   bool error = true;
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!(qstring = sqldb_auth_query ("group_rmuser")))
+      goto errorexit;
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
+                                        sqldb_col_TEXT, &email,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc==-1)
+      goto errorexit;
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
 bool sqldb_auth_user_find (sqldb_t    *db,
                            const char *email_pattern,
                            const char *nick_pattern,
@@ -890,6 +914,8 @@ bool sqldb_auth_group_members (sqldb_t    *db,
    error = false;
 
 errorexit:
+
+   sqldb_res_del (res);
 
    return !error;
 }

@@ -259,18 +259,70 @@ static bool list_memberships (sqldb_t *db)
          printf ("%" PRIu64 ", %s, %s\n", ids[j],
                                           emails[j],
                                           nicks[j]);
+         if (j==0) {
+            if (!(sqldb_auth_group_rmuser (db, name, emails[j]))) {
+               PROG_ERR ("Failed to remove user [%s/%s] from group [%s]\n%s\n",
+                           emails[j], nicks[j], name, sqldb_lasterr (db));
+               goto errorexit;
+            }
+         }
          free (emails[j]);
          free (nicks[j]);
       }
       free (emails);
       free (nicks);
       free (ids);
+
+      emails = NULL;
+      nicks = NULL;
+      ids = NULL;
+
+      printf ("-----------------------------\n");
+   }
+
+   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
+      uint64_t nitems = 0;
+      char **emails = NULL,
+           **nicks = NULL;
+      uint64_t *ids = NULL;
+
+      char name[30];
+
+      sprintf (name, "%s-%zu", groups[i].name, i);
+
+      if (!(sqldb_auth_group_members (db, name, &nitems,
+                                                &emails,
+                                                &nicks,
+                                                &ids))) {
+         PROG_ERR (">>Failed to get membership for [%s]: %s\n",
+                   name,
+                   sqldb_lasterr (db));
+         goto errorexit;
+      }
+
+      printf (">>Group %s has %" PRIu64 " members\n", groups[i].name, nitems);
+      for (uint64_t j=0; j<nitems; j++) {
+         printf (">>%" PRIu64 ", %s, %s\n", ids[j],
+                                          emails[j],
+                                          nicks[j]);
+         free (emails[j]);
+         free (nicks[j]);
+      }
+      free (emails);
+      free (nicks);
+      free (ids);
+
+      emails = NULL;
+      nicks = NULL;
+      ids = NULL;
+
+      printf (">>========================================\n");
    }
 
    error = false;
 
 errorexit:
-   return error;
+   return !error;
 }
 
 
