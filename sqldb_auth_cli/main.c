@@ -494,6 +494,8 @@ static bool cmd_help (char **args)
 
 static bool cmd_create (char **args)
 {
+   printf ("Creating empty sqlite database [%s]\n", args[1]);
+
    bool ret = sqldb_create (args[1], sqldb_SQLITE);
 
    if (ret) {
@@ -541,6 +543,12 @@ static bool cmd_init (char **args)
 
 errorexit:
 
+   sqldb_close (db);
+
+   if (!error) {
+      printf ("Initialised [%s] database [%s] for use with sqldb_auth.\n",
+               args[1], args[2]);
+   }
    return !error;
 }
 
@@ -671,13 +679,11 @@ int main (int argc, char **argv)
 
    if ((strcmp (cmd->cmd, "create"))==0) {
       ret = cmd_create (args) ? EXIT_SUCCESS : EXIT_FAILURE;
-      ret = EXIT_SUCCESS;
       goto errorexit;
    }
 
    if ((strcmp (cmd->cmd, "init"))==0) {
       ret = cmd_init (args) ? EXIT_SUCCESS : EXIT_FAILURE;
-      ret = EXIT_SUCCESS;
       goto errorexit;
    }
 
