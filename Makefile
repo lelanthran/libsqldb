@@ -9,6 +9,7 @@ LIBNAME=sqldb
 SUBPROJS=\
 	sqldb\
 	sqldb_auth\
+	sqldb_auth_cli\
 	sqlite3
 
 # Your extra include directories, for headers that are not in the path.
