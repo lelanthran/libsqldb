@@ -214,331 +214,170 @@ errorexit:
    return ret;
 }
 
+/* ******************************************************************** */
+
 #define PROG_ERR(...)      do {\
       fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
-static const struct {
-   const char *email;
-   const char *nick;
-} users[] = {
-   { "one@email.com",   "ONE"    },
-   { "two@email.com",   "TWO"    },
-   { "three@email.com", "THREE"  },
-   { "four@email.com",  "FOUR"   },
-   { "five@email.com",  "FIVE"   },
-   { "six@email.com",   "SIX"    },
-   { "seven@email.com", "SEVEN"  },
-   { "eight@email.com", "EIGHT"  },
-   { "nine@email.com",  "NINE"   },
-   { "ten@email.com",   "TEN"    },
-};
 
-static const struct {
-   const char *name;
-   const char *descr;
-} groups[] = {
-   { "Group-One",    "GROUP description: ONE"    },
-   { "Group-Two",    "GROUP description: TWO"    },
-   { "Group-Three",  "GROUP description: THREE"  },
-   { "Group-Four",   "GROUP description: FOUR"   },
-   { "Group-Five",   "GROUP description: FIVE"   },
-   { "Group-Six",    "GROUP description: SIX"    },
-};
-
-
-static bool create_users (sqldb_t *db)
+static void print_help_msg (const char *cmd)
 {
-   bool error = true;
+#define COMMAND_HELP    \
+"  help <command>"\
+"     Provide the help message for the specified command <command>."\
+""
+#define USER_NEW_MSG    \
+"  user_new <email> <nick> <password> ",\
+"     Create a new user, using specified <email>, <nick> and <password>.",\
+""
+#define USER_DEL_MSG    \
+"  user_del <email> ",\
+"     Delete the user with the specified <email>.",\
+""
+#define USER_MOD_MSG    \
+"  user_mod <email> <new-email> <new-nick> <new-password>",\
+"     Modify the user record specified with <email>, setting the new email,",\
+"     nick and password.",\
+""
+#define USER_INFO_MSG    \
+"  user_info <email> ",\
+"     Display all the user info for the record specified with <email>.",\
+""
+#define USER_FIND_MSG    \
+"  user_find <email-pattern> <nick-pattern>",\
+"     Find users matching either the <email-pattern> or <nick-pattern>. The",\
+"     pattern must match the rules for 'SQL LIKE' globbing patterns:",\
+"        \%: Matches zero or more wildcard characters",\
+"        _: Matches a single wildcard character",\
+""
+#define USER_PERMS_MSG    \
+"  user_perms <email> <resource>",\
+"     Display the permission bits of the user specified with <email> for the",\
+"     resource specified with <resource>. Only the actual permissions of the",\
+"     user is displayed; permissions inherited from group membership will not",\
+"     be displayed.",\
+"     To display the effective permissions of a user use the 'perms' command",\
+"     below.",\
+"     See '--display-bits' for display options.",\
+""
 
-   sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
-   for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
-      if ((sqldb_auth_user_create (db, users[i].email,
-                                       users[i].nick,
-                                       "123456"))==(uint64_t)-1) {
-         PROG_ERR ("Failed to create user [%s]\n%s\n", users[i].email,
-                                                       sqldb_lasterr (db));
-         goto errorexit;
-      }
+#define GROUP_NEW_MSG    \
+"  group_new <name> <description> ",\
+"     Create a new group, using specified <name> and <description>.",\
+""
+#define GROUP_DEL_MSG    \
+"  group_del <name> ",\
+"     Delete the group with the specified <name>.",\
+""
+#define GROUP_MOD_MSG    \
+"  group_mod <name> <new-name> <new-description>",\
+"     Modify the group record specified with <name>, setting the new name,",\
+"     and description.",\
+""
+#define GROUP_INFO_MSG    \
+"  group_info <name>",\
+"     Display all the group info for the record specified with <name>.",\
+""
+#define GROUP_FIND_MSG    \
+"  group_find <name-pattern> <description-pattern>",\
+"     Find groups matching either the <name-pattern> or <description-pattern>.",\
+"     The pattern must match the rules for 'SQL LIKE' globbing patterns:",\
+"        \%: Matches zero or more wildcard characters",\
+"        _: Matches a single wildcard character",\
+""
+#define GROUP_PERMS_MSG    \
+"  group_perms <name> <resource>",\
+"     Display the permission bits of the group specified with <name> for the",\
+"     resource specified with <resource>.",\
+"     See '--display-bits' for display options.",\
+""
 
-      printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
-   }
+#define GROUP_ADDUSER_MSG    \
+"  group_adduser <name> <email>",\
+"     Add the user specified by <email> to the group specified by <name>.",\
+""
+#define GROUP_RMUSER_MSG    \
+"  group_rmuser <name> <email>",\
+"     Remove the user specified by <email> from the group specified by <name>.",\
+""
+#define GROUP_MEMBERS_MSG    \
+"  group_members <name>",\
+"     List all the users in the group specified by <name>.",\
+""
 
-   for (size_t i=0; i<sizeof users/sizeof users[0]; i+=3) {
-      if (!(sqldb_auth_user_rm (db, users[i].email))) {
-         PROG_ERR ("Failed to remove user [%s]\n%s\n", users[i].email,
-                                                       sqldb_lasterr (db));
-         goto errorexit;
-      }
+#define GRANT_MSG    \
+"  grant <email> <resource> <bit-number [ | bit-number | ...]",\
+"     Allow user specified by <email> access to the resource specified by",\
+"     <resource>. The nature of the access is specified by one or more",\
+"     <bit-number> specifiers.",\
+""
+#define REVOKE_MSG    \
+"  revoke <email> <resource> <bit-number [ | bit-number | ...]",\
+"     Revoke access to the resource specified by <resource> for user specified",\
+"     by <email>. The nature of the access is specified by one or more",\
+"     <bit-number> specifiers.",\
+""
+#define PERMS_MSG    \
+"  perms <email> <resource>",\
+"     Display the *EFFECTIVE* permission bits of the user specified with",\
+"     <email> for the resource specified with <resource>. The effective",\
+"     permissions include all the permissions inherited from group",\
+"     membership.",\
+"     See '--display-bits' for display options.",\
+""
+   static const struct {
+      const char *cmd;
+      const char *msg[20];
+   } cmd_help[] = {
+      { "help",            { COMMAND_HELP       }  },
 
-      printf ("Created user [%s,%s]\n", users[i].email, users[i].nick);
-   }
+      { "user_new",        { USER_NEW_MSG       }  },
+      { "user_del",        { USER_DEL_MSG       }  },
+      { "user_mod",        { USER_MOD_MSG       }  },
+      { "user_info",       { USER_INFO_MSG      }  },
+      { "user_find",       { USER_FIND_MSG      }  },
+      { "user_perms",      { USER_PERMS_MSG     }  },
 
-   error = false;
+      { "group_new",       { GROUP_NEW_MSG      }  },
+      { "group_del",       { GROUP_DEL_MSG      }  },
+      { "group_mod",       { GROUP_MOD_MSG      }  },
+      { "group_info",      { GROUP_INFO_MSG     }  },
+      { "group_find",      { GROUP_FIND_MSG     }  },
+      { "group_perms",     { GROUP_PERMS_MSG    }  },
 
-errorexit:
+      { "group_adduser",   { GROUP_ADDUSER_MSG  }  },
+      { "group_rmuser",    { GROUP_RMUSER_MSG   }  },
+      { "group_members",   { GROUP_MEMBERS_MSG  }  },
 
-   sqldb_batch (db, "COMMIT;", NULL);
+      { "grant",           { GRANT_MSG          }  },
+      { "revoke",          { REVOKE_MSG         }  },
+      { "perms",           { PERMS_MSG          }  },
+   };
 
-   return !error;
-}
-
-static bool list_users (sqldb_t *db)
-{
-   bool error = true;
-   uint64_t nitems = 0;
-   char **emails = NULL;
-   char **nicks = NULL;
-   uint64_t *ids = NULL;
-
-   if (!(sqldb_auth_user_find (db, "t%", NULL,
-                               &nitems, &emails, &nicks, &ids))) {
-      PROG_ERR ("Failed to execute patterns for user searching\n");
-      goto errorexit;
-   }
-
-   printf ("Found %" PRIu64 " users\n", nitems);
-
-   for (uint64_t i=0; i<nitems; i++) {
-      uint64_t n_id = 0;
-      char *n_nick = NULL;
-      char sess[65];
-
-      if (!(sqldb_auth_user_info (db, emails[i], &n_id, &n_nick, sess))) {
-         PROG_ERR ("Failed to get user info\n");
-         goto errorexit;
-      }
-
-      printf ("L[%" PRIu64 "][%s][%s]\n", ids[i], emails[i], nicks[i]);
-
-      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, n_nick, sess);
-
-      free (emails[i]);
-      free (nicks[i]);
-      free (n_nick);
-   }
-
-   free (ids);
-   free (emails);
-   free (nicks);
-
-   error = false;
-
-errorexit:
-
-   return !error;
-}
-
-static bool create_groups (sqldb_t *db)
-{
-   bool error = true;
-
-   sqldb_batch (db, "BEGIN TRANSACTION;", NULL);
-   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
-      if ((sqldb_auth_group_create (db, groups[i].name,
-                                        groups[i].descr))==(uint64_t)-1) {
-         PROG_ERR ("Failed to create group [%s]\n%s\n", groups[i].name,
-                                                        sqldb_lasterr (db));
-         goto errorexit;
-      }
-
-      printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
-
-      for (size_t j=1; j<sizeof users/sizeof users[0]; j+=3) {
-         if (!(sqldb_auth_group_adduser (db, groups[i].name, users[j].email))) {
-            PROG_ERR ("Failed to add [%s] to group [%s]: %s\n",
-                       users[j].email, groups[i].name,
-                       sqldb_lasterr (db));
-            goto errorexit;
-         }
-      }
-   }
-
-   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
-      char name[30],
-           descr[100];
-
-      sprintf (name, "%s-%zu", groups[i].name, i);
-      sprintf (descr, "%s-%zu", groups[i].descr, i);
-
-      if (!(sqldb_auth_group_mod (db, groups[i].name, name, descr))) {
-         PROG_ERR ("Failed to modify group [%s][%s]=>[%s][%s]\n",
-                   groups[i].name, groups[i].descr,
-                   name, descr);
-         goto errorexit;
-      }
-   }
-
-   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i+=3) {
-      if (!(sqldb_auth_group_rm (db, groups[i].name))) {
-         PROG_ERR ("Failed to remove group [%s]\n%s\n", groups[i].name,
-                                                        sqldb_lasterr (db));
-         goto errorexit;
-      }
-
-      printf ("Created group [%s,%s]\n", groups[i].name, groups[i].descr);
-   }
-
-   error = false;
-
-errorexit:
-   sqldb_batch (db, "COMMIT;", NULL);
-
-   return !error;
-}
-
-static bool list_groups (sqldb_t *db)
-{
-   bool error = true;
-   uint64_t nitems = 0;
-   char **names = NULL;
-   char **descrs = NULL;
-   uint64_t *ids = NULL;
-
-   if (!(sqldb_auth_group_find (db, "group-t%", NULL,
-                                &nitems, &names, &descrs, &ids))) {
-      PROG_ERR ("Failed to execute patterns for group searching\n");
-      goto errorexit;
-   }
-
-   printf ("Found %" PRIu64 " groups\n", nitems);
-
-   for (uint64_t i=0; i<nitems; i++) {
-      uint64_t n_id = 0;
-      char *n_descr = NULL;
-
-      if (!(sqldb_auth_group_info (db, names[i], &n_id, &n_descr))) {
-         PROG_ERR ("Failed to get group info\n");
-         goto errorexit;
-      }
-
-      printf ("L[%" PRIu64 "][%s][%s]\n", ids[i], names[i], descrs[i]);
-
-      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, names[i], n_descr);
-
-      free (n_descr);
-      free (names[i]);
-      free (descrs[i]);
-   }
-
-   free (ids);
-   free (names);
-   free (descrs);
-
-   error = false;
-
-errorexit:
-
-   return !error;
-}
-
-static bool list_memberships (sqldb_t *db)
-{
-   bool error = false;
-
-   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
-      uint64_t nitems = 0;
-      char **emails = NULL,
-           **nicks = NULL;
-      uint64_t *ids = NULL;
-
-      char name[30];
-
-      sprintf (name, "%s-%zu", groups[i].name, i);
-
-      if (!(sqldb_auth_group_members (db, name, &nitems,
-                                                &emails,
-                                                &nicks,
-                                                &ids))) {
-         PROG_ERR ("Failed to get membership for [%s]: %s\n",
-                   name,
-                   sqldb_lasterr (db));
-         goto errorexit;
-      }
-
-      printf ("Group %s has %" PRIu64 " members\n", groups[i].name, nitems);
-      for (uint64_t j=0; j<nitems; j++) {
-         printf ("%" PRIu64 ", %s, %s\n", ids[j],
-                                          emails[j],
-                                          nicks[j]);
-         if (j==0) {
-            if (!(sqldb_auth_group_rmuser (db, name, emails[j]))) {
-               PROG_ERR ("Failed to remove user [%s/%s] from group [%s]\n%s\n",
-                           emails[j], nicks[j], name, sqldb_lasterr (db));
-               goto errorexit;
-            }
-         }
-         free (emails[j]);
-         free (nicks[j]);
-      }
-      free (emails);
-      free (nicks);
-      free (ids);
-
-      emails = NULL;
-      nicks = NULL;
-      ids = NULL;
-
-      printf ("-----------------------------\n");
-   }
-
-   for (size_t i=0; i<sizeof groups/sizeof groups[0]; i++) {
-      uint64_t nitems = 0;
-      char **emails = NULL,
-           **nicks = NULL;
-      uint64_t *ids = NULL;
-
-      char name[30];
-
-      sprintf (name, "%s-%zu", groups[i].name, i);
-
-      if (!(sqldb_auth_group_members (db, name, &nitems,
-                                                &emails,
-                                                &nicks,
-                                                &ids))) {
-         PROG_ERR (">>Failed to get membership for [%s]: %s\n",
-                   name,
-                   sqldb_lasterr (db));
-         goto errorexit;
-      }
-
-      printf (">>Group %s has %" PRIu64 " members\n", groups[i].name, nitems);
-      for (uint64_t j=0; j<nitems; j++) {
-         printf (">>%" PRIu64 ", %s, %s\n", ids[j],
-                                          emails[j],
-                                          nicks[j]);
-         free (emails[j]);
-         free (nicks[j]);
-      }
-      free (emails);
-      free (nicks);
-      free (ids);
-
-      emails = NULL;
-      nicks = NULL;
-      ids = NULL;
-
-      printf (">>========================================\n");
-   }
-
-   error = false;
-
-errorexit:
-   return !error;
-}
-
-static void print_help_msg (void)
-{
    static const char *msg[] = {
 "sqldb_auth: A command-line program to manage user, groups and permissions",
 "using the sqldb_auth module.",
 "",
-"USAGE:",
-"sqldb_auth [options] <command>",
+"-----",
+"USAGE",
+"-----",
+"     sqldb_auth help <command>",
+"     sqldb_auth [options] <command>",
+"     sqldb_auth <command> [options]",
+"",
+"The first form of usage displays the builtin help on every command. The",
+"second and third forms of usage are identical in behaviour and serve to",
+"show that commands and options may be interspersed.",
+"",
+"Options are of the form of  '--name=value' while commands and command",
+"arguments are positional.",
 "",
 "",
-"OPTIONS:",
+"-------",
+"OPTIONS",
+"-------",
 " --help",
 "     Print this message, then exit.",
 "",
@@ -558,87 +397,114 @@ static void print_help_msg (void)
 "  Specifies the format to display permission bits in. Defaults to binary.",
 "",
 "",
-"USER COMMANDS:",
-"  user_new <email> <nick> <password> ",
-"     Create a new user, using specified <email>, <nick> and <password>.",
-"  user_del <email> ",
-"     Delete the user with the specified <email>.",
-"  user_mod <email> <new-email> <new-nick> <new-password>",
-"     Modify the user record specified with <email>, setting the new email,",
-"     nick and password.",
-"  user_info <email> ",
-"     Display all the user info for the record specified with <email>.",
-"  user_find <email-pattern> <nick-pattern>",
-"     Find users matching either the <email-pattern> or <nick-pattern>. The",
-"     pattern must match the rules for 'SQL LIKE' globbing patterns:",
-"        \%: Matches zero or more wildcard characters",
-"        _: Matches a single wildcard character",
-"  user_perms <email> <resource>",
-"     Display the permission bits of the user specified with <email> for the",
-"     resource specified with <resource>. Only the actual permissions of the",
-"     user is displayed; permissions inherited from group membership will not",
-"     be displayed.",
-"     To display the effective permissions of a user use the 'perms' command",
-"     below.",
-"     See '--display-bits' for display options.",
-"",
-"GROUP COMMANDS:",
-"  group_new <name> <description> ",
-"     Create a new group, using specified <name> and <description>.",
-"  group_del <name> ",
-"     Delete the group with the specified <name>.",
-"  group_mod <name> <new-name> <new-description>",
-"     Modify the group record specified with <name>, setting the new name,",
-"     and description.",
-"  group_info <name>",
-"     Display all the group info for the record specified with <name>.",
-"  group_find <name-pattern> <description-pattern>",
-"     Find groups matching either the <name-pattern> or <description-pattern>.",
-"     The pattern must match the rules for 'SQL LIKE' globbing patterns:",
-"        \%: Matches zero or more wildcard characters",
-"        _: Matches a single wildcard character",
-"  group_perms <name> <resource>",
-"     Display the permission bits of the group specified with <name> for the",
-"     resource specified with <resource>.",
-"     See '--display-bits' for display options.",
+"-------------",
+"USER COMMANDS",
+"-------------",
+USER_NEW_MSG,
+USER_DEL_MSG,
+USER_MOD_MSG,
+USER_INFO_MSG,
+USER_FIND_MSG,
+USER_PERMS_MSG,
 "",
 "",
-"GROUP MEMBERSHIP COMMANDS:",
-"  group_adduser <name> <email>",
-"     Add the user specified by <email> to the group specified by <name>.",
-"  group_rmuser <name> <email>",
-"     Remove the user specified by <email> from the group specified by <name>.",
-"  group_members <name>",
-"     List all the users in the group specified by <name>.",
+"--------------",
+"GROUP COMMANDS",
+"--------------",
+GROUP_NEW_MSG,
+GROUP_DEL_MSG,
+GROUP_MOD_MSG,
+GROUP_INFO_MSG,
+GROUP_FIND_MSG,
+GROUP_PERMS_MSG,
 "",
-"PERMISSION COMMANDS:",
-"  grant <email> <resource> <bit-number [ | bit-number | ...]",
-"     Allow user specified by <email> access to the resource specified by",
-"     <resource>. The nature of the access is specified by one or more",
-"     <bit-number> specifiers.",
-"  revoke <email> <resource> <bit-number [ | bit-number | ...]",
-"     Revoke access to the resource specified by <resource> for user specified",
-"     by <email>. The nature of the access is specified by one or more",
-"     <bit-number> specifiers.",
 "",
-"  perms <email> <resource>",
-"     Display the *EFFECTIVE* permission bits of the user specified with",
-"     <email> for the resource specified with <resource>. The effective",
-"     permissions include all the permissions inherited from group",
-"     membership.",
-"     See '--display-bits' for display options.",
+"-------------------------",
+"GROUP MEMBERSHIP COMMANDS",
+"-------------------------",
+GROUP_ADDUSER_MSG,
+GROUP_RMUSER_MSG,
+GROUP_MEMBERS_MSG,
 "",
-
+"",
+"-------------------",
+"PERMISSION COMMANDS",
+"-------------------",
+GRANT_MSG,
+REVOKE_MSG,
+PERMS_MSG,
+"",
+"",
    };
 
-   for (size_t i=0; i<sizeof msg/sizeof msg[0]; i++) {
-      printf ("%s\n", msg[i]);
+   if (!cmd) {
+      for (size_t i=0; i<sizeof msg/sizeof msg[0]; i++) {
+         printf ("%s\n", msg[i]);
+      }
+      return;
    }
+
+   for (size_t i=0; i<sizeof cmd_help/sizeof cmd_help[0]; i++) {
+      if ((strcmp (cmd_help[i].cmd, cmd))==0) {
+         for (size_t j=0;
+              j<sizeof cmd_help[i].msg/sizeof cmd_help[i].msg[0];
+              j++) {
+            if (cmd_help[i].msg[j]) {
+               printf ("%s\n", cmd_help[i].msg[j]);
+            }
+         }
+         return;
+      }
+   }
+   printf ("   (Unrecognised command [%s]\n", cmd);
+}
+
+static bool help_cmd (char **args)
+{
+   printf ("\n\nHow to use command [%s]:\n", args[1]);
+   print_help_msg (args[1]);
+   return true;
+}
+
+static bool user_new (char **args)
+{
+   return false;
 }
 
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
+
+   static const struct {
+      const char *cmd;
+      bool (*fptr) (char **args);
+      size_t min_args;
+      size_t max_args;
+   } cmds[] = {
+      { "help",               help_cmd, 1, 1 },
+
+      { "user_new",           user_new, 3, 3 },
+      { "user_del",           user_new, 1, 1 },
+      { "user_mod",           user_new, 4, 4 },
+      { "user_info",          user_new, 1, 1 },
+      { "user_find",          user_new, 2, 2 },
+      { "user_perms",         user_new, 2, 2 },
+
+      { "group_new",          user_new, 2, 2 },
+      { "group_del",          user_new, 1, 1 },
+      { "group_mod",          user_new, 3, 3 },
+      { "group_info",         user_new, 1, 1 },
+      { "group_find",         user_new, 2, 2 },
+      { "group_perms",        user_new, 2, 2 },
+
+      { "group_adduser",      user_new, 2, 2 },
+      { "group_rmuser",       user_new, 2, 2 },
+      { "group_members",      user_new, 1, 1 },
+
+      { "grant",              user_new, 3, 67 },
+      { "revoke",             user_new, 3, 67 },
+      { "perms",              user_new, 2, 2 },
+   };
 
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
    sqldb_t *db = NULL;
@@ -646,11 +512,13 @@ int main (int argc, char **argv)
 
    const char *opt_help = NULL,
               *opt_dbtype = NULL,
-              *opt_dbconn = NULL;
-
+              *opt_dbconn = NULL,
+              *opt_display_bits = NULL;
    char **args = NULL, **lopts = NULL, **sopts = NULL;
    size_t nopts = 0;
 
+
+   /* Preliminary stuff, initialisation, parsing commands, etc */
    printf ("Using:\n"
            "   sqldb_auth version [%s]\n"
            "   sqlite version [%s]\n",
@@ -664,57 +532,51 @@ int main (int argc, char **argv)
    opt_help = find_opt (lopts, "help", sopts, 'h');
    opt_dbtype = find_opt (lopts, "dbtype", sopts, 'D');
    opt_dbconn = find_opt (lopts, "db", sopts, 'C');
+   opt_display_bits = find_opt (lopts, "display-bits", sopts, 'd');
 
    if (opt_help) {
-      print_help_msg ();
+      print_help_msg (NULL);
       ret = EXIT_SUCCESS;
       goto errorexit;
    }
 
-   if (argc <= 1) {
-      PROG_ERR ("Failed to specify one of 'sqlite' or 'postgres'\n");
-      return EXIT_FAILURE;
+   if ((strcmp (args[0], "help"))==0) {
+      help_cmd (args);
+      ret = EXIT_SUCCESS;
+      goto errorexit;
    }
 
-   if (!dbname || dbtype==sqldb_UNKNOWN) {
-      PROG_ERR ("Failed to specify one of 'sqlite' or 'postgres'\n");
-      return EXIT_FAILURE;
+   opt_dbtype = opt_dbtype ? opt_dbtype : "sqlite";
+   dbname = opt_dbconn ? opt_dbconn : "sqldb_auth.sql3";
+
+   /* Figure out what database type we are using */
+
+   dbtype = sqldb_UNKNOWN;
+
+   if ((strcmp (opt_dbtype, "sqlite"))==0) {
+      dbtype = sqldb_SQLITE;
    }
 
+   if ((strcmp (opt_dbtype, "postgres"))==0) {
+      dbtype = sqldb_POSTGRES;
+   }
+
+   if (dbtype==sqldb_UNKNOWN) {
+      PROG_ERR ("Unrecognised dbtype [%s].\n", opt_dbtype);
+      goto errorexit;
+   }
+
+
+   /* Open the specified database, using the specified type. */
    if (!(db = sqldb_open (dbname, dbtype))) {
-      PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      PROG_ERR ("Unable to open [%s] database using [%s] connection\n"
+                "Error:%s\n", opt_dbtype, opt_dbconn, sqldb_lasterr (db));
       goto errorexit;
    }
 
    if (!(sqldb_auth_initdb (db))) {
       PROG_ERR ("Failed to initialise the db for auth module [%s]\n",
                   sqldb_lasterr (db));
-      goto errorexit;
-   }
-
-
-   if (!(create_users (db))) {
-      PROG_ERR ("Failed to create users, aborting\n");
-      goto errorexit;
-   }
-
-   if (!(list_users (db))) {
-      PROG_ERR ("Failed to list users, aborting\n");
-      goto errorexit;
-   }
-
-   if (!(create_groups (db))) {
-      PROG_ERR ("Failed to create groups, aborting\n");
-      goto errorexit;
-   }
-
-   if (!(list_groups (db))) {
-      PROG_ERR ("Failed to list groups, aborting\n");
-      goto errorexit;
-   }
-
-   if (!(list_memberships (db))) {
-      PROG_ERR ("Failed to list the group members. aborting\n");
       goto errorexit;
    }
 
