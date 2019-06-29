@@ -716,13 +716,6 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
-   if (!(sqldb_auth_initdb (db))) {
-      PROG_ERR ("Failed to initialise the db for auth module [%s]\n",
-                  sqldb_lasterr (db));
-      goto errorexit;
-   }
-
-
    ret = EXIT_SUCCESS;
 
 errorexit:
