@@ -5,6 +5,10 @@
 #include <inttypes.h>
 #include <time.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 // TODO: The blob type was not tested!
 
 #include "sqlite3/sqlite3.h"
@@ -42,6 +46,7 @@ bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
 {
    sqlite3 *newdb = NULL;
    bool ret = false;
+   struct stat sb;
 
    if (type!=sqldb_SQLITE)
       return true;
@@ -49,11 +54,17 @@ bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
    if (!dbname)
       return false;
 
+   memset (&sb, 0, sizeof sb);
+   if ((stat (dbname, &sb))==0) {
+      PROG_ERR ("File [%s] exists; refusing to overwrite\n", dbname);
+      goto errorexit;
+   }
+
    int mode = (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
    int rc = sqlite3_open_v2 (dbname, &newdb, mode, NULL);
    if (rc!=SQLITE_OK) {
       PROG_ERR ("(%s) Unable to create sqlite file - %s [%m]\n",
-               dbname, sqlite3_errstr (rc));
+                dbname, sqlite3_errstr (rc));
       goto errorexit;
    }
 

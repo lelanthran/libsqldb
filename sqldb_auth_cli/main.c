@@ -215,6 +215,7 @@ errorexit:
 }
 
 /* ******************************************************************** */
+/* ******************************************************************** */
 
 #define PROG_ERR(...)      do {\
       fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
@@ -225,8 +226,22 @@ errorexit:
 static void print_help_msg (const char *cmd)
 {
 #define COMMAND_HELP    \
-"  help <command>"\
-"     Provide the help message for the specified command <command>."\
+"  help <command>",\
+"     Provide the help message for the specified command <command>.",\
+""
+#define COMMAND_CREATE    \
+"  create ",\
+"     Creates a new, empty sqlite database. This is only needed for Sqlite.",\
+"     When using a Postgres database, the database must be created by the",\
+"     caller.",\
+""
+#define COMMAND_INIT    \
+"  init <database-type> <database>",\
+"     Initialises a database with the necessary tables. The <database-type>",\
+"     must be one of 'sqlite' or 'postgres'. When the <database-type> is",\
+"     'sqlite' the <database> argument refers to a filename for the sqlite",\
+"     database. When the <database-type> is 'postgres' the <database> ",\
+"     argument must contain the postgres connection string.",\
 ""
 #define USER_NEW_MSG    \
 "  user_new <email> <nick> <password> ",\
@@ -332,6 +347,8 @@ static void print_help_msg (const char *cmd)
       const char *msg[20];
    } cmd_help[] = {
       { "help",            { COMMAND_HELP       }  },
+      { "create",          { COMMAND_CREATE     }  },
+      { "init",            { COMMAND_INIT       }  },
 
       { "user_new",        { USER_NEW_MSG       }  },
       { "user_del",        { USER_DEL_MSG       }  },
@@ -382,19 +399,28 @@ static void print_help_msg (const char *cmd)
 "     Print this message, then exit.",
 "",
 " --dbtype=<sqlite | postgres>",
-"  Database type. When dbtype is 'sqlite' then '--db' is used to determine",
-"  the filename of the sqlite3 database file. When dbtype is 'postgres'",
-"  '--dbtype' must contain the full connection string for a postgres database.",
+"  Database type. When dbtype is 'sqlite' then '--database' is used to",
+"  determine the filename of the sqlite3 database file. When dbtype is ",
+"  'postgres' then '--database' must contain the full connection string for",
+"  a postgres database.",
 "  Defaults to 'sqlite'.",
 "",
-" --db=<connection>",
+" --database=<connection>",
 "  Specifies the database to connect to. When '--dbtype' is 'sqlite' then",
-"  '--db' specifies a sqlite3 file. When '--dbtype' is 'postgres' then this",
-"  option must contain a full postgres connection string.",
+"  '--database' specifies a sqlite3 file. When '--dbtype' is 'postgres' then",
+"  this option must contain a full postgres connection string.",
 "  Defaults to 'sqldb_auth.sql3",
 "",
 " --display-bits=<binary | hex | oct | dec>",
 "  Specifies the format to display permission bits in. Defaults to binary.",
+"",
+"",
+"----------------",
+"GENERAL COMMANDS",
+"----------------",
+COMMAND_HELP,
+COMMAND_CREATE,
+COMMAND_INIT,
 "",
 "",
 "-------------",
@@ -459,14 +485,66 @@ PERMS_MSG,
    printf ("   (Unrecognised command [%s]\n", cmd);
 }
 
-static bool help_cmd (char **args)
+static bool cmd_help (char **args)
 {
    printf ("\n\nHow to use command [%s]:\n", args[1]);
    print_help_msg (args[1]);
    return true;
 }
 
-static bool user_new (char **args)
+static bool cmd_create (char **args)
+{
+   bool ret = sqldb_create (args[1], sqldb_SQLITE);
+
+   if (ret) {
+      printf ("Created empty sqlite database [%s]\n", args[1]);
+   } else {
+      PROG_ERR ("Failed to create empty sqlite database [%s]\n", args[1]);
+   }
+
+   return ret;
+}
+
+static bool cmd_init (char **args)
+{
+   bool error = true;
+   sqldb_t *db = NULL;
+   sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
+
+   printf ("Initialising [%s] database on [%s]\n", args[1], args[2]);
+
+   if ((strcmp (args[1], "sqlite"))==0) {
+      dbtype = sqldb_SQLITE;
+   }
+
+   if ((strcmp (args[1], "postgres"))==0) {
+      dbtype = sqldb_POSTGRES;
+   }
+
+   if (dbtype==sqldb_UNKNOWN) {
+      PROG_ERR ("Unrecognised dbtype [%s].\n", args[1]);
+      goto errorexit;
+   }
+
+   if (!(db = sqldb_open (args[2], dbtype))) {
+      PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if (!(sqldb_auth_initdb (db))) {
+      PROG_ERR ("Failed to initialise the db for auth module [%s]\n",
+                  sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
+static bool cmd_user_new (char **args)
 {
    return false;
 }
@@ -475,36 +553,40 @@ int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
 
-   static const struct {
+   static const struct command_t {
       const char *cmd;
       bool (*fptr) (char **args);
       size_t min_args;
       size_t max_args;
    } cmds[] = {
-      { "help",               help_cmd, 1, 1 },
+      { "help",               cmd_help,      2, 2     },
+      { "create",             cmd_create,    2, 2     },
+      { "init",               cmd_init,      3, 3     },
 
-      { "user_new",           user_new, 3, 3 },
-      { "user_del",           user_new, 1, 1 },
-      { "user_mod",           user_new, 4, 4 },
-      { "user_info",          user_new, 1, 1 },
-      { "user_find",          user_new, 2, 2 },
-      { "user_perms",         user_new, 2, 2 },
+      { "user_new",           cmd_user_new,  4, 4     },
+      { "user_del",           cmd_help,      2, 2     },
+      { "user_mod",           cmd_help,      5, 5     },
+      { "user_info",          cmd_help,      2, 2     },
+      { "user_find",          cmd_help,      3, 3     },
+      { "user_perms",         cmd_help,      3, 3     },
 
-      { "group_new",          user_new, 2, 2 },
-      { "group_del",          user_new, 1, 1 },
-      { "group_mod",          user_new, 3, 3 },
-      { "group_info",         user_new, 1, 1 },
-      { "group_find",         user_new, 2, 2 },
-      { "group_perms",        user_new, 2, 2 },
+      { "group_new",          cmd_help,      3, 3     },
+      { "group_del",          cmd_help,      2, 2     },
+      { "group_mod",          cmd_help,      4, 4     },
+      { "group_info",         cmd_help,      2, 2     },
+      { "group_find",         cmd_help,      3, 3     },
+      { "group_perms",        cmd_help,      3, 3     },
 
-      { "group_adduser",      user_new, 2, 2 },
-      { "group_rmuser",       user_new, 2, 2 },
-      { "group_members",      user_new, 1, 1 },
+      { "group_adduser",      cmd_help,      3, 3     },
+      { "group_rmuser",       cmd_help,      3, 3     },
+      { "group_members",      cmd_help,      2, 2     },
 
-      { "grant",              user_new, 3, 67 },
-      { "revoke",             user_new, 3, 67 },
-      { "perms",              user_new, 2, 2 },
+      { "grant",              cmd_help,      4, 68    },
+      { "revoke",             cmd_help,      4, 68    },
+      { "perms",              cmd_help,      3, 3     },
    };
+
+   const struct command_t *cmd = NULL;
 
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
    sqldb_t *db = NULL;
@@ -516,6 +598,7 @@ int main (int argc, char **argv)
               *opt_display_bits = NULL;
    char **args = NULL, **lopts = NULL, **sopts = NULL;
    size_t nopts = 0;
+   size_t nargs = 0;
 
 
    /* Preliminary stuff, initialisation, parsing commands, etc */
@@ -529,6 +612,10 @@ int main (int argc, char **argv)
       PROG_ERR ("Failed to read the command line arguments\n");
    }
 
+   /* Work out how many arguments we have. */
+   for (size_t i=0; args && args[i]; i++)
+      nargs++;
+
    opt_help = find_opt (lopts, "help", sopts, 'h');
    opt_dbtype = find_opt (lopts, "dbtype", sopts, 'D');
    opt_dbconn = find_opt (lopts, "db", sopts, 'C');
@@ -540,14 +627,63 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
-   if ((strcmp (args[0], "help"))==0) {
-      help_cmd (args);
+
+   /* Find the command that was requested, run a few sanity checks */
+   for (size_t i=0; i<sizeof cmds/sizeof cmds[0]; i++) {
+      if ((strcmp (cmds[i].cmd, args[0]))==0) {
+         cmd = &cmds[i];
+         break;
+      }
+   }
+
+   if (!cmd) {
+      PROG_ERR ("Unrecognised command: [%s]\n", args[0]);
+      goto errorexit;
+   }
+
+   if (nargs < cmd->min_args) {
+      PROG_ERR ("[%s] Too few arguments: minimum is %zu, got %zu\n",
+                cmd->cmd, cmd->min_args, nargs);
+      goto errorexit;
+   }
+
+   if (nargs > cmd->max_args) {
+      PROG_ERR ("[%s] Too many arguments: maximum is %zu, got %zu\n",
+                cmd->cmd, cmd->max_args, nargs);
+      goto errorexit;
+   }
+
+
+
+   /* If the command is 'init' or 'help' then we run that separately from
+    * the other commands because we must not try to open the database. All
+    * the commands other than 'help' and 'init' require the database to
+    * be opened first.
+    *
+    * We also check for 'create' if the caller wants to use an sqlite
+    * database that doesn't already exist. Create only works for sqlite.
+    */
+
+   if ((strcmp (cmd->cmd, "help"))==0) {
+      ret = cmd_help (args) ? EXIT_SUCCESS : EXIT_FAILURE;
+      goto errorexit;
+   }
+
+   if ((strcmp (cmd->cmd, "create"))==0) {
+      ret = cmd_create (args) ? EXIT_SUCCESS : EXIT_FAILURE;
+      ret = EXIT_SUCCESS;
+      goto errorexit;
+   }
+
+   if ((strcmp (cmd->cmd, "init"))==0) {
+      ret = cmd_init (args) ? EXIT_SUCCESS : EXIT_FAILURE;
       ret = EXIT_SUCCESS;
       goto errorexit;
    }
 
    opt_dbtype = opt_dbtype ? opt_dbtype : "sqlite";
    dbname = opt_dbconn ? opt_dbconn : "sqldb_auth.sql3";
+
 
    /* Figure out what database type we are using */
 
@@ -579,6 +715,7 @@ int main (int argc, char **argv)
                   sqldb_lasterr (db));
       goto errorexit;
    }
+
 
    ret = EXIT_SUCCESS;
 
