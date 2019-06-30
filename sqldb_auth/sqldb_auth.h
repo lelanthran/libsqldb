@@ -254,19 +254,19 @@ extern "C" {
                                        const char *resource,
                                        uint64_t    perms);
 
-   // Retrieve the group's permissions for the specified resource and
-   // stores in in 'perms'. Returns true on success and false on failure.
-   bool sqldb_auth_perms_get_group (sqldb_t     *db,
-                                    uint64_t    *perms_dst,
-                                    const char  *resource,
-                                    const char  *name);
-
    // Retrieve the user's permissions for the specified resource and
    // stores in in 'perms'. Returns true on success and false on failure.
    bool sqldb_auth_perms_get_user (sqldb_t      *db,
                                    uint64_t     *perms_dst,
-                                   const char   *resource,
-                                   const char   *email);
+                                   const char   *email,
+                                   const char   *resource);
+
+   // Retrieve the group's permissions for the specified resource and
+   // stores in in 'perms'. Returns true on success and false on failure.
+   bool sqldb_auth_perms_get_group (sqldb_t     *db,
+                                    uint64_t    *perms_dst,
+                                    const char  *name,
+                                    const char  *resource);
 
    // Retrieve the effective permissions of the specified user for the
    // specified resource and stores it in 'perms'. Returns true on success
@@ -277,8 +277,8 @@ extern "C" {
    // to.
    bool sqldb_auth_perms_get_all (sqldb_t    *db,
                                   uint64_t   *perms_dst,
-                                  const char *resource,
-                                  const char *email);
+                                  const char *email,
+                                  const char *resource);
 #ifdef __cplusplus
 };
 #endif

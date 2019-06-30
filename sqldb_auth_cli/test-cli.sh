@@ -135,5 +135,12 @@ $VALGRIND $VGOPTS $PROG revoke_group Group-One Resource-1 4
 # Resulting permission value should be 11
 
 # List user non-effective perms
+$VALGRIND $VGOPTS $PROG user_perms one@example.com Resource-1
+# echo 'set args one@example.com Resource-1'
+# gdb $PROG user_perms one@example.com Resource-1
+
+# List group perms
+$VALGRIND $VGOPTS $PROG group_perms Group-One Resource-1
 
 # List effective user perms
+$VALGRIND $VGOPTS $PROG perms one@example.com Resource-1

@@ -856,6 +856,89 @@ static bool cmd_revoke_group (char **args)
    return sqldb_auth_perms_revoke_group (g_db, args[1], args[2], bits);
 }
 
+static char *disp_perms_oct (uint64_t perms)
+{
+   static char ret[50];
+   snprintf (ret, sizeof ret, "%" PRIo64, perms);
+
+   return ret;
+}
+
+static char *disp_perms_dec (uint64_t perms)
+{
+   static char ret[25];
+   snprintf (ret, sizeof ret, "%" PRIu64, perms);
+
+   return ret;
+}
+
+static char *disp_perms_hex (uint64_t perms)
+{
+   static char ret[25];
+   snprintf (ret, sizeof ret, "%" PRIx64, perms);
+
+   return ret;
+}
+
+static char *disp_perms_bin (uint64_t perms)
+{
+   static char ret[65];
+   memset (ret, 0, sizeof ret);
+
+   size_t idx = 0;
+   for (uint64_t i=64; i>0; i--) {
+      sprintf (&ret[idx++], "%c", (perms & ((uint64_t)1 << (i-1))) ? '1' : '0');
+   }
+
+   return ret;
+}
+
+static char * (*disp_perms_func) (uint64_t) = disp_perms_bin;
+
+static bool cmd_user_perms (char **args)
+{
+   uint64_t perms = 0;
+   if (!(sqldb_auth_perms_get_user (g_db, &perms, args[1], args[2]))) {
+      PROG_ERR ("Failed to get user perms for [%s] / [%s]\n",
+                  args[1], args[2]);
+      return false;
+   }
+
+   printf ("Perms for resource [%s] user [%s]: %s\n%" PRIu64 "\n",
+            args[1], args[2], (disp_perms_func) (perms), perms);
+
+   return true;
+}
+
+static bool cmd_group_perms (char **args)
+{
+   uint64_t perms = 0;
+   if (!(sqldb_auth_perms_get_group (g_db, &perms, args[1], args[2]))) {
+      PROG_ERR ("Failed to get group perms for [%s] / [%s]\n",
+                  args[1], args[2]);
+      return false;
+   }
+
+   printf ("Perms for resource [%s] group [%s]: %s\n",
+            args[1], args[2], (disp_perms_func) (perms));
+
+   return true;
+}
+
+static bool cmd_perms (char **args)
+{
+   uint64_t perms = 0;
+   if (!(sqldb_auth_perms_get_all (g_db, &perms, args[1], args[2]))) {
+      PROG_ERR ("Failed to get effective user perms for [%s] / [%s]\n",
+                  args[1], args[2]);
+      return false;
+   }
+
+   printf ("Effective perms for resource [%s] user [%s]: %s\n",
+            args[1], args[2], (disp_perms_func) (perms));
+
+   return true;
+}
 
 int main (int argc, char **argv)
 {
@@ -891,9 +974,9 @@ int main (int argc, char **argv)
       { "revoke_user",        cmd_revoke_user,     4, 68    },
       { "grant_group",        cmd_grant_group,     4, 68    },
       { "revoke_group",       cmd_revoke_group,    4, 68    },
-      { "user_perms",         cmd_TODO,            3, 3     },
-      { "group_perms",        cmd_TODO,            3, 3     },
-      { "perms",              cmd_TODO,            3, 3     },
+      { "user_perms",         cmd_user_perms,      3, 3     },
+      { "group_perms",        cmd_group_perms,     3, 3     },
+      { "perms",              cmd_perms,           3, 3     },
    };
 
    const struct command_t *cmd = NULL;
@@ -924,6 +1007,28 @@ int main (int argc, char **argv)
    opt_dbconn = find_opt (lopts, "database", sopts, 'D');
    opt_display_bits = find_opt (lopts, "display-bits", sopts, 'd');
    opt_verbose = find_opt (lopts, "verbose", sopts, 'v');
+
+   if (opt_display_bits) {
+      disp_perms_func = NULL;
+
+      if ((strcmp (opt_display_bits, "binary"))==0)
+         disp_perms_func = disp_perms_bin;
+
+      if ((strcmp (opt_display_bits, "hex"))==0)
+         disp_perms_func = disp_perms_hex;
+
+      if ((strcmp (opt_display_bits, "oct"))==0)
+         disp_perms_func = disp_perms_oct;
+
+      if ((strcmp (opt_display_bits, "dec"))==0)
+         disp_perms_func = disp_perms_dec;
+
+      if (!disp_perms_func) {
+         PROG_ERR ("Unrecognised value specified for --display-bits [%s].\n",
+               opt_display_bits);
+         goto errorexit;
+      }
+   }
 
    /* Preliminary stuff, initialisation, parsing commands, etc */
    if (opt_verbose) {

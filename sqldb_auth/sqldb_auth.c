@@ -1067,17 +1067,161 @@ errorexit:
    return !error;
 }
 
-bool sqldb_auth_perms_get_group (sqldb_t     *db,
-                                 uint64_t    *perms_dst,
-                                 const char  *resource,
-                                 const char  *name);
-
 bool sqldb_auth_perms_get_user (sqldb_t      *db,
                                 uint64_t     *perms_dst,
-                                const char   *resource,
-                                const char   *email);
+                                const char   *email,
+                                const char   *resource)
+{
+   bool error = true;
+   sqldb_res_t *res = NULL;
+   const char *qstring = NULL;
+
+   if (!db || !perms_dst ||
+       !SVALID (resource) || !SVALID (email))
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("perms_get_user"))) {
+      LOG_ERR ("Failed to find query for [perms_get_user]\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT,  &email,
+                                        sqldb_col_TEXT,  &resource,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute query [%s]:%s\n", qstring,
+                                                    sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res))!=1) {
+      LOG_ERR ("Failed to retrieve query results for [%s]\n"
+               "#1=%s, #2%s\n%s\n%s\n",
+                qstring, email, resource, sqldb_res_lasterr (res),
+                                          sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_UINT64, perms_dst,
+                                 sqldb_col_UNKNOWN))!=1) {
+
+      LOG_ERR ("Failed to scan query results for [%s]\n"
+               "#1=%s, #2%s\n%s\n%s\n",
+                qstring, email, resource, sqldb_res_lasterr (res),
+                                          sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   sqldb_res_del (res);
+
+   return !error;
+}
+
+bool sqldb_auth_perms_get_group (sqldb_t     *db,
+                                 uint64_t    *perms_dst,
+                                 const char  *name,
+                                 const char  *resource)
+{
+   bool error = true;
+   sqldb_res_t *res = NULL;
+   const char *qstring = NULL;
+
+   if (!db || !perms_dst ||
+       !SVALID (resource) || !SVALID (name))
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("perms_get_group"))) {
+      LOG_ERR ("Failed to find query for [perms_get_group]\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT,  &name,
+                                        sqldb_col_TEXT,  &resource,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute query [%s]:%s\n", qstring,
+                                                    sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res))!=1) {
+      LOG_ERR ("Failed to retrieve query results for [%s]\n"
+               "#1=%s, #2%s\n%s\n%s\n",
+                qstring, name, resource, sqldb_res_lasterr (res),
+                                         sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_UINT64, perms_dst,
+                                 sqldb_col_UNKNOWN))!=1) {
+
+      LOG_ERR ("Failed to scan query results for [%s]\n"
+               "#1=%s, #2%s\n%s\n%s\n",
+                qstring, name, resource, sqldb_res_lasterr (res),
+                                         sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   sqldb_res_del (res);
+
+   return !error;
+}
 
 bool sqldb_auth_perms_get_all (sqldb_t    *db,
                                uint64_t   *perms_dst,
-                               const char *resource,
-                               const char *email);
+                               const char *email,
+                               const char *resource)
+{
+   bool error = true;
+   sqldb_res_t *res = NULL;
+   const char *qstring = NULL;
+
+   if (!db || !perms_dst ||
+       !SVALID (resource) || !SVALID (email))
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("perms_get_effective"))) {
+      LOG_ERR ("Failed to find query for [perms_get_effective]\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT,  &email,
+                                        sqldb_col_TEXT,  &resource,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute query [%s]:%s\n", qstring,
+                                                    sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res))!=1) {
+      LOG_ERR ("Failed to retrieve query results for [%s]\n"
+               "#1=%s, #2%s\n%s\n%s\n",
+                qstring, email, resource, sqldb_res_lasterr (res),
+                                          sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_UINT64, perms_dst,
+                                 sqldb_col_UNKNOWN))!=1) {
+
+      LOG_ERR ("Failed to scan query results for [%s]\n"
+               "#1=%s, #2%s\n%s\n%s\n",
+                qstring, email, resource, sqldb_res_lasterr (res),
+                                          sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   sqldb_res_del (res);
+
+   return !error;
+}
