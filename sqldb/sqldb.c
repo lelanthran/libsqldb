@@ -452,7 +452,11 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
                                 &ret->sqlite_stmt, NULL);
    if (rc!=SQLITE_OK) {
       const char *tmp = sqlite3_errstr (rc);
-      db_err_printf (db, "Fatal error: %s/%i\n[%s]\n", tmp, rc, qstring);
+      const char *tmp2 =sqlite3_errmsg (db->sqlite_db);
+      db_err_printf (db, "Fatal error: %s/%i\n%s\n[%s]\n", tmp,
+                                                           rc,
+                                                           tmp2,
+                                                           qstring);
       goto errorexit;
    }
 
