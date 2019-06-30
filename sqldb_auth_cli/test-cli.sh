@@ -43,8 +43,16 @@ $VALGRIND $VGOPTS $PROG user_mod mfive@example.com  five@example.com  FIVE-USER 
 $VALGRIND $VGOPTS $PROG user_mod msix@example.com   six@example.com   SIX-USER    12345
 $VALGRIND $VGOPTS $PROG user_mod mten@example.com   ten@example.com   TEN-USER    12345
 
+# Display information on a single user
+$VALGRIND $VGOPTS $PROG user_info four@example.com
+$VALGRIND $VGOPTS $PROG user_info five@example.com
+$VALGRIND $VGOPTS $PROG user_info six@example.com
 
 # List the users
+$VALGRIND $VGOPTS $PROG user_find "f%" ""
+$VALGRIND $VGOPTS $PROG user_find "" "t%"
+$VALGRIND $VGOPTS $PROG user_find "f%" "t%"
+
 
 # Add a few groups
 

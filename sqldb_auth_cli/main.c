@@ -166,7 +166,7 @@ static size_t process_args (int argc, char **argv,
    *sopts = NULL;
 
    for (int i=1; i<argc && argv[i]; i++) {
-      if ((memcmp (argv[i], "--", 2))==0) {
+      if ((strncmp (argv[i], "--", 2))==0) {
          // Store in lopt
          if (!(string_array_append (&llopts, &argv[i][2], "")))
             goto errorexit;
@@ -573,6 +573,73 @@ static bool cmd_user_mod (char **args)
    return sqldb_auth_user_mod (g_db, args[1], args[2], args[3], args[4]);
 }
 
+static bool cmd_user_info (char **args)
+{
+   uint64_t id = 0;
+   char *nick = NULL;
+   char session[65];
+   bool ret = false;
+
+   memset (session, 0, sizeof session);
+
+   ret = sqldb_auth_user_info (g_db, args[1], &id, &nick, session);
+   if (!ret) {
+      PROG_ERR ("Failed to retrieve user_info for [%s]\n", args[1]);
+   } else {
+      printf ("--------------------------\n");
+      printf ("User:    [%s]\n", args[1]);
+      printf ("ID:      [%" PRIu64 "]\n", id);
+      printf ("Nick:    [%s]\n", nick);
+      printf ("Session: [%s]\n", session);
+      printf ("--------------------------\n");
+   }
+
+   free (nick);
+   return ret;
+}
+
+static bool cmd_user_find (char **args)
+{
+   char *epat = NULL;
+   char *npat = NULL;
+
+   uint64_t    nitems = 0;
+   char **emails = NULL;
+   char **nicks = NULL;
+   uint64_t *ids = NULL;
+
+   bool ret = false;
+
+   if (args[1][0])
+      epat = args[1];
+
+   if (args[2][0])
+      npat = args[2];
+
+   ret = sqldb_auth_user_find (g_db, epat, npat,
+                               &nitems, &emails, &nicks, &ids);
+   if (!ret) {
+      PROG_ERR ("Failed to list users matching [%s]/[%s]\n", args[1], args[2]);
+   } else {
+      printf ("Matches [%s][%s]\n", args[1], args[2]);
+      for (uint64_t i=0; i<nitems; i++) {
+         printf ("%" PRIu64 ":%s:%s\n", ids[i], emails[i], nicks[i]);
+      }
+      printf ("..........................\n");
+   }
+
+   for (uint64_t i=0; i<nitems; i++) {
+      free (emails[i]);
+      free (nicks[i]);
+   }
+
+   free (emails);
+   free (nicks);
+   free (ids);
+
+   return ret;
+}
+
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
@@ -583,31 +650,31 @@ int main (int argc, char **argv)
       size_t min_args;
       size_t max_args;
    } cmds[] = {
-      { "help",               cmd_help,      2, 2     },
-      { "create",             cmd_create,    2, 2     },
-      { "init",               cmd_init,      3, 3     },
+      { "help",               cmd_help,         2, 2     },
+      { "create",             cmd_create,       2, 2     },
+      { "init",               cmd_init,         3, 3     },
 
-      { "user_new",           cmd_user_new,  4, 4     },
-      { "user_rm",            cmd_user_rm,   2, 2     },
-      { "user_mod",           cmd_user_mod,  5, 5     },
-      { "user_info",          cmd_help,      2, 2     },
-      { "user_find",          cmd_help,      3, 3     },
-      { "user_perms",         cmd_help,      3, 3     },
+      { "user_new",           cmd_user_new,     4, 4     },
+      { "user_rm",            cmd_user_rm,      2, 2     },
+      { "user_mod",           cmd_user_mod,     5, 5     },
+      { "user_info",          cmd_user_info,    2, 2     },
+      { "user_find",          cmd_user_find,    3, 3     },
+      { "user_perms",         cmd_help,         3, 3     },
 
-      { "group_new",          cmd_help,      3, 3     },
-      { "group_rm",           cmd_help,      2, 2     },
-      { "group_mod",          cmd_help,      4, 4     },
-      { "group_info",         cmd_help,      2, 2     },
-      { "group_find",         cmd_help,      3, 3     },
-      { "group_perms",        cmd_help,      3, 3     },
+      { "group_new",          cmd_help,         3, 3     },
+      { "group_rm",           cmd_help,         2, 2     },
+      { "group_mod",          cmd_help,         4, 4     },
+      { "group_info",         cmd_help,         2, 2     },
+      { "group_find",         cmd_help,         3, 3     },
+      { "group_perms",        cmd_help,         3, 3     },
 
-      { "group_adduser",      cmd_help,      3, 3     },
-      { "group_rmuser",       cmd_help,      3, 3     },
-      { "group_members",      cmd_help,      2, 2     },
+      { "group_adduser",      cmd_help,         3, 3     },
+      { "group_rmuser",       cmd_help,         3, 3     },
+      { "group_members",      cmd_help,         2, 2     },
 
-      { "grant",              cmd_help,      4, 68    },
-      { "revoke",             cmd_help,      4, 68    },
-      { "perms",              cmd_help,      3, 3     },
+      { "grant",              cmd_help,         4, 68    },
+      { "revoke",             cmd_help,         4, 68    },
+      { "perms",              cmd_help,         3, 3     },
    };
 
    const struct command_t *cmd = NULL;
