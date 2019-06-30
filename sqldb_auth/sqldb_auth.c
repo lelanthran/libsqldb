@@ -343,6 +343,7 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
 
    ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &old_email,
                                          sqldb_col_TEXT, &new_email,
+                                         sqldb_col_TEXT, &nick,
                                          sqldb_col_TEXT, &ptr_salt,
                                          sqldb_col_TEXT, &ptr_hash,
                                          sqldb_col_UNKNOWN);

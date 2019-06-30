@@ -247,8 +247,8 @@ static void print_help_msg (const char *cmd)
 "  user_new <email> <nick> <password> ",\
 "     Create a new user, using specified <email>, <nick> and <password>.",\
 ""
-#define USER_DEL_MSG    \
-"  user_del <email> ",\
+#define USER_RM_MSG    \
+"  user_rm <email> ",\
 "     Delete the user with the specified <email>.",\
 ""
 #define USER_MOD_MSG    \
@@ -282,8 +282,8 @@ static void print_help_msg (const char *cmd)
 "  group_new <name> <description> ",\
 "     Create a new group, using specified <name> and <description>.",\
 ""
-#define GROUP_DEL_MSG    \
-"  group_del <name> ",\
+#define GROUP_RM_MSG    \
+"  group_rm <name> ",\
 "     Delete the group with the specified <name>.",\
 ""
 #define GROUP_MOD_MSG    \
@@ -351,14 +351,14 @@ static void print_help_msg (const char *cmd)
       { "init",            { COMMAND_INIT       }  },
 
       { "user_new",        { USER_NEW_MSG       }  },
-      { "user_del",        { USER_DEL_MSG       }  },
+      { "user_rm",         { USER_RM_MSG       }  },
       { "user_mod",        { USER_MOD_MSG       }  },
       { "user_info",       { USER_INFO_MSG      }  },
       { "user_find",       { USER_FIND_MSG      }  },
       { "user_perms",      { USER_PERMS_MSG     }  },
 
       { "group_new",       { GROUP_NEW_MSG      }  },
-      { "group_del",       { GROUP_DEL_MSG      }  },
+      { "group_rm",        { GROUP_RM_MSG      }  },
       { "group_mod",       { GROUP_MOD_MSG      }  },
       { "group_info",      { GROUP_INFO_MSG     }  },
       { "group_find",      { GROUP_FIND_MSG     }  },
@@ -398,6 +398,10 @@ static void print_help_msg (const char *cmd)
 " --help",
 "     Print this message, then exit.",
 "",
+" --verbose",
+"     Be verbose in the messages printed to screen. By default only errors",
+"     and some informational messages are printed.",
+"",
 " --database-type=<sqlite | postgres>",
 "  Database type. When database-type is 'sqlite' then '--database' is used to",
 "  determine the filename of the sqlite3 database file. When database-type is ",
@@ -427,7 +431,7 @@ COMMAND_INIT,
 "USER COMMANDS",
 "-------------",
 USER_NEW_MSG,
-USER_DEL_MSG,
+USER_RM_MSG,
 USER_MOD_MSG,
 USER_INFO_MSG,
 USER_FIND_MSG,
@@ -438,7 +442,7 @@ USER_PERMS_MSG,
 "GROUP COMMANDS",
 "--------------",
 GROUP_NEW_MSG,
-GROUP_DEL_MSG,
+GROUP_RM_MSG,
 GROUP_MOD_MSG,
 GROUP_INFO_MSG,
 GROUP_FIND_MSG,
@@ -559,6 +563,16 @@ static bool cmd_user_new (char **args)
    return sqldb_auth_user_create (g_db, args[1], args[2], args[3]);
 }
 
+static bool cmd_user_rm (char **args)
+{
+   return sqldb_auth_user_rm (g_db, args[1]);
+}
+
+static bool cmd_user_mod (char **args)
+{
+   return sqldb_auth_user_mod (g_db, args[1], args[2], args[3], args[4]);
+}
+
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
@@ -574,14 +588,14 @@ int main (int argc, char **argv)
       { "init",               cmd_init,      3, 3     },
 
       { "user_new",           cmd_user_new,  4, 4     },
-      { "user_del",           cmd_help,      2, 2     },
-      { "user_mod",           cmd_help,      5, 5     },
+      { "user_rm",            cmd_user_rm,   2, 2     },
+      { "user_mod",           cmd_user_mod,  5, 5     },
       { "user_info",          cmd_help,      2, 2     },
       { "user_find",          cmd_help,      3, 3     },
       { "user_perms",         cmd_help,      3, 3     },
 
       { "group_new",          cmd_help,      3, 3     },
-      { "group_del",          cmd_help,      2, 2     },
+      { "group_rm",           cmd_help,      2, 2     },
       { "group_mod",          cmd_help,      4, 4     },
       { "group_info",         cmd_help,      2, 2     },
       { "group_find",         cmd_help,      3, 3     },
@@ -604,18 +618,12 @@ int main (int argc, char **argv)
    const char *opt_help = NULL,
               *opt_dbtype = NULL,
               *opt_dbconn = NULL,
-              *opt_display_bits = NULL;
+              *opt_display_bits = NULL,
+              *opt_verbose = NULL;
    char **args = NULL, **lopts = NULL, **sopts = NULL;
    size_t nopts = 0;
    size_t nargs = 0;
 
-
-   /* Preliminary stuff, initialisation, parsing commands, etc */
-   printf ("sqldb_auth_cli program:\n"
-           "   sqldb_auth version [%s]\n"
-           "   sqlite version [%s]\n",
-           SQLDB_VERSION,
-           SQLITE_VERSION);
 
    if ((nopts = process_args (argc, argv, &args, &lopts, &sopts))==(size_t)-1) {
       PROG_ERR ("Failed to read the command line arguments\n");
@@ -629,6 +637,16 @@ int main (int argc, char **argv)
    opt_dbtype = find_opt (lopts, "database-type", sopts, 't');
    opt_dbconn = find_opt (lopts, "database", sopts, 'D');
    opt_display_bits = find_opt (lopts, "display-bits", sopts, 'd');
+   opt_verbose = find_opt (lopts, "verbose", sopts, 'v');
+
+   /* Preliminary stuff, initialisation, parsing commands, etc */
+   if (opt_verbose) {
+      printf ("sqldb_auth_cli program:\n"
+              "   sqldb_auth version [%s]\n"
+              "   sqlite version [%s]\n",
+              SQLDB_VERSION,
+              SQLITE_VERSION);
+   }
 
    if (opt_help) {
       print_help_msg (NULL);
@@ -715,11 +733,16 @@ int main (int argc, char **argv)
                 "Error:%s\n", opt_dbtype, opt_dbconn, sqldb_lasterr (g_db));
       goto errorexit;
    }
-   printf ("Using [%s] database %s\n", opt_dbtype,
-                                       dbtype==sqldb_SQLITE ? dbname : "");
+
+   if (opt_verbose) {
+      printf ("Using [%s] database %s\n", opt_dbtype,
+                                          dbtype==sqldb_SQLITE ? dbname : "");
+   }
 
    /* Run the command given */
-   printf ("Running command [%s]\n", cmd->cmd);
+   if (opt_verbose) {
+      printf ("Running command [%s]\n", cmd->cmd);
+   }
 
    ret = cmd->fptr (args) ? EXIT_SUCCESS : EXIT_FAILURE;
 

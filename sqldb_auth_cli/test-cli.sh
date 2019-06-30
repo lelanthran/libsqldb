@@ -30,8 +30,19 @@ $VALGRIND $VGOPTS $PROG user_new mnine@example.com  mNINE-USER   123456
 $VALGRIND $VGOPTS $PROG user_new mten@example.com   mTEN-USER    123456
 
 # Remove some of the users
+$VALGRIND $VGOPTS $PROG user_rm mseven@example.com
+$VALGRIND $VGOPTS $PROG user_rm meight@example.com
+$VALGRIND $VGOPTS $PROG user_rm mnine@example.com
 
 # Modify some of the users (remove the 'm' prefix)
+$VALGRIND $VGOPTS $PROG user_mod mone@example.com   one@example.com   ONE-USER    12345
+$VALGRIND $VGOPTS $PROG user_mod mtwo@example.com   two@example.com   TWO-USER    12345
+$VALGRIND $VGOPTS $PROG user_mod mthree@example.com three@example.com THREE-USER  12345
+$VALGRIND $VGOPTS $PROG user_mod mfour@example.com  four@example.com  FOUR-USER   12345
+$VALGRIND $VGOPTS $PROG user_mod mfive@example.com  five@example.com  FIVE-USER   12345
+$VALGRIND $VGOPTS $PROG user_mod msix@example.com   six@example.com   SIX-USER    12345
+$VALGRIND $VGOPTS $PROG user_mod mten@example.com   ten@example.com   TEN-USER    12345
+
 
 # List the users
 
