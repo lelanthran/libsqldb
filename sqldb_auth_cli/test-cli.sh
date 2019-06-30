@@ -109,10 +109,19 @@ $VALGRIND $VGOPTS $PROG group_rmuser Group-One five@example.com
 $VALGRIND $VGOPTS $PROG group_members Group-One
 
 # Grant permissions to users
-
-# Grant permissions to groups
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 0
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 1
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 2
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 3
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 4
 
 # Remove permissions from users
+$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 1
+$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 3
+
+# Resulting permission value should be 21
+
+# Grant permissions to groups
 
 # Remove permissions from groups
 

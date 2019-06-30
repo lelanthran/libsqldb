@@ -921,3 +921,100 @@ errorexit:
    return !error;
 }
 
+bool sqldb_auth_perms_grant_user (sqldb_t    *db,
+                                  const char *email,
+                                  const char *resource,
+                                  uint64_t    perms)
+{
+   bool error = true;
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!db ||
+       !SVALID (resource) || !SVALID (email))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("perms_user_grant"))) {
+      LOG_ERR ("Failed to find query string [perms_user_grant]\n");
+      goto errorexit;
+   }
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &resource,
+                                        sqldb_col_TEXT, &email,
+                                        sqldb_col_UINT64, &perms,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc == (uint64_t)-1) {
+      LOG_ERR ("Failed to execute [%s]:\n%s\n", qstring,
+                                                sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+}
+
+bool sqldb_auth_perms_revoke_user (sqldb_t   *db,
+                                   const char *email,
+                                   const char *resource,
+                                   uint64_t    perms)
+{
+   bool error = true;
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!db ||
+       !SVALID (resource) || !SVALID (email))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("perms_user_revoke"))) {
+      LOG_ERR ("Failed to find query string [perms_user_revoke]\n");
+      goto errorexit;
+   }
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &resource,
+                                        sqldb_col_TEXT, &email,
+                                        sqldb_col_UINT64, &perms,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc == (uint64_t)-1) {
+      LOG_ERR ("Failed to execute [%s]:\n%s\n", qstring,
+                                                sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   return !error;
+
+}
+
+bool sqldb_auth_perms_grant_group (sqldb_t    *db,
+                                   const char *name,
+                                   const char *resource,
+                                   uint64_t    perms);
+
+bool sqldb_auth_perms_revoke_group (sqldb_t   *db,
+                                    const char *name,
+                                    const char *resource,
+                                    uint64_t    perms);
+
+bool sqldb_auth_perms_get_group (sqldb_t     *db,
+                                 uint64_t    *perms_dst,
+                                 const char  *resource,
+                                 const char  *name);
+
+bool sqldb_auth_perms_get_user (sqldb_t      *db,
+                                uint64_t     *perms_dst,
+                                const char   *resource,
+                                const char   *email);
+
+bool sqldb_auth_perms_get_all (sqldb_t    *db,
+                               uint64_t   *perms_dst,
+                               const char *resource,
+                               const char *email);

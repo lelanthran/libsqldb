@@ -33,15 +33,17 @@
 "      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
 "" \
 "CREATE TABLE t_user_perm (" \
+"   c_resource   TEXT," \
 "   c_user       INTEGER," \
 "   c_perms      INTEGER," \
-"   c_resource   TEXT," \
+"      PRIMARY KEY (c_user, c_resource),"\
 "      FOREIGN KEY (c_user) REFERENCES t_user(c_id));" \
  "" \
 "CREATE TABLE t_group_perm (" \
+"   c_resource   TEXT," \
 "   c_group      INTEGER," \
 "   c_perms      INTEGER," \
-"   c_resource   TEXT," \
+"      PRIMARY KEY (c_group, c_resource),"\
 "      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
 "" \
 "COMMIT;"
@@ -109,6 +111,25 @@
 
 ///////////////////////////////////////////////////////////////////
 
+#define perms_user_grant \
+"INSERT INTO t_user_perm (c_resource, c_user, c_perms) "\
+" VALUES ("\
+"  #1, "\
+"  (SELECT c_id FROM t_user WHERE c_email=#2), "\
+"  #3) "\
+" ON CONFLICT (c_user, c_resource) DO UPDATE "\
+"  SET c_perms = c_perms | #3 "\
+" WHERE c_resource = #1 "\
+"  AND c_user = (SELECT c_id FROM t_user WHERE c_email=#2);"
+
+#define perms_user_revoke \
+"UPDATE t_user_perm "\
+" SET c_perms = c_perms & ~#3 "\
+" WHERE c_resource = #1 "\
+"  AND c_user = (SELECT c_id FROM t_user WHERE c_email=#2);"
+
+///////////////////////////////////////////////////////////////////
+
 #define STMT(x)      {#x, x }
 static const struct {
    const char *name;
@@ -133,6 +154,8 @@ static const struct {
    STMT (group_rmuser),
    STMT (group_membership),
 
+   STMT (perms_user_grant),
+   STMT (perms_user_revoke),
 };
 #undef STMT
 

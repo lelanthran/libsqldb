@@ -322,17 +322,29 @@ static void print_help_msg (const char *cmd)
 "     List all the users in the group specified by <name>.",\
 ""
 
-#define GRANT_MSG    \
-"  grant <email> <resource> <bit-number [ | bit-number | ...]",\
+#define GRANT_USER_MSG    \
+"  grant_user <email> <resource> <bit-number [ | bit-number | ...]",\
 "     Allow user specified by <email> access to the resource specified by",\
 "     <resource>. The nature of the access is specified by one or more",\
 "     <bit-number> specifiers.",\
 ""
-#define REVOKE_MSG    \
-"  revoke <email> <resource> <bit-number [ | bit-number | ...]",\
+#define REVOKE_USER_MSG    \
+"  revoke_user <email> <resource> <bit-number [ | bit-number | ...]",\
 "     Revoke access to the resource specified by <resource> for user specified",\
 "     by <email>. The nature of the access is specified by one or more",\
 "     <bit-number> specifiers.",\
+""
+#define GRANT_GROUP_MSG    \
+"  grant_group <name> <resource> <bit-number [ | bit-number | ...]",\
+"     Allow group specified by <name> access to the resource specified by",\
+"     <resource>. The nature of the access is specified by one or more",\
+"     <bit-number> specifiers.",\
+""
+#define REVOKE_GROUP_MSG    \
+"  revoke_group <name> <resource> <bit-number [ | bit-number | ...]",\
+"     Revoke access to the resource specified by <resource> for group",\
+"     specified by <email>. The nature of the access is specified by one",\
+"     or more <bit-number> specifiers.",\
 ""
 #define PERMS_MSG    \
 "  perms <email> <resource>",\
@@ -368,8 +380,10 @@ static void print_help_msg (const char *cmd)
       { "group_rmuser",    { GROUP_RMUSER_MSG   }  },
       { "group_members",   { GROUP_MEMBERS_MSG  }  },
 
-      { "grant",           { GRANT_MSG          }  },
-      { "revoke",          { REVOKE_MSG         }  },
+      { "grant_user",      { GRANT_USER_MSG     }  },
+      { "revoke_user",     { REVOKE_USER_MSG    }  },
+      { "grant_group",     { GRANT_GROUP_MSG     }  },
+      { "revoke_group",    { REVOKE_GROUP_MSG    }  },
       { "perms",           { PERMS_MSG          }  },
    };
 
@@ -460,8 +474,10 @@ GROUP_MEMBERS_MSG,
 "-------------------",
 "PERMISSION COMMANDS",
 "-------------------",
-GRANT_MSG,
-REVOKE_MSG,
+GRANT_USER_MSG,
+REVOKE_USER_MSG,
+GRANT_GROUP_MSG,
+REVOKE_GROUP_MSG,
 PERMS_MSG,
 "",
 "",
@@ -776,6 +792,38 @@ static bool cmd_group_members (char **args)
    return ret;
 }
 
+static bool cmd_grant_user (char **args)
+{
+   uint64_t bits = 0;
+
+   for (size_t i=3; args[i]; i++) {
+      uint64_t bitnum = 0;
+      if ((sscanf (args[i], "%" PRIu64, &bitnum))!=1) {
+         PROG_ERR ("Failed to scan permission bit number [%s] as a number\n",
+                    args[i]);
+         return false;
+      }
+      bits |= 1 << bitnum;
+   }
+   return sqldb_auth_perms_grant_user (g_db, args[1], args[2], bits);
+}
+
+static bool cmd_revoke_user (char **args)
+{
+   uint64_t bits = 0;
+
+   for (size_t i=3; args[i]; i++) {
+      uint64_t bitnum = 0;
+      if ((sscanf (args[i], "%" PRIu64, &bitnum))!=1) {
+         PROG_ERR ("Failed to scan permission bit number [%s] as a number\n",
+                    args[i]);
+         return false;
+      }
+      bits |= 1 << bitnum;
+   }
+   return sqldb_auth_perms_revoke_user (g_db, args[1], args[2], bits);
+}
+
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
@@ -806,8 +854,10 @@ int main (int argc, char **argv)
       { "group_rmuser",       cmd_group_rmuser,    3, 3     },
       { "group_members",      cmd_group_members,   2, 2     },
 
-      { "grant",              cmd_TODO,            4, 68    },
-      { "revoke",             cmd_TODO,            4, 68    },
+      { "grant_user",         cmd_grant_user,      4, 68    },
+      { "revoke_user",        cmd_revoke_user,     4, 68    },
+      { "grant_group",        cmd_TODO,            4, 68    },
+      { "revoke_group",       cmd_TODO,            4, 68    },
       { "user_perms",         cmd_TODO,            3, 3     },
       { "group_perms",        cmd_TODO,            3, 3     },
       { "perms",              cmd_TODO,            3, 3     },
