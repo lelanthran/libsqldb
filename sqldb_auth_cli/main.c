@@ -733,6 +733,49 @@ static bool cmd_group_find (char **args)
    return ret;
 }
 
+static bool cmd_group_adduser (char **args)
+{
+   return sqldb_auth_group_adduser (g_db, args[1], args[2]);
+}
+
+static bool cmd_group_rmuser (char **args)
+{
+   return sqldb_auth_group_rmuser (g_db, args[1], args[2]);
+}
+
+static bool cmd_group_members (char **args)
+{
+   uint64_t    nitems = 0;
+   char **emails = NULL;
+   char **nicks = NULL;
+   uint64_t *ids = NULL;
+
+   bool ret = false;
+
+   ret = sqldb_auth_group_members (g_db, args[1],
+                                   &nitems, &emails, &nicks, &ids);
+   if (!ret) {
+      PROG_ERR ("Failed to list users in group [%s]\n", args[1]);
+   } else {
+      printf ("Membership of [%s]\n", args[1]);
+      for (uint64_t i=0; i<nitems; i++) {
+         printf ("%" PRIu64 ":%s:%s\n", ids[i], emails[i], nicks[i]);
+      }
+      printf ("..........................\n");
+   }
+
+   for (uint64_t i=0; i<nitems; i++) {
+      free (emails[i]);
+      free (nicks[i]);
+   }
+
+   free (emails);
+   free (nicks);
+   free (ids);
+
+   return ret;
+}
+
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
@@ -743,31 +786,31 @@ int main (int argc, char **argv)
       size_t min_args;
       size_t max_args;
    } cmds[] = {
-      { "help",               cmd_help,         2, 2     },
-      { "create",             cmd_create,       2, 2     },
-      { "init",               cmd_init,         3, 3     },
+      { "help",               cmd_help,            2, 2     },
+      { "create",             cmd_create,          2, 2     },
+      { "init",               cmd_init,            3, 3     },
 
-      { "user_create",        cmd_user_create,  4, 4     },
-      { "user_rm",            cmd_user_rm,      2, 2     },
-      { "user_mod",           cmd_user_mod,     5, 5     },
-      { "user_info",          cmd_user_info,    2, 2     },
-      { "user_find",          cmd_user_find,    3, 3     },
+      { "user_create",        cmd_user_create,     4, 4     },
+      { "user_rm",            cmd_user_rm,         2, 2     },
+      { "user_mod",           cmd_user_mod,        5, 5     },
+      { "user_info",          cmd_user_info,       2, 2     },
+      { "user_find",          cmd_user_find,       3, 3     },
 
-      { "group_create",       cmd_group_create, 3, 3     },
-      { "group_rm",           cmd_group_rm,     2, 2     },
-      { "group_mod",          cmd_group_mod,    4, 4     },
-      { "group_info",         cmd_group_info,   2, 2     },
-      { "group_find",         cmd_group_find,   3, 3     },
+      { "group_create",       cmd_group_create,    3, 3     },
+      { "group_rm",           cmd_group_rm,        2, 2     },
+      { "group_mod",          cmd_group_mod,       4, 4     },
+      { "group_info",         cmd_group_info,      2, 2     },
+      { "group_find",         cmd_group_find,      3, 3     },
 
-      { "group_adduser",      cmd_TODO,         3, 3     },
-      { "group_rmuser",       cmd_TODO,         3, 3     },
-      { "group_members",      cmd_TODO,         2, 2     },
+      { "group_adduser",      cmd_group_adduser,   3, 3     },
+      { "group_rmuser",       cmd_group_rmuser,    3, 3     },
+      { "group_members",      cmd_group_members,   2, 2     },
 
-      { "grant",              cmd_TODO,         4, 68    },
-      { "revoke",             cmd_TODO,         4, 68    },
-      { "user_perms",         cmd_TODO,         3, 3     },
-      { "group_perms",        cmd_TODO,         3, 3     },
-      { "perms",              cmd_TODO,         3, 3     },
+      { "grant",              cmd_TODO,            4, 68    },
+      { "revoke",             cmd_TODO,            4, 68    },
+      { "user_perms",         cmd_TODO,            3, 3     },
+      { "group_perms",        cmd_TODO,            3, 3     },
+      { "perms",              cmd_TODO,            3, 3     },
    };
 
    const struct command_t *cmd = NULL;

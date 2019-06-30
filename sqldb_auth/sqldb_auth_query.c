@@ -105,8 +105,7 @@
 "WHERE "\
 "     t_group.c_name=#1 "\
 "AND  t_user.c_id = t_group_membership.c_user "\
-"AND  t_group_membership.c_group = t_group.c_id  "\
-"ORDER BY t_user.c_email;"
+"AND  t_group_membership.c_group = t_group.c_id;"
 
 ///////////////////////////////////////////////////////////////////
 

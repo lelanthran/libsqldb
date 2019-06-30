@@ -93,10 +93,20 @@ $VALGRIND $VGOPTS $PROG group_find "group-t%" "group f%"
 
 
 # Add users to a group
+$VALGRIND $VGOPTS $PROG group_adduser Group-One one@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-One two@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-One three@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-One four@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-One five@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-One six@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-One ten@example.com
 
 # Remove users from a few groups
+$VALGRIND $VGOPTS $PROG group_rmuser Group-One three@example.com
+$VALGRIND $VGOPTS $PROG group_rmuser Group-One five@example.com
 
 # List group membership
+$VALGRIND $VGOPTS $PROG group_members Group-One
 
 # Grant permissions to users
 
