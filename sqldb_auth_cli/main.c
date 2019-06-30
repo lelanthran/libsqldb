@@ -652,6 +652,87 @@ static bool cmd_user_find (char **args)
    return ret;
 }
 
+static bool cmd_group_create (char **args)
+{
+   return sqldb_auth_group_create (g_db, args[1], args[2]);
+}
+
+static bool cmd_group_rm (char **args)
+{
+   return sqldb_auth_group_rm (g_db, args[1]);
+}
+
+static bool cmd_group_mod (char **args)
+{
+   return sqldb_auth_group_mod (g_db, args[1], args[2], args[3]);
+}
+
+static bool cmd_group_info (char **args)
+{
+   uint64_t id = 0;
+   char *descr = NULL;
+   char session[65];
+   bool ret = false;
+
+   memset (session, 0, sizeof session);
+
+   ret = sqldb_auth_group_info (g_db, args[1], &id, &descr);
+   if (!ret) {
+      PROG_ERR ("Failed to retrieve group_info for [%s]\n", args[1]);
+   } else {
+      printf ("--------------------------\n");
+      printf ("Group:    [%s]\n", args[1]);
+      printf ("ID:       [%" PRIu64 "]\n", id);
+      printf ("Descr:    [%s]\n", descr);
+      printf ("--------------------------\n");
+   }
+
+   free (descr);
+   return ret;
+}
+
+static bool cmd_group_find (char **args)
+{
+   char *npat = NULL;
+   char *dpat = NULL;
+
+   uint64_t    nitems = 0;
+   char **names = NULL;
+   char **descrs = NULL;
+   uint64_t *ids = NULL;
+
+   bool ret = false;
+
+   if (args[1][0])
+      npat = args[1];
+
+   if (args[2][0])
+      dpat = args[2];
+
+   ret = sqldb_auth_group_find (g_db, npat, dpat,
+                               &nitems, &names, &descrs, &ids);
+   if (!ret) {
+      PROG_ERR ("Failed to list groups matching [%s]/[%s]\n", args[1], args[2]);
+   } else {
+      printf ("Matches [%s][%s]\n", args[1], args[2]);
+      for (uint64_t i=0; i<nitems; i++) {
+         printf ("%" PRIu64 ":%s:%s\n", ids[i], names[i], descrs[i]);
+      }
+      printf ("..........................\n");
+   }
+
+   for (uint64_t i=0; i<nitems; i++) {
+      free (names[i]);
+      free (descrs[i]);
+   }
+
+   free (names);
+   free (descrs);
+   free (ids);
+
+   return ret;
+}
+
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
@@ -672,11 +753,11 @@ int main (int argc, char **argv)
       { "user_info",          cmd_user_info,    2, 2     },
       { "user_find",          cmd_user_find,    3, 3     },
 
-      { "group_create",       cmd_TODO,         3, 3     },
-      { "group_rm",           cmd_TODO,         2, 2     },
-      { "group_mod",          cmd_TODO,         4, 4     },
-      { "group_info",         cmd_TODO,         2, 2     },
-      { "group_find",         cmd_TODO,         3, 3     },
+      { "group_create",       cmd_group_create, 3, 3     },
+      { "group_rm",           cmd_group_rm,     2, 2     },
+      { "group_mod",          cmd_group_mod,    4, 4     },
+      { "group_info",         cmd_group_info,   2, 2     },
+      { "group_find",         cmd_group_find,   3, 3     },
 
       { "group_adduser",      cmd_TODO,         3, 3     },
       { "group_rmuser",       cmd_TODO,         3, 3     },

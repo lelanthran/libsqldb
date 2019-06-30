@@ -43,7 +43,7 @@ $VALGRIND $VGOPTS $PROG user_mod mfive@example.com  five@example.com  FIVE-USER 
 $VALGRIND $VGOPTS $PROG user_mod msix@example.com   six@example.com   SIX-USER    12345
 $VALGRIND $VGOPTS $PROG user_mod mten@example.com   ten@example.com   TEN-USER    12345
 
-# Display information on a single user
+# Display information on a few users
 $VALGRIND $VGOPTS $PROG user_info four@example.com
 $VALGRIND $VGOPTS $PROG user_info five@example.com
 $VALGRIND $VGOPTS $PROG user_info six@example.com
@@ -51,16 +51,46 @@ $VALGRIND $VGOPTS $PROG user_info six@example.com
 # List the users
 $VALGRIND $VGOPTS $PROG user_find "f%" ""
 $VALGRIND $VGOPTS $PROG user_find "" "t%"
-$VALGRIND $VGOPTS $PROG user_find "f%" "t%"
+$VALGRIND $VGOPTS $PROG user_find "t%" "f%"
 
 
 # Add a few groups
+$VALGRIND $VGOPTS $PROG group_create mGroup-One    "mGroup One Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Two    "mGroup Two Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Three  "mGroup Three Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Four   "mGroup Four Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Five   "mGroup Five Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Six    "mGroup Six Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Seven  "mGroup Seven Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Eight  "mGroup Eight Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Nine   "mGroup Nine Description"
+$VALGRIND $VGOPTS $PROG group_create mGroup-Ten    "mGroup Ten Description"
 
 # Remove some of the groups
+$VALGRIND $VGOPTS $PROG group_rm mGroup-Seven
+$VALGRIND $VGOPTS $PROG group_rm mGroup-Eight
+$VALGRIND $VGOPTS $PROG group_rm mGroup-Nine
 
 # Modify some of the groups (remove the 'm' prefix)
+$VALGRIND $VGOPTS $PROG group_mod mGroup-One   Group-One   "Group One Description"
+$VALGRIND $VGOPTS $PROG group_mod mGroup-Two   Group-Two   "Group Two Description"
+$VALGRIND $VGOPTS $PROG group_mod mGroup-Three Group-Three "Group Three Description"
+$VALGRIND $VGOPTS $PROG group_mod mGroup-Four  Group-Four  "Group Four Description"
+$VALGRIND $VGOPTS $PROG group_mod mGroup-Five  Group-Five  "Group Five Description"
+$VALGRIND $VGOPTS $PROG group_mod mGroup-Six   Group-Six   "Group Six Description"
+$VALGRIND $VGOPTS $PROG group_mod mGroup-Ten   Group-Ten   "Group Ten Description"
+
+
+# Display information on a few groups
+$VALGRIND $VGOPTS $PROG group_info Group-One
+$VALGRIND $VGOPTS $PROG group_info Group-Two
+$VALGRIND $VGOPTS $PROG group_info Group-Four
 
 # List the groups
+$VALGRIND $VGOPTS $PROG group_find "group-t%" ""
+$VALGRIND $VGOPTS $PROG group_find "" "group f%"
+$VALGRIND $VGOPTS $PROG group_find "group-t%" "group f%"
+
 
 # Add users to a group
 
