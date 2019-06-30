@@ -398,18 +398,18 @@ static void print_help_msg (const char *cmd)
 " --help",
 "     Print this message, then exit.",
 "",
-" --dbtype=<sqlite | postgres>",
-"  Database type. When dbtype is 'sqlite' then '--database' is used to",
-"  determine the filename of the sqlite3 database file. When dbtype is ",
+" --database-type=<sqlite | postgres>",
+"  Database type. When database-type is 'sqlite' then '--database' is used to",
+"  determine the filename of the sqlite3 database file. When database-type is ",
 "  'postgres' then '--database' must contain the full connection string for",
 "  a postgres database.",
 "  Defaults to 'sqlite'.",
 "",
 " --database=<connection>",
-"  Specifies the database to connect to. When '--dbtype' is 'sqlite' then",
-"  '--database' specifies a sqlite3 file. When '--dbtype' is 'postgres' then",
-"  this option must contain a full postgres connection string.",
-"  Defaults to 'sqldb_auth.sql3",
+"  Specifies the database to connect to. When '--database-type' is 'sqlite'",
+"  then '--database' specifies a sqlite3 file. When '--database-type' is",
+"  'postgres' then '--database' must contain a postgres connection string.",
+"  Defaults to 'sqldb_auth.sql3,",
 "",
 " --display-bits=<binary | hex | oct | dec>",
 "  Specifies the format to display permission bits in. Defaults to binary.",
@@ -552,9 +552,11 @@ errorexit:
    return !error;
 }
 
+static sqldb_t *g_db = NULL;
+
 static bool cmd_user_new (char **args)
 {
-   return false;
+   return sqldb_auth_user_create (g_db, args[1], args[2], args[3]);
 }
 
 int main (int argc, char **argv)
@@ -597,7 +599,6 @@ int main (int argc, char **argv)
    const struct command_t *cmd = NULL;
 
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
-   sqldb_t *db = NULL;
    const char *dbname = NULL;
 
    const char *opt_help = NULL,
@@ -610,7 +611,7 @@ int main (int argc, char **argv)
 
 
    /* Preliminary stuff, initialisation, parsing commands, etc */
-   printf ("Using:\n"
+   printf ("sqldb_auth_cli program:\n"
            "   sqldb_auth version [%s]\n"
            "   sqlite version [%s]\n",
            SQLDB_VERSION,
@@ -625,8 +626,8 @@ int main (int argc, char **argv)
       nargs++;
 
    opt_help = find_opt (lopts, "help", sopts, 'h');
-   opt_dbtype = find_opt (lopts, "dbtype", sopts, 'D');
-   opt_dbconn = find_opt (lopts, "db", sopts, 'C');
+   opt_dbtype = find_opt (lopts, "database-type", sopts, 't');
+   opt_dbconn = find_opt (lopts, "database", sopts, 'D');
    opt_display_bits = find_opt (lopts, "display-bits", sopts, 'd');
 
    if (opt_help) {
@@ -692,7 +693,6 @@ int main (int argc, char **argv)
 
 
    /* Figure out what database type we are using */
-
    dbtype = sqldb_UNKNOWN;
 
    if ((strcmp (opt_dbtype, "sqlite"))==0) {
@@ -710,13 +710,18 @@ int main (int argc, char **argv)
 
 
    /* Open the specified database, using the specified type. */
-   if (!(db = sqldb_open (dbname, dbtype))) {
+   if (!(g_db = sqldb_open (dbname, dbtype))) {
       PROG_ERR ("Unable to open [%s] database using [%s] connection\n"
-                "Error:%s\n", opt_dbtype, opt_dbconn, sqldb_lasterr (db));
+                "Error:%s\n", opt_dbtype, opt_dbconn, sqldb_lasterr (g_db));
       goto errorexit;
    }
+   printf ("Using [%s] database %s\n", opt_dbtype,
+                                       dbtype==sqldb_SQLITE ? dbname : "");
 
-   ret = EXIT_SUCCESS;
+   /* Run the command given */
+   printf ("Running command [%s]\n", cmd->cmd);
+
+   ret = cmd->fptr (args) ? EXIT_SUCCESS : EXIT_FAILURE;
 
 errorexit:
 
@@ -724,7 +729,7 @@ errorexit:
    string_array_free (lopts);
    string_array_free (sopts);
 
-   sqldb_close (db);
+   sqldb_close (g_db);
 
    return ret;
 }
