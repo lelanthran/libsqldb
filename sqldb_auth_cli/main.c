@@ -824,6 +824,39 @@ static bool cmd_revoke_user (char **args)
    return sqldb_auth_perms_revoke_user (g_db, args[1], args[2], bits);
 }
 
+static bool cmd_grant_group (char **args)
+{
+   uint64_t bits = 0;
+
+   for (size_t i=3; args[i]; i++) {
+      uint64_t bitnum = 0;
+      if ((sscanf (args[i], "%" PRIu64, &bitnum))!=1) {
+         PROG_ERR ("Failed to scan permission bit number [%s] as a number\n",
+                    args[i]);
+         return false;
+      }
+      bits |= 1 << bitnum;
+   }
+   return sqldb_auth_perms_grant_group (g_db, args[1], args[2], bits);
+}
+
+static bool cmd_revoke_group (char **args)
+{
+   uint64_t bits = 0;
+
+   for (size_t i=3; args[i]; i++) {
+      uint64_t bitnum = 0;
+      if ((sscanf (args[i], "%" PRIu64, &bitnum))!=1) {
+         PROG_ERR ("Failed to scan permission bit number [%s] as a number\n",
+                    args[i]);
+         return false;
+      }
+      bits |= 1 << bitnum;
+   }
+   return sqldb_auth_perms_revoke_group (g_db, args[1], args[2], bits);
+}
+
+
 int main (int argc, char **argv)
 {
    int ret = EXIT_FAILURE;
@@ -856,8 +889,8 @@ int main (int argc, char **argv)
 
       { "grant_user",         cmd_grant_user,      4, 68    },
       { "revoke_user",        cmd_revoke_user,     4, 68    },
-      { "grant_group",        cmd_TODO,            4, 68    },
-      { "revoke_group",       cmd_TODO,            4, 68    },
+      { "grant_group",        cmd_grant_group,     4, 68    },
+      { "revoke_group",       cmd_revoke_group,    4, 68    },
       { "user_perms",         cmd_TODO,            3, 3     },
       { "group_perms",        cmd_TODO,            3, 3     },
       { "perms",              cmd_TODO,            3, 3     },

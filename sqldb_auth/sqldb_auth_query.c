@@ -128,6 +128,23 @@
 " WHERE c_resource = #1 "\
 "  AND c_user = (SELECT c_id FROM t_user WHERE c_email=#2);"
 
+#define perms_group_grant \
+"INSERT INTO t_group_perm (c_resource, c_group, c_perms) "\
+" VALUES ("\
+"  #1, "\
+"  (SELECT c_id FROM t_group WHERE c_name=#2), "\
+"  #3) "\
+" ON CONFLICT (c_group, c_resource) DO UPDATE "\
+"  SET c_perms = c_perms | #3 "\
+" WHERE c_resource = #1 "\
+"  AND c_group = (SELECT c_id FROM t_group WHERE c_name=#2);"
+
+#define perms_group_revoke \
+"UPDATE t_group_perm "\
+" SET c_perms = c_perms & ~#3 "\
+" WHERE c_resource = #1 "\
+"  AND c_group = (SELECT c_id FROM t_group WHERE c_name=#2);"
+
 ///////////////////////////////////////////////////////////////////
 
 #define STMT(x)      {#x, x }
@@ -156,6 +173,8 @@ static const struct {
 
    STMT (perms_user_grant),
    STMT (perms_user_revoke),
+   STMT (perms_group_grant),
+   STMT (perms_group_revoke),
 };
 #undef STMT
 
