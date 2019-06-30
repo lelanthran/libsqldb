@@ -18,16 +18,16 @@ $VALGRIND $VGOPTS $PROG create sqldb_auth.sql3
 $VALGRIND $VGOPTS $PROG init sqlite sqldb_auth.sql3
 
 # Add a few users
-$VALGRIND $VGOPTS $PROG user_new mone@example.com   mONE-USER    123456
-$VALGRIND $VGOPTS $PROG user_new mtwo@example.com   mTWO-USER    123456
-$VALGRIND $VGOPTS $PROG user_new mthree@example.com mTHREE-USER  123456
-$VALGRIND $VGOPTS $PROG user_new mfour@example.com  mFOUR-USER   123456
-$VALGRIND $VGOPTS $PROG user_new mfive@example.com  mFIVE-USER   123456
-$VALGRIND $VGOPTS $PROG user_new msix@example.com   mSIX-USER    123456
-$VALGRIND $VGOPTS $PROG user_new mseven@example.com mSEVEN-USER  123456
-$VALGRIND $VGOPTS $PROG user_new meight@example.com mEIGHT-USER  123456
-$VALGRIND $VGOPTS $PROG user_new mnine@example.com  mNINE-USER   123456
-$VALGRIND $VGOPTS $PROG user_new mten@example.com   mTEN-USER    123456
+$VALGRIND $VGOPTS $PROG user_create mone@example.com   mONE-USER    123456
+$VALGRIND $VGOPTS $PROG user_create mtwo@example.com   mTWO-USER    123456
+$VALGRIND $VGOPTS $PROG user_create mthree@example.com mTHREE-USER  123456
+$VALGRIND $VGOPTS $PROG user_create mfour@example.com  mFOUR-USER   123456
+$VALGRIND $VGOPTS $PROG user_create mfive@example.com  mFIVE-USER   123456
+$VALGRIND $VGOPTS $PROG user_create msix@example.com   mSIX-USER    123456
+$VALGRIND $VGOPTS $PROG user_create mseven@example.com mSEVEN-USER  123456
+$VALGRIND $VGOPTS $PROG user_create meight@example.com mEIGHT-USER  123456
+$VALGRIND $VGOPTS $PROG user_create mnine@example.com  mNINE-USER   123456
+$VALGRIND $VGOPTS $PROG user_create mten@example.com   mTEN-USER    123456
 
 # Remove some of the users
 $VALGRIND $VGOPTS $PROG user_rm mseven@example.com

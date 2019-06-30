@@ -244,7 +244,7 @@ static void print_help_msg (const char *cmd)
 "     argument must contain the postgres connection string.",\
 ""
 #define USER_NEW_MSG    \
-"  user_new <email> <nick> <password> ",\
+"  user_create <email> <nick> <password> ",\
 "     Create a new user, using specified <email>, <nick> and <password>.",\
 ""
 #define USER_RM_MSG    \
@@ -279,7 +279,7 @@ static void print_help_msg (const char *cmd)
 ""
 
 #define GROUP_NEW_MSG    \
-"  group_new <name> <description> ",\
+"  group_create <name> <description> ",\
 "     Create a new group, using specified <name> and <description>.",\
 ""
 #define GROUP_RM_MSG    \
@@ -350,14 +350,14 @@ static void print_help_msg (const char *cmd)
       { "create",          { COMMAND_CREATE     }  },
       { "init",            { COMMAND_INIT       }  },
 
-      { "user_new",        { USER_NEW_MSG       }  },
+      { "user_create",     { USER_NEW_MSG       }  },
       { "user_rm",         { USER_RM_MSG       }  },
       { "user_mod",        { USER_MOD_MSG       }  },
       { "user_info",       { USER_INFO_MSG      }  },
       { "user_find",       { USER_FIND_MSG      }  },
       { "user_perms",      { USER_PERMS_MSG     }  },
 
-      { "group_new",       { GROUP_NEW_MSG      }  },
+      { "group_create",    { GROUP_NEW_MSG      }  },
       { "group_rm",        { GROUP_RM_MSG      }  },
       { "group_mod",       { GROUP_MOD_MSG      }  },
       { "group_info",      { GROUP_INFO_MSG     }  },
@@ -384,8 +384,8 @@ static void print_help_msg (const char *cmd)
 "     sqldb_auth [options] <command>",
 "     sqldb_auth <command> [options]",
 "",
-"The first form of usage displays the builtin help on every command. The",
-"second and third forms of usage are identical in behaviour and serve to",
+"The first form of usage displays the builtin help on the specified command.",
+"The second and third forms of usage are identical in behaviour and serve to",
 "show that commands and options may be interspersed.",
 "",
 "Options are of the form of  '--name=value' while commands and command",
@@ -489,6 +489,16 @@ PERMS_MSG,
    printf ("   (Unrecognised command [%s]\n", cmd);
 }
 
+
+/* ******************************************************************** */
+
+static bool cmd_TODO (char **args)
+{
+   PROG_ERR ("Unimplemented\n");
+   return false;
+}
+
+
 static bool cmd_help (char **args)
 {
    printf ("\n\nHow to use command [%s]:\n", args[1]);
@@ -556,9 +566,11 @@ errorexit:
    return !error;
 }
 
+/* ******************************************************************** */
+
 static sqldb_t *g_db = NULL;
 
-static bool cmd_user_new (char **args)
+static bool cmd_user_create (char **args)
 {
    return sqldb_auth_user_create (g_db, args[1], args[2], args[3]);
 }
@@ -654,27 +666,27 @@ int main (int argc, char **argv)
       { "create",             cmd_create,       2, 2     },
       { "init",               cmd_init,         3, 3     },
 
-      { "user_new",           cmd_user_new,     4, 4     },
+      { "user_create",        cmd_user_create,  4, 4     },
       { "user_rm",            cmd_user_rm,      2, 2     },
       { "user_mod",           cmd_user_mod,     5, 5     },
       { "user_info",          cmd_user_info,    2, 2     },
       { "user_find",          cmd_user_find,    3, 3     },
-      { "user_perms",         cmd_help,         3, 3     },
 
-      { "group_new",          cmd_help,         3, 3     },
-      { "group_rm",           cmd_help,         2, 2     },
-      { "group_mod",          cmd_help,         4, 4     },
-      { "group_info",         cmd_help,         2, 2     },
-      { "group_find",         cmd_help,         3, 3     },
-      { "group_perms",        cmd_help,         3, 3     },
+      { "group_create",       cmd_TODO,         3, 3     },
+      { "group_rm",           cmd_TODO,         2, 2     },
+      { "group_mod",          cmd_TODO,         4, 4     },
+      { "group_info",         cmd_TODO,         2, 2     },
+      { "group_find",         cmd_TODO,         3, 3     },
 
-      { "group_adduser",      cmd_help,         3, 3     },
-      { "group_rmuser",       cmd_help,         3, 3     },
-      { "group_members",      cmd_help,         2, 2     },
+      { "group_adduser",      cmd_TODO,         3, 3     },
+      { "group_rmuser",       cmd_TODO,         3, 3     },
+      { "group_members",      cmd_TODO,         2, 2     },
 
-      { "grant",              cmd_help,         4, 68    },
-      { "revoke",             cmd_help,         4, 68    },
-      { "perms",              cmd_help,         3, 3     },
+      { "grant",              cmd_TODO,         4, 68    },
+      { "revoke",             cmd_TODO,         4, 68    },
+      { "user_perms",         cmd_TODO,         3, 3     },
+      { "group_perms",        cmd_TODO,         3, 3     },
+      { "perms",              cmd_TODO,         3, 3     },
    };
 
    const struct command_t *cmd = NULL;
