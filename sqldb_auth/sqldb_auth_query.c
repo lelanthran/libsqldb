@@ -17,6 +17,7 @@
 "   c_expiry     INTEGER," \
 "   c_email      TEXT UNIQUE," \
 "   c_nick       TEXT," \
+"   c_flags      INTEGER," \
 "   c_salt       TEXT," \
 "   c_hash       TEXT);" \
 "" \
