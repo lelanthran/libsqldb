@@ -17,3 +17,5 @@
    also requires implementation of the respective three functions in the
    sqldb_auth module (hasn't been done yet).
 
+5. Perhaps not a bad idea to add in a flags column for users (enabled,
+   disabled).

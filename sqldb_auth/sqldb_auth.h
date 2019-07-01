@@ -60,22 +60,24 @@ extern "C" {
    // regardless of the return value. This function will first free the
    // strings stored at that location before populating them with new
    // values.
-   bool sqldb_auth_user_session (sqldb_t     *db,
-                                 const char   session_id[65],
-                                 char       **email_dst,
-                                 char       **nick_dst,
-                                 uint64_t    *id_dst);
+   bool sqldb_auth_session_valid (sqldb_t     *db,
+                                  const char   session_id[65],
+                                  char       **email_dst,
+                                  char       **nick_dst,
+                                  uint64_t    *id_dst);
 
    // Creates a new session, returns the session ID in the sess_id_dst
    // array. Returns true on success and false on error.
-   bool sqldb_auth_user_login (sqldb_t    *db,
-                               const char *email,
-                               const char *password,
-                               char        sess_id_dst[65]);
+   bool sqldb_auth_session_authenticate (sqldb_t    *db,
+                                         const char *email,
+                                         const char *password,
+                                         char        sess_id_dst[65]);
 
-   // Invalidates the session for user specified by email.
-   void sqldb_auth_user_logout (sqldb_t      *db,
-                                const char   *email);
+   // Invalidates the session specified by session for user specified by email.
+   // If the session is not valid for that user then no action is taken.
+   void sqldb_auth_session_invalidate (sqldb_t      *db,
+                                       const char    session_id[65],
+                                       const char   *email);
 
    ///////////////////////////////////////////////////////////////////////
 

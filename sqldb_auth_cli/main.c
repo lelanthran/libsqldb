@@ -243,6 +243,28 @@ static void print_help_msg (const char *cmd)
 "     database. When the <database-type> is 'postgres' the <database> ",\
 "     argument must contain the postgres connection string.",\
 ""
+#define SESSION_AUTHENTICATE_MSG \
+"  session_authenticate <email> <password>",\
+"     Authenticates the user specified with <email> using the specified",\
+"     password <password>.",\
+"     Prints the session ID token and other user infomation to stdout on",\
+"     success, or an error msg (with no stdout output) on error. Returns",\
+"     non-zero on failure to authenticate the user, and zero on successful",\
+"     authentication. Any existing session is invalidated on a successful",\
+"     authentication only.",\
+""
+#define SESSION_INVALIDATE_MSG \
+"  session_invalidate <email> <session-ID>",\
+"     Invalidates the user specified with <email> if and only if the",\
+"     specified session-id is valid for that user.",\
+""
+#define SESSION_VALID_MSG \
+"  session_valid <email> <session-ID>",\
+"     Checks if the session specified by <session-ID> is valid for the user",\
+"     specified by <email>. If valid, prints 'true' to stdout and returns",\
+"     zero to the caller. If not valid, prints 'false' to stdout and",\
+"     returns non-zero to the caller.",\
+""
 #define USER_NEW_MSG    \
 "  user_create <email> <nick> <password> ",\
 "     Create a new user, using specified <email>, <nick> and <password>.",\
@@ -358,33 +380,37 @@ static void print_help_msg (const char *cmd)
       const char *cmd;
       const char *msg[20];
    } cmd_help[] = {
-      { "help",            { COMMAND_HELP       }  },
-      { "create",          { COMMAND_CREATE     }  },
-      { "init",            { COMMAND_INIT       }  },
+      { "help",                  { COMMAND_HELP             }  },
+      { "create",                { COMMAND_CREATE           }  },
+      { "init",                  { COMMAND_INIT             }  },
 
-      { "user_create",     { USER_NEW_MSG       }  },
-      { "user_rm",         { USER_RM_MSG       }  },
-      { "user_mod",        { USER_MOD_MSG       }  },
-      { "user_info",       { USER_INFO_MSG      }  },
-      { "user_find",       { USER_FIND_MSG      }  },
-      { "user_perms",      { USER_PERMS_MSG     }  },
+      { "session_authenticate",  { SESSION_AUTHENTICATE_MSG }  },
+      { "session_invalidate",    { SESSION_INVALIDATE_MSG   }  },
+      { "session_valid",         { SESSION_VALID_MSG        }  },
 
-      { "group_create",    { GROUP_NEW_MSG      }  },
-      { "group_rm",        { GROUP_RM_MSG      }  },
-      { "group_mod",       { GROUP_MOD_MSG      }  },
-      { "group_info",      { GROUP_INFO_MSG     }  },
-      { "group_find",      { GROUP_FIND_MSG     }  },
-      { "group_perms",     { GROUP_PERMS_MSG    }  },
+      { "user_create",           { USER_NEW_MSG             }  },
+      { "user_rm",               { USER_RM_MSG              }  },
+      { "user_mod",              { USER_MOD_MSG             }  },
+      { "user_info",             { USER_INFO_MSG            }  },
+      { "user_find",             { USER_FIND_MSG            }  },
+      { "user_perms",            { USER_PERMS_MSG           }  },
 
-      { "group_adduser",   { GROUP_ADDUSER_MSG  }  },
-      { "group_rmuser",    { GROUP_RMUSER_MSG   }  },
-      { "group_members",   { GROUP_MEMBERS_MSG  }  },
+      { "group_create",          { GROUP_NEW_MSG            }  },
+      { "group_rm",              { GROUP_RM_MSG             }  },
+      { "group_mod",             { GROUP_MOD_MSG            }  },
+      { "group_info",            { GROUP_INFO_MSG           }  },
+      { "group_find",            { GROUP_FIND_MSG           }  },
+      { "group_perms",           { GROUP_PERMS_MSG          }  },
 
-      { "grant_user",      { GRANT_USER_MSG     }  },
-      { "revoke_user",     { REVOKE_USER_MSG    }  },
-      { "grant_group",     { GRANT_GROUP_MSG     }  },
-      { "revoke_group",    { REVOKE_GROUP_MSG    }  },
-      { "perms",           { PERMS_MSG          }  },
+      { "group_adduser",         { GROUP_ADDUSER_MSG        }  },
+      { "group_rmuser",          { GROUP_RMUSER_MSG         }  },
+      { "group_members",         { GROUP_MEMBERS_MSG        }  },
+
+      { "grant_user",            { GRANT_USER_MSG           }  },
+      { "revoke_user",           { REVOKE_USER_MSG          }  },
+      { "grant_group",           { GRANT_GROUP_MSG          }  },
+      { "revoke_group",          { REVOKE_GROUP_MSG         }  },
+      { "perms",                 { PERMS_MSG                }  },
    };
 
    static const char *msg[] = {
@@ -439,6 +465,14 @@ static void print_help_msg (const char *cmd)
 COMMAND_HELP,
 COMMAND_CREATE,
 COMMAND_INIT,
+"",
+"",
+"----------------",
+"SESSION COMMANDS",
+"----------------",
+SESSION_AUTHENTICATE_MSG,
+SESSION_INVALIDATE_MSG,
+SESSION_VALID_MSG,
 "",
 "",
 "-------------",
@@ -510,6 +544,7 @@ PERMS_MSG,
 
 static bool cmd_TODO (char **args)
 {
+   args = args;
    PROG_ERR ("Unimplemented\n");
    return false;
 }
@@ -950,33 +985,37 @@ int main (int argc, char **argv)
       size_t min_args;
       size_t max_args;
    } cmds[] = {
-      { "help",               cmd_help,            2, 2     },
-      { "create",             cmd_create,          2, 2     },
-      { "init",               cmd_init,            3, 3     },
+      { "help",                  cmd_help,            2, 2     },
+      { "create",                cmd_create,          2, 2     },
+      { "init",                  cmd_init,            3, 3     },
 
-      { "user_create",        cmd_user_create,     4, 4     },
-      { "user_rm",            cmd_user_rm,         2, 2     },
-      { "user_mod",           cmd_user_mod,        5, 5     },
-      { "user_info",          cmd_user_info,       2, 2     },
-      { "user_find",          cmd_user_find,       3, 3     },
+      { "session_authenticate",  cmd_TODO,            2, 2     },
+      { "session_invalidate",    cmd_TODO,            2, 2     },
+      { "session_valid",         cmd_TODO,            2, 2     },
 
-      { "group_create",       cmd_group_create,    3, 3     },
-      { "group_rm",           cmd_group_rm,        2, 2     },
-      { "group_mod",          cmd_group_mod,       4, 4     },
-      { "group_info",         cmd_group_info,      2, 2     },
-      { "group_find",         cmd_group_find,      3, 3     },
+      { "user_create",           cmd_user_create,     4, 4     },
+      { "user_rm",               cmd_user_rm,         2, 2     },
+      { "user_mod",              cmd_user_mod,        5, 5     },
+      { "user_info",             cmd_user_info,       2, 2     },
+      { "user_find",             cmd_user_find,       3, 3     },
 
-      { "group_adduser",      cmd_group_adduser,   3, 3     },
-      { "group_rmuser",       cmd_group_rmuser,    3, 3     },
-      { "group_members",      cmd_group_members,   2, 2     },
+      { "group_create",          cmd_group_create,    3, 3     },
+      { "group_rm",              cmd_group_rm,        2, 2     },
+      { "group_mod",             cmd_group_mod,       4, 4     },
+      { "group_info",            cmd_group_info,      2, 2     },
+      { "group_find",            cmd_group_find,      3, 3     },
 
-      { "grant_user",         cmd_grant_user,      4, 68    },
-      { "revoke_user",        cmd_revoke_user,     4, 68    },
-      { "grant_group",        cmd_grant_group,     4, 68    },
-      { "revoke_group",       cmd_revoke_group,    4, 68    },
-      { "user_perms",         cmd_user_perms,      3, 3     },
-      { "group_perms",        cmd_group_perms,     3, 3     },
-      { "perms",              cmd_perms,           3, 3     },
+      { "group_adduser",         cmd_group_adduser,   3, 3     },
+      { "group_rmuser",          cmd_group_rmuser,    3, 3     },
+      { "group_members",         cmd_group_members,   2, 2     },
+
+      { "grant_user",            cmd_grant_user,      4, 68    },
+      { "revoke_user",           cmd_revoke_user,     4, 68    },
+      { "grant_group",           cmd_grant_group,     4, 68    },
+      { "revoke_group",          cmd_revoke_group,    4, 68    },
+      { "user_perms",            cmd_user_perms,      3, 3     },
+      { "group_perms",           cmd_group_perms,     3, 3     },
+      { "perms",                 cmd_perms,           3, 3     },
    };
 
    const struct command_t *cmd = NULL;
