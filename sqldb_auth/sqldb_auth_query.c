@@ -155,7 +155,17 @@
 "WHERE c_group = (SELECT c_id FROM t_group WHERE c_name=#1) "\
 "AND   c_resource = #2;"
 
-// TODO: perms_get_effective
+#define perms_get_all \
+"SELECT c_perms FROM t_group_perm "\
+"WHERE c_resource = #2 "\
+"AND "\
+"   c_group IN "\
+"      (SELECT c_group FROM t_group_membership "\
+"      WHERE c_user = "\
+"         (SELECT c_id FROM t_user "\
+"         WHERE c_email=#1));"
+
+
 ///////////////////////////////////////////////////////////////////
 
 #define STMT(x)      {#x, x }
@@ -188,6 +198,7 @@ static const struct {
    STMT (perms_group_revoke),
    STMT (perms_get_user),
    STMT (perms_get_group),
+   STMT (perms_get_all),
 };
 #undef STMT
 

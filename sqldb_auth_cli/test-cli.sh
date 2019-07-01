@@ -101,6 +101,11 @@ $VALGRIND $VGOPTS $PROG group_adduser Group-One five@example.com
 $VALGRIND $VGOPTS $PROG group_adduser Group-One six@example.com
 $VALGRIND $VGOPTS $PROG group_adduser Group-One ten@example.com
 
+## Needed to test the effective perms
+$VALGRIND $VGOPTS $PROG group_adduser Group-Two one@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-Four one@example.com
+$VALGRIND $VGOPTS $PROG group_adduser Group-Five one@example.com
+
 # Remove users from a few groups
 $VALGRIND $VGOPTS $PROG group_rmuser Group-One three@example.com
 $VALGRIND $VGOPTS $PROG group_rmuser Group-One five@example.com
@@ -109,15 +114,15 @@ $VALGRIND $VGOPTS $PROG group_rmuser Group-One five@example.com
 $VALGRIND $VGOPTS $PROG group_members Group-One
 
 # Grant permissions to users
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 0
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 1
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 2
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 3
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 4
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 20
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 21
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 22
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 23
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 24
 
 # Remove permissions from users
-$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 1
-$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 3
+$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 21
+$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 23
 
 # Resulting permission value should be 21
 
@@ -127,6 +132,12 @@ $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 1
 $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 2
 $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 3
 $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 4
+
+## Needed to test the effective perms
+$VALGRIND $VGOPTS $PROG grant_group Group-Two Resource-1 9
+$VALGRIND $VGOPTS $PROG grant_group Group-Three Resource-1 10
+$VALGRIND $VGOPTS $PROG grant_group Group-Four Resource-1 11
+$VALGRIND $VGOPTS $PROG grant_group Group-Five Resource-1 12
 
 # Remove permissions from groups
 $VALGRIND $VGOPTS $PROG revoke_group Group-One Resource-1 2

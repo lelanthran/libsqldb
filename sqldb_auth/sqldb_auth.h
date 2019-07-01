@@ -1,6 +1,6 @@
 
-#ifndef H_XCGI_AUTH
-#define H_XCGI_AUTH
+#ifndef H_SQLDB_AUTH
+#define H_SQLDB_AUTH
 
 #include <stdbool.h>
 #include <stdint.h>
