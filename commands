@@ -1,0 +1,2 @@
+rm -fv /tmp/testdb.sql3 && sqlite3 /tmp/testdb.sql3 .databases && make debug && valgrind ./sqldb_auth/main-d.elf sqlite
+rm -fv /tmp/testdb.sql3 && sqlite3 /tmp/testdb.sql3 .databases && make debug && valgrind ./sqldb_auth/main-d.elf sqlite
