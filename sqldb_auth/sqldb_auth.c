@@ -1181,13 +1181,19 @@ bool sqldb_auth_perms_get_all (sqldb_t    *db,
    bool error = true;
    sqldb_res_t *res = NULL;
    const char *qstring = NULL;
+   int rc = 0;
 
    if (!db || !perms_dst ||
        !SVALID (resource) || !SVALID (email))
       return false;
 
-   if (!(qstring = sqldb_auth_query ("perms_get_effective"))) {
-      LOG_ERR ("Failed to find query for [perms_get_effective]\n");
+   if (!(sqldb_auth_perms_get_user (db, perms_dst, email, resource))) {
+      LOG_ERR ("Failed to get permissions for user [%s]\n", email);
+      goto errorexit;
+   }
+
+   if (!(qstring = sqldb_auth_query ("perms_get_all"))) {
+      LOG_ERR ("Failed to find query for [perms_get_all]\n");
       goto errorexit;
    }
 
@@ -1199,18 +1205,21 @@ bool sqldb_auth_perms_get_all (sqldb_t    *db,
       goto errorexit;
    }
 
-   if ((sqldb_res_step (res))!=1) {
-      LOG_ERR ("Failed to retrieve query results for [%s]\n"
-               "#1=%s, #2%s\n%s\n%s\n",
-                qstring, email, resource, sqldb_res_lasterr (res),
-                                          sqldb_lasterr (db));
-      goto errorexit;
+   while ((rc = sqldb_res_step (res)) > 0) {
+      uint64_t tmp = 0;
+      if ((sqldb_scan_columns (res, sqldb_col_UINT64, &tmp,
+                                    sqldb_col_UNKNOWN))!=1) {
+         LOG_ERR ("Failed to scan query results for [%s]\n"
+                  "#1=%s, #2%s\n%s\n%s\n",
+                     qstring, email, resource, sqldb_res_lasterr (res),
+                     sqldb_lasterr (db));
+         goto errorexit;
+      }
+      *perms_dst = (*perms_dst) | tmp;
    }
 
-   if ((sqldb_scan_columns (res, sqldb_col_UINT64, perms_dst,
-                                 sqldb_col_UNKNOWN))!=1) {
-
-      LOG_ERR ("Failed to scan query results for [%s]\n"
+   if (rc < 0) {
+      LOG_ERR ("Failed to retrieve query results for [%s]\n"
                "#1=%s, #2%s\n%s\n%s\n",
                 qstring, email, resource, sqldb_res_lasterr (res),
                                           sqldb_lasterr (db));
