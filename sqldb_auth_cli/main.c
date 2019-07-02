@@ -231,8 +231,8 @@ static void print_help_msg (const char *cmd)
 ""
 #define COMMAND_CREATE    \
 "  create ",\
-"     Creates a new, empty sqlite database. This is only needed for Sqlite.",\
-"     When using a Postgres database, the database must be created by the",\
+"     Creates a new, empty sqlite database. This is only needed for sqlite.",\
+"     When using a postgres database, the database must be created by the",\
 "     caller.",\
 ""
 #define COMMAND_INIT    \
@@ -256,7 +256,7 @@ static void print_help_msg (const char *cmd)
 #define SESSION_INVALIDATE_MSG \
 "  session_invalidate <email> <session-ID>",\
 "     Invalidates the user specified with <email> if and only if the",\
-"     specified session-id is valid for that user.",\
+"     specified <session-ID> is valid for that user.",\
 ""
 #define SESSION_VALID_MSG \
 "  session_valid <email> <session-ID>",\
@@ -443,20 +443,20 @@ static void print_help_msg (const char *cmd)
 "     and some informational messages are printed.",
 "",
 " --database-type=<sqlite | postgres>",
-"  Database type. When database-type is 'sqlite' then '--database' is used to",
-"  determine the filename of the sqlite3 database file. When database-type is ",
-"  'postgres' then '--database' must contain the full connection string for",
-"  a postgres database.",
-"  Defaults to 'sqlite'.",
+"     Database type. When database-type is 'sqlite' then '--database' is",
+"     used to determine the filename of the sqlite3 database file. When",
+"     database-type is 'postgres' then '--database' must contain the full",
+"     connection string for a postgres database.",
+"     Defaults to 'sqlite'.",
 "",
 " --database=<connection>",
-"  Specifies the database to connect to. When '--database-type' is 'sqlite'",
-"  then '--database' specifies a sqlite3 file. When '--database-type' is",
-"  'postgres' then '--database' must contain a postgres connection string.",
-"  Defaults to 'sqldb_auth.sql3,",
+"     Specifies the database to connect to. When '--database-type' is 'sqlite'",
+"     then '--database' specifies a sqlite3 file. When '--database-type' is",
+"     'postgres' then '--database' must contain a postgres connection string.",
+"     Defaults to 'sqldb_auth.sql3,",
 "",
 " --display-bits=<binary | hex | oct | dec>",
-"  Specifies the format to display permission bits in. Defaults to binary.",
+"     Specifies the format to display permission bits in. Defaults to binary.",
 "",
 "",
 "----------------",

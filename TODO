@@ -18,4 +18,5 @@
    sqldb_auth module (hasn't been done yet).
 
 5. Perhaps not a bad idea to add in a flags column for users (enabled,
-   disabled).
+   disabled). This means all the user_*() functions which return any form
+   of user info must also return the flags.
