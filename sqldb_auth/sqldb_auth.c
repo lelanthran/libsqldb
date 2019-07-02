@@ -164,7 +164,8 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
 uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                  const char *email,
                                  const char *nick,
-                                 const char *password)
+                                 const char *password,
+                                 uint64_t    flags)
 {
    bool error = true;
    uint64_t ret = (uint64_t)-1;
@@ -183,7 +184,7 @@ uint64_t sqldb_auth_user_create (sqldb_t    *db,
    if (ret==(uint64_t)-1 || ret==0)
       goto errorexit;
 
-   if (!(sqldb_auth_user_mod (db, email, email, nick, password)))
+   if (!(sqldb_auth_user_mod (db, email, email, nick, password, flags)))
       goto errorexit;
    error = false;
 
@@ -213,6 +214,7 @@ bool sqldb_auth_user_rm (sqldb_t *db, const char *email)
 bool sqldb_auth_user_info (sqldb_t    *db,
                            const char *email,
                            uint64_t   *id_dst,
+                           uint64_t   *flags,
                            char      **nick_dst,
                            char        session_dst[65])
 {
@@ -310,7 +312,8 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
                           const char *old_email,
                           const char *new_email,
                           const char *nick,
-                          const char *password)
+                          const char *password,
+                          uint64_t    flags)
 {
    bool error = true;
 
@@ -526,6 +529,7 @@ bool sqldb_auth_user_find (sqldb_t    *db,
                            uint64_t   *nitems,
                            char     ***emails,
                            char     ***nicks,
+                           uint64_t  **flags,
                            uint64_t  **ids)
 {
 #define BASE_QS      "SELECT c_email, c_nick, c_id FROM t_user "
@@ -830,6 +834,7 @@ bool sqldb_auth_group_members (sqldb_t    *db,
                                uint64_t   *nitems,
                                char     ***emails,
                                char     ***nicks,
+                               uint64_t  **flags,
                                uint64_t  **ids)
 {
    bool error = true;

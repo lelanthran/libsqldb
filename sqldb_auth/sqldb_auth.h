@@ -64,6 +64,7 @@ extern "C" {
                                   const char   session_id[65],
                                   char       **email_dst,
                                   char       **nick_dst,
+                                  uint64_t    *flags,
                                   uint64_t    *id_dst);
 
    // Creates a new session, returns the session ID in the sess_id_dst
@@ -86,7 +87,8 @@ extern "C" {
    uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                     const char *email,
                                     const char *nick,
-                                    const char *password);
+                                    const char *password,
+                                    uint64_t    flags);
 
    // Removes a user from the database.
    bool sqldb_auth_user_rm (sqldb_t *db, const char *email);
@@ -99,6 +101,7 @@ extern "C" {
    bool sqldb_auth_user_info (sqldb_t    *db,
                               const char *email,
                               uint64_t   *id_dst,
+                              uint64_t   *flags,
                               char      **nick_dst,
                               char        session_dst[65]);
 
@@ -109,7 +112,8 @@ extern "C" {
                              const char *old_email,
                              const char *new_email,
                              const char *nick,
-                             const char *password);
+                             const char *password,
+                             uint64_t    flags);
 
 
    ///////////////////////////////////////////////////////////////////////
@@ -178,6 +182,7 @@ extern "C" {
                               uint64_t   *nitems,
                               char     ***emails,
                               char     ***nicks,
+                              uint64_t  **flags,
                               uint64_t  **ids);
 
    // Generates a list of group records from the database that match the
@@ -226,6 +231,7 @@ extern "C" {
                                   uint64_t   *nitems,
                                   char     ***emails,
                                   char     ***nicks,
+                                  uint64_t  **flags,
                                   uint64_t  **ids);
 
    ///////////////////////////////////////////////////////////////////////

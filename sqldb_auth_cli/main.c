@@ -299,7 +299,16 @@ static void print_help_msg (const char *cmd)
 "     below.",\
 "     See '--display-bits' for display options.",\
 ""
-
+#define USER_FLAGS_SET_MSG    \
+"  user_flags_set <email>  <bit-number [ | bit-number | ...]>",\
+"     Set a flag for the user specified by <email>. Up to 64 flags can be",\
+"     set or cleared per user.",\
+""
+#define USER_FLAGS_CLEAR_MSG    \
+"  user_flags_clear <email> <bit-number [ | bit-number | ...]>",\
+"     Clear a flag for the user specified by <email>. Up to 64 flags can be",\
+"     set or cleared per user.",\
+""
 #define GROUP_NEW_MSG    \
 "  group_create <name> <description> ",\
 "     Create a new group, using specified <name> and <description>.",\
@@ -345,25 +354,25 @@ static void print_help_msg (const char *cmd)
 ""
 
 #define GRANT_USER_MSG    \
-"  grant_user <email> <resource> <bit-number [ | bit-number | ...]",\
+"  grant_user <email> <resource> <bit-number [ | bit-number | ...]>",\
 "     Allow user specified by <email> access to the resource specified by",\
 "     <resource>. The nature of the access is specified by one or more",\
 "     <bit-number> specifiers.",\
 ""
 #define REVOKE_USER_MSG    \
-"  revoke_user <email> <resource> <bit-number [ | bit-number | ...]",\
+"  revoke_user <email> <resource> <bit-number [ | bit-number | ...]>",\
 "     Revoke access to the resource specified by <resource> for user specified",\
 "     by <email>. The nature of the access is specified by one or more",\
 "     <bit-number> specifiers.",\
 ""
 #define GRANT_GROUP_MSG    \
-"  grant_group <name> <resource> <bit-number [ | bit-number | ...]",\
+"  grant_group <name> <resource> <bit-number [ | bit-number | ...]>",\
 "     Allow group specified by <name> access to the resource specified by",\
 "     <resource>. The nature of the access is specified by one or more",\
 "     <bit-number> specifiers.",\
 ""
 #define REVOKE_GROUP_MSG    \
-"  revoke_group <name> <resource> <bit-number [ | bit-number | ...]",\
+"  revoke_group <name> <resource> <bit-number [ | bit-number | ...]>",\
 "     Revoke access to the resource specified by <resource> for group",\
 "     specified by <email>. The nature of the access is specified by one",\
 "     or more <bit-number> specifiers.",\
@@ -394,6 +403,8 @@ static void print_help_msg (const char *cmd)
       { "user_info",             { USER_INFO_MSG            }  },
       { "user_find",             { USER_FIND_MSG            }  },
       { "user_perms",            { USER_PERMS_MSG           }  },
+      { "user_flags_set",        { USER_FLAGS_SET_MSG       }  },
+      { "user_flags_clear",      { USER_FLAGS_CLEAR_MSG     }  },
 
       { "group_create",          { GROUP_NEW_MSG            }  },
       { "group_rm",              { GROUP_RM_MSG             }  },
@@ -456,7 +467,8 @@ static void print_help_msg (const char *cmd)
 "     Defaults to 'sqldb_auth.sql3,",
 "",
 " --display-bits=<binary | hex | oct | dec>",
-"     Specifies the format to display permission bits in. Defaults to binary.",
+"     Specifies the format to display permission or flag bits in. Defaults to",
+"     binary.",
 "",
 "",
 "----------------",
@@ -483,6 +495,8 @@ USER_RM_MSG,
 USER_MOD_MSG,
 USER_INFO_MSG,
 USER_FIND_MSG,
+USER_FLAGS_SET_MSG,
+USER_FLAGS_CLEAR_MSG,
 USER_PERMS_MSG,
 "",
 "",
@@ -623,7 +637,9 @@ static sqldb_t *g_db = NULL;
 
 static bool cmd_user_create (char **args)
 {
-   return sqldb_auth_user_create (g_db, args[1], args[2], args[3]);
+   // TODO: Flags must be initialised from the remainder of the c/line
+   uint64_t flags = 0;
+   return sqldb_auth_user_create (g_db, args[1], args[2], args[3], flags);
 }
 
 static bool cmd_user_rm (char **args)
@@ -633,25 +649,28 @@ static bool cmd_user_rm (char **args)
 
 static bool cmd_user_mod (char **args)
 {
-   return sqldb_auth_user_mod (g_db, args[1], args[2], args[3], args[4]);
+   // TODO: Flags must be initialised from the remainder of the c/line
+   uint64_t flags = 0;
+   return sqldb_auth_user_mod (g_db, args[1], args[2], args[3], args[4], flags);
 }
 
 static bool cmd_user_info (char **args)
 {
-   uint64_t id = 0;
+   uint64_t id = 0, flags = 0;
    char *nick = NULL;
    char session[65];
    bool ret = false;
 
    memset (session, 0, sizeof session);
 
-   ret = sqldb_auth_user_info (g_db, args[1], &id, &nick, session);
+   ret = sqldb_auth_user_info (g_db, args[1], &id, &flags, &nick, session);
    if (!ret) {
       PROG_ERR ("Failed to retrieve user_info for [%s]\n", args[1]);
    } else {
       printf ("--------------------------\n");
       printf ("User:    [%s]\n", args[1]);
       printf ("ID:      [%" PRIu64 "]\n", id);
+      printf ("Flags:   [%" PRIu64 "]\n", flags);
       printf ("Nick:    [%s]\n", nick);
       printf ("Session: [%s]\n", session);
       printf ("--------------------------\n");
@@ -669,7 +688,7 @@ static bool cmd_user_find (char **args)
    uint64_t    nitems = 0;
    char **emails = NULL;
    char **nicks = NULL;
-   uint64_t *ids = NULL;
+   uint64_t *ids = NULL, *flags = NULL;
 
    bool ret = false;
 
@@ -680,13 +699,14 @@ static bool cmd_user_find (char **args)
       npat = args[2];
 
    ret = sqldb_auth_user_find (g_db, epat, npat,
-                               &nitems, &emails, &nicks, &ids);
+                               &nitems, &emails, &nicks, &flags, &ids);
    if (!ret) {
       PROG_ERR ("Failed to list users matching [%s]/[%s]\n", args[1], args[2]);
    } else {
       printf ("Matches [%s][%s]\n", args[1], args[2]);
       for (uint64_t i=0; i<nitems; i++) {
-         printf ("%" PRIu64 ":%s:%s\n", ids[i], emails[i], nicks[i]);
+         printf ("%" PRIu64 ":%" PRIu64 ":%s:%s\n",
+                  ids[i], flags[i], emails[i], nicks[i]);
       }
       printf ("..........................\n");
    }
@@ -699,6 +719,7 @@ static bool cmd_user_find (char **args)
    free (emails);
    free (nicks);
    free (ids);
+   free (flags);
 
    return ret;
 }
@@ -799,18 +820,19 @@ static bool cmd_group_members (char **args)
    uint64_t    nitems = 0;
    char **emails = NULL;
    char **nicks = NULL;
-   uint64_t *ids = NULL;
+   uint64_t *ids = NULL, *flags = NULL;
 
    bool ret = false;
 
    ret = sqldb_auth_group_members (g_db, args[1],
-                                   &nitems, &emails, &nicks, &ids);
+                                   &nitems, &emails, &nicks, &flags, &ids);
    if (!ret) {
       PROG_ERR ("Failed to list users in group [%s]\n", args[1]);
    } else {
       printf ("Membership of [%s]\n", args[1]);
       for (uint64_t i=0; i<nitems; i++) {
-         printf ("%" PRIu64 ":%s:%s\n", ids[i], emails[i], nicks[i]);
+         printf ("%" PRIu64 ":%" PRIu64 ":%s:%s\n",
+                  ids[i], flags[i], emails[i], nicks[i]);
       }
       printf ("..........................\n");
    }
@@ -823,6 +845,7 @@ static bool cmd_group_members (char **args)
    free (emails);
    free (nicks);
    free (ids);
+   free (flags);
 
    return ret;
 }
@@ -998,6 +1021,8 @@ int main (int argc, char **argv)
       { "user_mod",              cmd_user_mod,        5, 5     },
       { "user_info",             cmd_user_info,       2, 2     },
       { "user_find",             cmd_user_find,       3, 3     },
+      { "user_perms",            cmd_TODO,            3, 68    },
+      { "user_flags_set",        cmd_TODO,            3, 68    },
 
       { "group_create",          cmd_group_create,    3, 3     },
       { "group_rm",              cmd_group_rm,        2, 2     },

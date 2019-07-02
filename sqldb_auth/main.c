@@ -53,7 +53,7 @@ static bool create_users (sqldb_t *db)
    for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
       if ((sqldb_auth_user_create (db, users[i].email,
                                        users[i].nick,
-                                       "123456"))==(uint64_t)-1) {
+                                       "123456", 0))==(uint64_t)-1) {
          PROG_ERR ("Failed to create user [%s]\n%s\n", users[i].email,
                                                        sqldb_lasterr (db));
          goto errorexit;
@@ -88,9 +88,10 @@ static bool list_users (sqldb_t *db)
    char **emails = NULL;
    char **nicks = NULL;
    uint64_t *ids = NULL;
+   uint64_t *flags = NULL;
 
    if (!(sqldb_auth_user_find (db, "t%", NULL,
-                               &nitems, &emails, &nicks, &ids))) {
+                               &nitems, &emails, &nicks, &flags, &ids))) {
       PROG_ERR ("Failed to execute patterns for user searching\n");
       goto errorexit;
    }
@@ -98,18 +99,20 @@ static bool list_users (sqldb_t *db)
    printf ("Found %" PRIu64 " users\n", nitems);
 
    for (uint64_t i=0; i<nitems; i++) {
-      uint64_t n_id = 0;
+      uint64_t n_id = 0, n_flags = 0;
       char *n_nick = NULL;
       char sess[65];
 
-      if (!(sqldb_auth_user_info (db, emails[i], &n_id, &n_nick, sess))) {
+      if (!(sqldb_auth_user_info (db, emails[i], &n_id, &n_flags, &n_nick, sess))) {
          PROG_ERR ("Failed to get user info\n");
          goto errorexit;
       }
 
-      printf ("L[%" PRIu64 "][%s][%s]\n", ids[i], emails[i], nicks[i]);
+      printf ("L[%" PRIu64 "][%" PRIu64 "][%s][%s]\n",
+               ids[i], flags[i], emails[i], nicks[i]);
 
-      printf ("I[%" PRIu64 "][%s][%s]\n", n_id, n_nick, sess);
+      printf ("I[%" PRIu64 "][%" PRIu64 "][%s][%s]\n",
+               n_id, n_flags, n_nick, sess);
 
       free (emails[i]);
       free (nicks[i]);
@@ -117,6 +120,7 @@ static bool list_users (sqldb_t *db)
    }
 
    free (ids);
+   free (flags);
    free (emails);
    free (nicks);
 
@@ -238,7 +242,7 @@ static bool list_memberships (sqldb_t *db)
       uint64_t nitems = 0;
       char **emails = NULL,
            **nicks = NULL;
-      uint64_t *ids = NULL;
+      uint64_t *ids = NULL, *flags = NULL;
 
       char name[30];
 
@@ -247,6 +251,7 @@ static bool list_memberships (sqldb_t *db)
       if (!(sqldb_auth_group_members (db, name, &nitems,
                                                 &emails,
                                                 &nicks,
+                                                &flags,
                                                 &ids))) {
          PROG_ERR ("Failed to get membership for [%s]: %s\n",
                    name,
@@ -272,6 +277,7 @@ static bool list_memberships (sqldb_t *db)
       free (emails);
       free (nicks);
       free (ids);
+      free (flags);
 
       emails = NULL;
       nicks = NULL;
@@ -284,7 +290,7 @@ static bool list_memberships (sqldb_t *db)
       uint64_t nitems = 0;
       char **emails = NULL,
            **nicks = NULL;
-      uint64_t *ids = NULL;
+      uint64_t *ids = NULL, *flags = NULL;
 
       char name[30];
 
@@ -293,6 +299,7 @@ static bool list_memberships (sqldb_t *db)
       if (!(sqldb_auth_group_members (db, name, &nitems,
                                                 &emails,
                                                 &nicks,
+                                                &flags,
                                                 &ids))) {
          PROG_ERR (">>Failed to get membership for [%s]: %s\n",
                    name,
@@ -302,15 +309,16 @@ static bool list_memberships (sqldb_t *db)
 
       printf (">>Group %s has %" PRIu64 " members\n", groups[i].name, nitems);
       for (uint64_t j=0; j<nitems; j++) {
-         printf (">>%" PRIu64 ", %s, %s\n", ids[j],
-                                          emails[j],
-                                          nicks[j]);
+         printf (">>%" PRIu64 ", %" PRIu64 " %s, %s\n", ids[j], flags[j],
+                                                        emails[j],
+                                                        nicks[j]);
          free (emails[j]);
          free (nicks[j]);
       }
       free (emails);
       free (nicks);
       free (ids);
+      free (flags);
 
       emails = NULL;
       nicks = NULL;
