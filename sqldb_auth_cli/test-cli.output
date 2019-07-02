@@ -79,7 +79,10 @@ SESSION COMMANDS
 
   session_invalidate <email> <session-ID>
      Invalidates the user specified with <email> if and only if the
-     specified <session-ID> is valid for that user.
+     specified <session-ID> is valid for that user. Prints either 'true'
+     and returns 0 if the session-id and email combination was found in the
+     database, or prints 'false' and returns non-zero if the session-id and
+     email combination was not found in the database.
 
   session_valid <email> <session-ID>
      Checks if the session specified by <session-ID> is valid for the user
@@ -212,39 +215,39 @@ Initialised [sqlite] database [sqldb_auth.sql3] for use with sqldb_auth.
 --------------------------
 User:    [four@example.com]
 ID:      [4]
-Flags:   [0]
+Flags:   [10]
 Nick:    [FOUR-USER]
 Session: []
 --------------------------
 --------------------------
 User:    [five@example.com]
 ID:      [5]
-Flags:   [0]
+Flags:   [10]
 Nick:    [FIVE-USER]
 Session: []
 --------------------------
 --------------------------
 User:    [six@example.com]
 ID:      [6]
-Flags:   [0]
+Flags:   [10]
 Nick:    [SIX-USER]
 Session: []
 --------------------------
 Matches [f%][]
-4:0:four@example.com:FOUR-USER
-5:0:five@example.com:FIVE-USER
+4:10:four@example.com:FOUR-USER
+5:10:five@example.com:FIVE-USER
 ..........................
 Matches [][t%]
-2:0:two@example.com:TWO-USER
-3:0:three@example.com:THREE-USER
-10:0:ten@example.com:TEN-USER
+2:10:two@example.com:TWO-USER
+3:10:three@example.com:THREE-USER
+10:10:ten@example.com:TEN-USER
 ..........................
 Matches [t%][f%]
-2:0:two@example.com:TWO-USER
-3:0:three@example.com:THREE-USER
-4:0:four@example.com:FOUR-USER
-5:0:five@example.com:FIVE-USER
-10:0:ten@example.com:TEN-USER
+2:10:two@example.com:TWO-USER
+3:10:three@example.com:THREE-USER
+4:10:four@example.com:FOUR-USER
+5:10:five@example.com:FIVE-USER
+10:10:ten@example.com:TEN-USER
 ..........................
 --------------------------
 Group:    [Group-One]
@@ -278,13 +281,18 @@ Matches [group-t%][group f%]
 10:Group-Ten:Group Ten Description
 ..........................
 Membership of [Group-One]
-1:0:one@example.com:ONE-USER
-2:0:two@example.com:TWO-USER
-4:0:four@example.com:FOUR-USER
-6:0:six@example.com:SIX-USER
-10:0:ten@example.com:TEN-USER
+1:10:one@example.com:ONE-USER
+2:10:two@example.com:TWO-USER
+4:10:four@example.com:FOUR-USER
+6:10:six@example.com:SIX-USER
+10:10:ten@example.com:TEN-USER
 ..........................
-Perms for resource [one@example.com] user [Resource-1]: 0000000000000000000000000000000000000001010100000000000000000000
-22020096
+Perms for resource [one@example.com] user [Resource-1]: 0000000000000000000000000000000000000000000000000000000000010101
+21
 Perms for resource [Group-One] group [Resource-1]: 0000000000000000000000000000000000000000000000000000000000001011
-Effective perms for resource [one@example.com] user [Resource-1]: 0000000000000000000000000000000000000001010100000001101000001011
+Effective perms for resource [one@example.com] user [Resource-1]: 0000000000000000000000000000000000000000000000000000000000011111
+false
+Using session b19cb5a089ad878638eba8d7f22baff12a5f5436bf0864eeba48d12490ff6e42
+true:ONE-USER:10:1
+true
+false

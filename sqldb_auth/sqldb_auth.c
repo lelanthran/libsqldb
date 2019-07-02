@@ -19,6 +19,51 @@
 
 #define SVALID(s)   ((s && s[0]))
 
+static bool make_password_hash (char dst[65], const char  sz_salt[65],
+                                              const char *new_email,
+                                              const char *nick,
+                                              const char *password)
+{
+   bool error = true;
+
+   uint8_t  hash[32];
+
+   char *tmp = NULL;
+   size_t tmplen = 0;
+
+   tmplen =   strlen (sz_salt)
+            + strlen (new_email)
+            + strlen (nick)
+            + strlen (password)
+            + 1;
+
+   if (!(tmp = malloc (tmplen)))
+      goto errorexit;
+
+   strcpy (tmp, sz_salt);
+   strcat (tmp, new_email);
+   strcat (tmp, nick);
+   strcat (tmp, password);
+
+   calc_sha_256 (hash, tmp, tmplen);
+
+#define STRINGIFY(dst,dstlen,src,srclen)    do {\
+   for (size_t i=0; i<srclen && (i*2)<dstlen; i++) {\
+      sprintf (&dst[i*2], "%02x", src[i]);\
+   }\
+} while (0)
+
+   STRINGIFY (dst, 64, hash, sizeof hash);
+
+   error = false;
+
+errorexit:
+
+   free (tmp);
+
+   return !error;
+}
+
 bool sqldb_auth_initdb (sqldb_t *db)
 {
    bool error = true;
@@ -161,6 +206,179 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
    }
 }
 
+bool sqldb_auth_session_valid (sqldb_t     *db,
+                               const char  *email,
+                               const char   session_id[65],
+                               char       **nick_dst,
+                               uint64_t    *flags_dst,
+                               uint64_t    *id_dst)
+{
+   bool error = true;
+   const char *qstring = NULL;
+   sqldb_res_t *res = NULL;
+
+   if (!db || !SVALID (email) || !SVALID (session_id))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("session_valid"))) {
+      LOG_ERR ("Failed to get query-string [session_valid]\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_TEXT, &session_id,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute session query for [%s/%s]\n%s\n",
+                email, session_id, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res)) != 1) {
+      LOG_ERR ("Failed to find a session for [%s/%s]\n",
+               email, session_id);
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_TEXT,     nick_dst,
+                                 sqldb_col_UINT64,   flags_dst,
+                                 sqldb_col_UINT64,   id_dst,
+                                 sqldb_col_UNKNOWN)) != 3) {
+      LOG_ERR ("Failed to scan 3 columns in for session [%s/%s]\n",
+               email, session_id);
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   sqldb_res_del (res);
+
+   return !error;
+}
+
+bool sqldb_auth_session_authenticate (sqldb_t    *db,
+                                      const char *email,
+                                      const char *password,
+                                      char        sess_id_dst[65])
+{
+   bool error = true;
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+   sqldb_res_t *res = NULL;
+
+   char *salt = NULL,
+        *nick = NULL,
+        *dbhash = NULL;
+
+   char phash[65];
+   uint8_t sess_id_bin[32];
+
+   memset (phash, 0, sizeof phash);
+
+   if (!db || !SVALID (email) || !SVALID (password))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("user_salt_nick_hash"))) {
+      LOG_ERR ("Failed to get query-string for [user_salt_nick]\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute [%s] with #1=[%s]\n%s\n",
+               qstring, email, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res)) != 1) {
+      LOG_ERR ("Failed to step results set for [%s] #1 = %s: %s\n",
+            qstring, email, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if (!(sqldb_scan_columns (res, sqldb_col_TEXT, &salt,
+                                  sqldb_col_TEXT, &nick,
+                                  sqldb_col_TEXT, &dbhash,
+                                  sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to scan columns set for [%s] #1 = %s: %s\n",
+            qstring, email, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   sqldb_res_del (res);
+   res = NULL;
+
+   if (!(make_password_hash (phash, salt, email, nick, password))) {
+      LOG_ERR ("Failed to make password hash for [%s]\n", email);
+      goto errorexit;
+   }
+
+   if ((strncmp (dbhash, phash, sizeof phash))!=0)
+      goto errorexit;
+
+   sqldb_auth_random_bytes (sess_id_bin, 32);
+   memset (sess_id_dst, 0, 65);
+   for (size_t i=0; i<32; i++) {
+      sprintf (&sess_id_dst[i*2], "%02x", sess_id_bin[i]);
+   }
+
+   if (!(qstring = sqldb_auth_query ("user_update_session_id"))) {
+      LOG_ERR ("Failed to find query-string for [user_update_session_id]\n");
+      goto errorexit;
+   }
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_TEXT, &sess_id_dst,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc == (uint64_t)-1) {
+      LOG_ERR ("Failed to update db with new session ID [%s:%s]\n%s\n",
+               email, sess_id_dst, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   free (salt);
+   free (nick);
+   free (dbhash);
+
+   sqldb_res_del (res);
+
+   return !error;
+}
+
+bool sqldb_auth_session_invalidate (sqldb_t      *db,
+                                    const char   *email,
+                                    const char    session_id[65])
+{
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!db || !SVALID (email) || !SVALID (session_id))
+      return false;
+
+   if (!(qstring = sqldb_auth_query ("session_invalidate")))
+      return false;
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_TEXT, &session_id,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc==(uint64_t)-1) {
+      LOG_ERR ("Failed to invalidate session [%s/%s]: %s\n",
+               email, session_id,
+               sqldb_lasterr (db));
+      return false;
+   }
+
+   return true;
+
+}
+
 uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                  const char *email,
                                  const char *nick,
@@ -269,51 +487,6 @@ errorexit:
 
    free (tmp_sess);
    sqldb_res_del (res);
-
-   return !error;
-}
-
-static bool make_password_hash (char dst[65], const char  sz_salt[65],
-                                              const char *new_email,
-                                              const char *nick,
-                                              const char *password)
-{
-   bool error = true;
-
-   uint8_t  hash[32];
-
-   char *tmp = NULL;
-   size_t tmplen = 0;
-
-   tmplen =   strlen (sz_salt)
-            + strlen (new_email)
-            + strlen (nick)
-            + strlen (password)
-            + 1;
-
-   if (!(tmp = malloc (tmplen)))
-      goto errorexit;
-
-   strcpy (tmp, sz_salt);
-   strcat (tmp, new_email);
-   strcat (tmp, nick);
-   strcat (tmp, password);
-
-   calc_sha_256 (hash, tmp, tmplen);
-
-#define STRINGIFY(dst,dstlen,src,srclen)    do {\
-   for (size_t i=0; i<srclen && (i*2)<dstlen; i++) {\
-      sprintf (&dst[i*2], "%02x", src[i]);\
-   }\
-} while (0)
-
-   STRINGIFY (dst, 64, hash, sizeof hash);
-
-   error = false;
-
-errorexit:
-
-   free (tmp);
 
    return !error;
 }

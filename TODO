@@ -1,3 +1,6 @@
+URGENT: All the functions that take pointers to dst results must be able
+to handle NULLs being passed in.
+
 1. Need to differentiate between returned columns that are NULL and
    returned columns that are empty strings.
 

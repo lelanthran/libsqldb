@@ -49,6 +49,16 @@
 "" \
 "COMMIT;"
 
+
+///////////////////////////////////////////////////////////////////
+
+#define session_valid \
+"SELECT c_nick, c_flags, c_id FROM t_user "\
+"WHERE c_email = #1 AND c_session = #2;"
+
+#define session_invalidate \
+"UPDATE t_user SET c_session = '0' WHERE c_email = #1 AND c_session = #2;"
+
 ///////////////////////////////////////////////////////////////////
 
 #define user_create \
@@ -73,6 +83,12 @@
 
 #define user_flags_clear \
 "  UPDATE t_user SET c_flags = c_flags & ~#2 WHERE c_email = #1;"
+
+#define user_salt_nick_hash \
+" SELECT c_salt, c_nick, c_hash FROM t_user WHERE c_email = #1;"
+
+#define user_update_session_id \
+"  UPDATE t_user SET c_session = #2 WHERE c_email = #1;"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -185,12 +201,17 @@ static const struct {
 
    STMT (create_tables),
 
+   STMT (session_valid),
+   STMT (session_invalidate),
+
    STMT (user_create),
    STMT (user_mod),
    STMT (user_rm),
    STMT (user_info),
    STMT (user_flags_set),
    STMT (user_flags_clear),
+   STMT (user_salt_nick_hash),
+   STMT (user_update_session_id),
 
    STMT (group_create),
    STMT (group_mod),

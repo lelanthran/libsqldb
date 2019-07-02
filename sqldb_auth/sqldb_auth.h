@@ -53,18 +53,18 @@ extern "C" {
    ///////////////////////////////////////////////////////////////////////
 
    // Authenticates the session specified against the user in the
-   // database, returns the user info in email, nick and id if the
-   // specified session is in the database and valid.
+   // database, returns the user info in nick and id if the specified
+   // session is in the database and valid.
    //
    // The caller must free the strings in email_dst and nick_dst
    // regardless of the return value. This function will first free the
    // strings stored at that location before populating them with new
    // values.
    bool sqldb_auth_session_valid (sqldb_t     *db,
+                                  const char  *email,
                                   const char   session_id[65],
-                                  char       **email_dst,
                                   char       **nick_dst,
-                                  uint64_t    *flags,
+                                  uint64_t    *flags_dst,
                                   uint64_t    *id_dst);
 
    // Creates a new session, returns the session ID in the sess_id_dst
@@ -76,9 +76,9 @@ extern "C" {
 
    // Invalidates the session specified by session for user specified by email.
    // If the session is not valid for that user then no action is taken.
-   void sqldb_auth_session_invalidate (sqldb_t      *db,
-                                       const char    session_id[65],
-                                       const char   *email);
+   bool sqldb_auth_session_invalidate (sqldb_t      *db,
+                                       const char   *email,
+                                       const char    session_id[65]);
 
    ///////////////////////////////////////////////////////////////////////
 

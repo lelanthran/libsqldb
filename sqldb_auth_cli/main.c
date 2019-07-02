@@ -256,7 +256,10 @@ static void print_help_msg (const char *cmd)
 #define SESSION_INVALIDATE_MSG \
 "  session_invalidate <email> <session-ID>",\
 "     Invalidates the user specified with <email> if and only if the",\
-"     specified <session-ID> is valid for that user.",\
+"     specified <session-ID> is valid for that user. Prints either 'true'",\
+"     and returns 0 if the session-id and email combination was found in the",\
+"     database, or prints 'false' and returns non-zero if the session-id and",\
+"     email combination was not found in the database.",\
 ""
 #define SESSION_VALID_MSG \
 "  session_valid <email> <session-ID>",\
@@ -634,6 +637,46 @@ errorexit:
 /* ******************************************************************** */
 
 static sqldb_t *g_db = NULL;
+
+static bool cmd_session_authenticate (char **args)
+{
+   char sess_id[65];
+
+   if (sqldb_auth_session_authenticate (g_db, args[1], args[2], sess_id)) {
+      printf ("%s\n", sess_id);
+      return true;
+   }
+
+   return false;
+}
+
+static bool cmd_session_invalidate (char **args)
+{
+   if (sqldb_auth_session_invalidate (g_db, args[1], args[2])) {
+      printf ("true\n");
+      return true;
+   }
+
+   printf ("false\n");
+   return false;
+}
+
+static bool cmd_session_valid (char **args)
+{
+   char *nick = NULL;
+   uint64_t id = 0, flags = 0;
+
+   if (sqldb_auth_session_valid (g_db, args[1], args[2], &nick, &flags, &id)) {
+      printf ("true:%s:%" PRIu64 ":%" PRIu64 "\n", nick, flags, id);
+      free (nick);
+      return true;
+   }
+
+   free (nick);
+   printf ("false\n");
+   return false;
+}
+
 
 static bool cmd_user_create (char **args)
 {
@@ -1040,9 +1083,9 @@ int main (int argc, char **argv)
       { "create",                cmd_create,             2, 2     },
       { "init",                  cmd_init,               3, 3     },
 
-      { "session_authenticate",  cmd_TODO,               2, 2     },
-      { "session_invalidate",    cmd_TODO,               2, 2     },
-      { "session_valid",         cmd_TODO,               2, 2     },
+      { "session_authenticate",  cmd_session_authenticate,  3, 3  },
+      { "session_invalidate",    cmd_session_invalidate,    3, 3  },
+      { "session_valid",         cmd_session_valid,         3, 3  },
 
       { "user_create",           cmd_user_create,        4, 4     },
       { "user_rm",               cmd_user_rm,            2, 2     },
@@ -1228,6 +1271,9 @@ int main (int argc, char **argv)
    }
 
    ret = cmd->fptr (args) ? EXIT_SUCCESS : EXIT_FAILURE;
+   if (ret != EXIT_SUCCESS) {
+      PROG_ERR ("Command [%s] failed\n", cmd->cmd);
+   }
 
 errorexit:
 
