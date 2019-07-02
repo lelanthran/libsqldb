@@ -181,11 +181,15 @@ uint64_t sqldb_auth_user_create (sqldb_t    *db,
 
    ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
                                          sqldb_col_UNKNOWN);
-   if (ret==(uint64_t)-1 || ret==0)
+   if (ret==(uint64_t)-1 || ret==0) {
+      LOG_ERR ("Failed to create user [%s]: %s\n", email,
+                                                   sqldb_lasterr (db));
       goto errorexit;
+   }
 
    if (!(sqldb_auth_user_mod (db, email, email, nick, password, flags)))
       goto errorexit;
+
    error = false;
 
 errorexit:
@@ -208,7 +212,13 @@ bool sqldb_auth_user_rm (sqldb_t *db, const char *email)
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
                                         sqldb_col_UNKNOWN);
 
-   return (rc==(uint64_t)-1) ? false : true;
+   if (rc==(uint64_t)-1) {
+      LOG_ERR ("Failed to remove group [%s]: %s\n", email,
+                                                    sqldb_lasterr (db));
+      return false;
+   }
+
+   return true;
 }
 
 bool sqldb_auth_user_info (sqldb_t    *db,
@@ -316,8 +326,6 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
                           const char *password,
                           uint64_t    flags)
 {
-   bool error = true;
-
    const char *qstring = NULL;
 
    uint8_t  salt[32];
@@ -332,10 +340,10 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
    if (!db ||
        !old_email    || !new_email    || !nick    || !password ||
        !old_email[0] || !new_email[0] || !nick[0] || !password[0])
-      goto errorexit;
+      return false;
 
    if (!(qstring = sqldb_auth_query ("user_mod")))
-      goto errorexit;
+      return false;
 
    sqldb_auth_random_bytes (salt, sizeof salt);
    STRINGIFY (sz_salt, sizeof sz_salt, salt, 32);
@@ -343,20 +351,23 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
 
 
    if (!(make_password_hash (sz_hash, sz_salt, new_email, nick, password)))
-      goto errorexit;
+      return false;
 
-   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &old_email,
-                                         sqldb_col_TEXT, &new_email,
-                                         sqldb_col_TEXT, &nick,
-                                         sqldb_col_TEXT, &ptr_salt,
-                                         sqldb_col_TEXT, &ptr_hash,
-                                         sqldb_col_UINT64, &flags,
+   ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT,    &old_email,
+                                         sqldb_col_TEXT,    &new_email,
+                                         sqldb_col_TEXT,    &nick,
+                                         sqldb_col_TEXT,    &ptr_salt,
+                                         sqldb_col_TEXT,    &ptr_hash,
+                                         sqldb_col_UINT64,  &flags,
                                          sqldb_col_UNKNOWN);
-   error = false;
 
-errorexit:
+   if (ret==(uint64_t)-1) {
+      LOG_ERR ("Failed to modify user [%s]: %s\n", old_email,
+                                                   sqldb_lasterr (db));
+      return false;
+   }
 
-   return !error;
+   return true;
 }
 
 
@@ -379,6 +390,11 @@ uint64_t sqldb_auth_group_create (sqldb_t    *db,
    ret = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
                                          sqldb_col_TEXT, &description,
                                          sqldb_col_UNKNOWN);
+   if (ret==(uint64_t)-1) {
+      LOG_ERR ("Failed to create group [%s]: %s\n", name,
+                                                    sqldb_lasterr (db));
+   }
+
 
 errorexit:
 
@@ -395,7 +411,13 @@ bool sqldb_auth_group_rm (sqldb_t *db, const char *name)
    uint64_t rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
                                                  sqldb_col_UNKNOWN);
 
-   return rc == (uint64_t)-1 ? false : true;
+   if (rc==(uint64_t)-1) {
+      LOG_ERR ("Failed to remove group [%s]: %s\n", name,
+                                                    sqldb_lasterr (db));
+      return false;
+   }
+
+   return true;
 }
 
 bool sqldb_auth_group_info (sqldb_t    *db,
@@ -448,81 +470,79 @@ bool sqldb_auth_group_mod (sqldb_t    *db,
                            const char *newname,
                            const char *description)
 {
-   bool error = true;
    uint64_t rc = 0;
    const char *qstring = NULL;
 
    if (!db ||
        !SVALID (oldname) || !SVALID (newname) || !SVALID (description))
-      goto errorexit;
+      return false;
 
-   if (!(qstring = sqldb_auth_query ("group_mod")))
-      goto errorexit;
+   if (!(qstring = sqldb_auth_query ("group_mod"))) {
+      LOG_ERR ("Failed to find query_string [group_mod]: %s\n",
+                sqldb_lasterr (db));
+      return false;
+   }
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &oldname,
                                         sqldb_col_TEXT, &newname,
                                         sqldb_col_TEXT, &description,
                                         sqldb_col_UNKNOWN);
 
-   if (rc==-1)
-      goto errorexit;
+   if (rc==(uint64_t)-1) {
+      LOG_ERR ("Failed to modify group [%s]: %s\n", oldname,
+                                                    sqldb_lasterr (db));
+      return false;
+   }
 
-   error = false;
-
-errorexit:
-
-   return !error;
-
+   return true;
 }
 
 bool sqldb_auth_group_adduser (sqldb_t    *db,
                                const char *name, const char *email)
 {
-   bool error = true;
-
    const char *qstring = NULL;
    uint64_t rc = 0;
 
    if (!(qstring = sqldb_auth_query ("group_adduser"))) {
-      goto errorexit;
+      LOG_ERR ("Failed to find query_string [group_adduser]: %s\n",
+                sqldb_lasterr (db));
+      return false;
    }
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
                                         sqldb_col_TEXT, &name,
                                         sqldb_col_UNKNOWN);
    if (rc==(uint64_t)-1) {
-      goto errorexit;
+      LOG_ERR ("Failed to add user to group [%s/%s]: %s\n",
+               email,
+               name,
+               sqldb_lasterr (db));
+      return false;
    }
 
-   error = false;
-
-errorexit:
-
-   return !error;
+   return true;
 }
 
 bool sqldb_auth_group_rmuser (sqldb_t    *db,
                               const char *name, const char *email)
 {
-   bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
 
    if (!(qstring = sqldb_auth_query ("group_rmuser")))
-      goto errorexit;
+      return false;
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &name,
                                         sqldb_col_TEXT, &email,
                                         sqldb_col_UNKNOWN);
 
-   if (rc==-1)
-      goto errorexit;
+   if (rc==(uint64_t)-1) {
+      LOG_ERR ("Failed to remove user from group [%s/%s]: %s\n",
+               email, name, sqldb_lasterr (db));
+      return false;
+   }
 
-   error = false;
-
-errorexit:
-
-   return !error;
+   return true;
 }
 
 bool sqldb_auth_user_find (sqldb_t    *db,
@@ -995,17 +1015,16 @@ bool sqldb_auth_perms_grant_user (sqldb_t    *db,
                                   const char *resource,
                                   uint64_t    perms)
 {
-   bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
 
    if (!db ||
        !SVALID (resource) || !SVALID (email))
-      goto errorexit;
+      return false;
 
    if (!(qstring = sqldb_auth_query ("perms_user_grant"))) {
       LOG_ERR ("Failed to find query string [perms_user_grant]\n");
-      goto errorexit;
+      return false;
    }
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT,     &resource,
@@ -1016,14 +1035,10 @@ bool sqldb_auth_perms_grant_user (sqldb_t    *db,
    if (rc == (uint64_t)-1) {
       LOG_ERR ("Failed to execute [%s]:\n%s\n", qstring,
                                                 sqldb_lasterr (db));
-      goto errorexit;
+      return false;
    }
 
-   error = false;
-
-errorexit:
-
-   return !error;
+   return true;
 }
 
 bool sqldb_auth_perms_revoke_user (sqldb_t   *db,
@@ -1031,17 +1046,16 @@ bool sqldb_auth_perms_revoke_user (sqldb_t   *db,
                                    const char *resource,
                                    uint64_t    perms)
 {
-   bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
 
    if (!db ||
        !SVALID (resource) || !SVALID (email))
-      goto errorexit;
+      return false;
 
    if (!(qstring = sqldb_auth_query ("perms_user_revoke"))) {
       LOG_ERR ("Failed to find query string [perms_user_revoke]\n");
-      goto errorexit;
+      return false;
    }
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT,     &resource,
@@ -1052,15 +1066,10 @@ bool sqldb_auth_perms_revoke_user (sqldb_t   *db,
    if (rc == (uint64_t)-1) {
       LOG_ERR ("Failed to execute [%s]:\n%s\n", qstring,
                                                 sqldb_lasterr (db));
-      goto errorexit;
+      return false;
    }
 
-   error = false;
-
-errorexit:
-
-   return !error;
-
+   return true;
 }
 
 bool sqldb_auth_perms_grant_group (sqldb_t    *db,
@@ -1068,17 +1077,16 @@ bool sqldb_auth_perms_grant_group (sqldb_t    *db,
                                    const char *resource,
                                    uint64_t    perms)
 {
-   bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
 
    if (!db ||
        !SVALID (resource) || !SVALID (name))
-      goto errorexit;
+      return false;
 
    if (!(qstring = sqldb_auth_query ("perms_group_grant"))) {
       LOG_ERR ("Failed to find query string [perms_group_grant]\n");
-      goto errorexit;
+      return false;
    }
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT,     &resource,
@@ -1089,15 +1097,10 @@ bool sqldb_auth_perms_grant_group (sqldb_t    *db,
    if (rc == (uint64_t)-1) {
       LOG_ERR ("Failed to execute [%s]:\n%s\n", qstring,
                                                 sqldb_lasterr (db));
-      goto errorexit;
+      return false;
    }
 
-   error = false;
-
-errorexit:
-
-   return !error;
-
+   return true;
 }
 
 bool sqldb_auth_perms_revoke_group (sqldb_t   *db,
@@ -1105,17 +1108,16 @@ bool sqldb_auth_perms_revoke_group (sqldb_t   *db,
                                     const char *resource,
                                     uint64_t    perms)
 {
-   bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
 
    if (!db ||
        !SVALID (resource) || !SVALID (name))
-      goto errorexit;
+      return false;
 
    if (!(qstring = sqldb_auth_query ("perms_group_revoke"))) {
       LOG_ERR ("Failed to find query string [perms_group_revoke]\n");
-      goto errorexit;
+      return false;
    }
 
    rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT,     &resource,
@@ -1126,14 +1128,10 @@ bool sqldb_auth_perms_revoke_group (sqldb_t   *db,
    if (rc == (uint64_t)-1) {
       LOG_ERR ("Failed to execute [%s]:\n%s\n", qstring,
                                                 sqldb_lasterr (db));
-      goto errorexit;
+      return false;
    }
 
-   error = false;
-
-errorexit:
-
-   return !error;
+   return true;
 }
 
 bool sqldb_auth_perms_get_user (sqldb_t      *db,
