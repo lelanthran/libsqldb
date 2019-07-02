@@ -1,5 +1,12 @@
 ## 0.1.4 - ???
 Feature additions
+1. Added support for flags column in the user table for the callers to use
+   as they need (for example, to implement enabled/disabled accounts).
+   Program sqldb_auth_cli updated to expose these functions to the end-user.
+
+2. Added session management functions to allow user login, logout and session
+   validation. Also added commands to the cli program to expose the session
+   management to the end-user.
 
 ## 0.1.3 - Mon Jul  1 22:30:44 SAST 2019
 Feature additions.

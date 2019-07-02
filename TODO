@@ -16,7 +16,3 @@ to handle NULLs being passed in.
       2. Perform searching for query-strings using the currently selected
          backend as a priority.
 
-4. Add in the login/logout/session commands to the cli interface. This
-   also requires implementation of the respective three functions in the
-   sqldb_auth module (hasn't been done yet).
-
