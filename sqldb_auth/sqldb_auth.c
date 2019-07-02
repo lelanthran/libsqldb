@@ -164,8 +164,7 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
 uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                  const char *email,
                                  const char *nick,
-                                 const char *password,
-                                 uint64_t    flags)
+                                 const char *password)
 {
    bool error = true;
    uint64_t ret = (uint64_t)-1;
@@ -187,7 +186,7 @@ uint64_t sqldb_auth_user_create (sqldb_t    *db,
       goto errorexit;
    }
 
-   if (!(sqldb_auth_user_mod (db, email, email, nick, password, flags)))
+   if (!(sqldb_auth_user_mod (db, email, email, nick, password)))
       goto errorexit;
 
    error = false;
@@ -323,8 +322,7 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
                           const char *old_email,
                           const char *new_email,
                           const char *nick,
-                          const char *password,
-                          uint64_t    flags)
+                          const char *password)
 {
    const char *qstring = NULL;
 
@@ -358,7 +356,6 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
                                          sqldb_col_TEXT,    &nick,
                                          sqldb_col_TEXT,    &ptr_salt,
                                          sqldb_col_TEXT,    &ptr_hash,
-                                         sqldb_col_UINT64,  &flags,
                                          sqldb_col_UNKNOWN);
 
    if (ret==(uint64_t)-1) {
@@ -368,6 +365,46 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
    }
 
    return true;
+}
+
+
+static bool sqldb_auth_user_flags (sqldb_t *db, const char *qname,
+                                                const char *email,
+                                                uint64_t flags)
+{
+   const char *qstring = NULL;
+   uint64_t rc = 0;
+
+   if (!db || !SVALID (email) || !SVALID (qname))
+      return false;
+
+   if (!(qstring = sqldb_auth_query (qname))) {
+      LOG_ERR ("Failed to get query-string for [%s][%s]\n", qname, email);
+      return false;
+   }
+
+   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT,     &email,
+                                        sqldb_col_UINT64,   &flags,
+                                        sqldb_col_UNKNOWN);
+
+   if (rc==(uint64_t)-1) {
+      LOG_ERR ("Failed to execute [%s] for user [%s]\n", qstring, email);
+      return false;
+   }
+
+   return true;
+}
+
+bool sqldb_auth_user_flags_set (sqldb_t *db, const char *email,
+                                             uint64_t flags)
+{
+   return sqldb_auth_user_flags (db, "user_flags_set", email, flags);
+}
+
+bool sqldb_auth_user_flags_clear (sqldb_t *db, const char *email,
+                                               uint64_t flags)
+{
+   return sqldb_auth_user_flags (db, "user_flags_clear", email, flags);
 }
 
 

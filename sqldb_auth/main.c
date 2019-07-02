@@ -53,7 +53,7 @@ static bool create_users (sqldb_t *db)
    for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
       if ((sqldb_auth_user_create (db, users[i].email,
                                        users[i].nick,
-                                       "123456", 0))==(uint64_t)-1) {
+                                       "123456"))==(uint64_t)-1) {
          PROG_ERR ("Failed to create user [%s]\n%s\n", users[i].email,
                                                        sqldb_lasterr (db));
          goto errorexit;

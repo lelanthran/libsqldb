@@ -52,14 +52,13 @@
 ///////////////////////////////////////////////////////////////////
 
 #define user_create \
-" INSERT INTO t_user (c_email, c_hash) VALUES (#1, '00000000');"
+" INSERT INTO t_user (c_email, c_hash, c_flags) VALUES (#1, '00000000', 0);"
 
 #define user_mod \
 " UPDATE t_user SET c_email = #2, "\
 "                   c_nick = #3, "\
 "                   c_salt = #4, "\
 "                   c_hash = #5, "\
-"                   c_flags = #6, "\
 "                   c_expiry = 0 "\
 " WHERE c_email = #1;"
 
@@ -68,6 +67,12 @@
 
 #define user_info \
 " SELECT c_id, c_nick, c_session, c_flags FROM t_user WHERE c_email = #1;"
+
+#define user_flags_set \
+"  UPDATE t_user SET c_flags = c_flags | #2 WHERE c_email = #1;"
+
+#define user_flags_clear \
+"  UPDATE t_user SET c_flags = c_flags & ~#2 WHERE c_email = #1;"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -184,6 +189,8 @@ static const struct {
    STMT (user_mod),
    STMT (user_rm),
    STMT (user_info),
+   STMT (user_flags_set),
+   STMT (user_flags_clear),
 
    STMT (group_create),
    STMT (group_mod),

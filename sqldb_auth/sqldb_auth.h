@@ -87,8 +87,7 @@ extern "C" {
    uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                     const char *email,
                                     const char *nick,
-                                    const char *password,
-                                    uint64_t    flags);
+                                    const char *password);
 
    // Removes a user from the database.
    bool sqldb_auth_user_rm (sqldb_t *db, const char *email);
@@ -112,9 +111,18 @@ extern "C" {
                              const char *old_email,
                              const char *new_email,
                              const char *nick,
-                             const char *password,
-                             uint64_t    flags);
+                             const char *password);
 
+
+   ///////////////////////////////////////////////////////////////////////
+
+   // Set the flags in 'flags' for the user specified by email.
+   bool sqldb_auth_user_flags_set (sqldb_t *db, const char *email,
+                                                uint64_t flags);
+
+   // Clear the flags in 'flags' for the user specified by email.
+   bool sqldb_auth_user_flags_clear (sqldb_t *db, const char *email,
+                                                  uint64_t flags);
 
    ///////////////////////////////////////////////////////////////////////
 

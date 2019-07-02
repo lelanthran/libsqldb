@@ -29,6 +29,30 @@ $VALGRIND $VGOPTS $PROG user_create meight@example.com mEIGHT-USER  123456
 $VALGRIND $VGOPTS $PROG user_create mnine@example.com  mNINE-USER   123456
 $VALGRIND $VGOPTS $PROG user_create mten@example.com   mTEN-USER    123456
 
+# Set a few user flags
+$VALGRIND $VGOPTS $PROG user_flags_set mone@example.com   0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mtwo@example.com   0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mthree@example.com 0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mfour@example.com  0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mfive@example.com  0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set msix@example.com   0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mseven@example.com 0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set meight@example.com 0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mnine@example.com  0 1 2 3 4 5
+$VALGRIND $VGOPTS $PROG user_flags_set mten@example.com   0 1 2 3 4 5
+
+# Clear a few user flags
+$VALGRIND $VGOPTS $PROG user_flags_clear mone@example.com   0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mtwo@example.com   0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mthree@example.com 0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mfour@example.com  0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mfive@example.com  0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear msix@example.com   0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mseven@example.com 0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear meight@example.com 0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mnine@example.com  0 2 4 5
+$VALGRIND $VGOPTS $PROG user_flags_clear mten@example.com   0 2 4 5
+
 # Remove some of the users
 $VALGRIND $VGOPTS $PROG user_rm mseven@example.com
 $VALGRIND $VGOPTS $PROG user_rm meight@example.com
@@ -101,11 +125,6 @@ $VALGRIND $VGOPTS $PROG group_adduser Group-One five@example.com
 $VALGRIND $VGOPTS $PROG group_adduser Group-One six@example.com
 $VALGRIND $VGOPTS $PROG group_adduser Group-One ten@example.com
 
-## Needed to test the effective perms
-$VALGRIND $VGOPTS $PROG group_adduser Group-Two one@example.com
-$VALGRIND $VGOPTS $PROG group_adduser Group-Four one@example.com
-$VALGRIND $VGOPTS $PROG group_adduser Group-Five one@example.com
-
 # Remove users from a few groups
 $VALGRIND $VGOPTS $PROG group_rmuser Group-One three@example.com
 $VALGRIND $VGOPTS $PROG group_rmuser Group-One five@example.com
@@ -114,15 +133,15 @@ $VALGRIND $VGOPTS $PROG group_rmuser Group-One five@example.com
 $VALGRIND $VGOPTS $PROG group_members Group-One
 
 # Grant permissions to users
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 20
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 21
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 22
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 23
-$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 24
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 0
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 1
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 2
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 3
+$VALGRIND $VGOPTS $PROG grant_user one@example.com Resource-1 4
 
 # Remove permissions from users
-$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 21
-$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 23
+$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 1
+$VALGRIND $VGOPTS $PROG revoke_user one@example.com Resource-1 3
 
 # Resulting permission value should be 21
 
@@ -132,12 +151,6 @@ $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 1
 $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 2
 $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 3
 $VALGRIND $VGOPTS $PROG grant_group Group-One Resource-1 4
-
-## Needed to test the effective perms
-$VALGRIND $VGOPTS $PROG grant_group Group-Two Resource-1 9
-$VALGRIND $VGOPTS $PROG grant_group Group-Three Resource-1 10
-$VALGRIND $VGOPTS $PROG grant_group Group-Four Resource-1 11
-$VALGRIND $VGOPTS $PROG grant_group Group-Five Resource-1 12
 
 # Remove permissions from groups
 $VALGRIND $VGOPTS $PROG revoke_group Group-One Resource-1 2

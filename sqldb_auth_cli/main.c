@@ -637,9 +637,7 @@ static sqldb_t *g_db = NULL;
 
 static bool cmd_user_create (char **args)
 {
-   // TODO: Flags must be initialised from the remainder of the c/line
-   uint64_t flags = 0;
-   return sqldb_auth_user_create (g_db, args[1], args[2], args[3], flags);
+   return sqldb_auth_user_create (g_db, args[1], args[2], args[3]);
 }
 
 static bool cmd_user_rm (char **args)
@@ -649,9 +647,7 @@ static bool cmd_user_rm (char **args)
 
 static bool cmd_user_mod (char **args)
 {
-   // TODO: Flags must be initialised from the remainder of the c/line
-   uint64_t flags = 0;
-   return sqldb_auth_user_mod (g_db, args[1], args[2], args[3], args[4], flags);
+   return sqldb_auth_user_mod (g_db, args[1], args[2], args[3], args[4]);
 }
 
 static bool cmd_user_info (char **args)
@@ -722,6 +718,38 @@ static bool cmd_user_find (char **args)
    free (flags);
 
    return ret;
+}
+
+static bool cmd_user_flags_set (char **args)
+{
+   uint64_t bits = 0;
+
+   for (size_t i=2; args[i]; i++) {
+      uint64_t bitnum = 0;
+      if ((sscanf (args[i], "%" PRIu64, &bitnum))!=1) {
+         PROG_ERR ("Failed to scan flag bit number [%s] as a number\n",
+                    args[i]);
+         return false;
+      }
+      bits |= 1 << bitnum;
+   }
+   return sqldb_auth_user_flags_set (g_db, args[1], bits);
+}
+
+static bool cmd_user_flags_clear (char **args)
+{
+   uint64_t bits = 0;
+
+   for (size_t i=2; args[i]; i++) {
+      uint64_t bitnum = 0;
+      if ((sscanf (args[i], "%" PRIu64, &bitnum))!=1) {
+         PROG_ERR ("Failed to scan flag bit number [%s] as a number\n",
+                    args[i]);
+         return false;
+      }
+      bits |= 1 << bitnum;
+   }
+   return sqldb_auth_user_flags_clear (g_db, args[1], bits);
 }
 
 static bool cmd_group_create (char **args)
@@ -1008,39 +1036,39 @@ int main (int argc, char **argv)
       size_t min_args;
       size_t max_args;
    } cmds[] = {
-      { "help",                  cmd_help,            2, 2     },
-      { "create",                cmd_create,          2, 2     },
-      { "init",                  cmd_init,            3, 3     },
+      { "help",                  cmd_help,               2, 2     },
+      { "create",                cmd_create,             2, 2     },
+      { "init",                  cmd_init,               3, 3     },
 
-      { "session_authenticate",  cmd_TODO,            2, 2     },
-      { "session_invalidate",    cmd_TODO,            2, 2     },
-      { "session_valid",         cmd_TODO,            2, 2     },
+      { "session_authenticate",  cmd_TODO,               2, 2     },
+      { "session_invalidate",    cmd_TODO,               2, 2     },
+      { "session_valid",         cmd_TODO,               2, 2     },
 
-      { "user_create",           cmd_user_create,     4, 4     },
-      { "user_rm",               cmd_user_rm,         2, 2     },
-      { "user_mod",              cmd_user_mod,        5, 5     },
-      { "user_info",             cmd_user_info,       2, 2     },
-      { "user_find",             cmd_user_find,       3, 3     },
-      { "user_flags_set",        cmd_TODO,            3, 68    },
-      { "user_flags_clear",      cmd_TODO,            3, 68    },
+      { "user_create",           cmd_user_create,        4, 4     },
+      { "user_rm",               cmd_user_rm,            2, 2     },
+      { "user_mod",              cmd_user_mod,           5, 5     },
+      { "user_info",             cmd_user_info,          2, 2     },
+      { "user_find",             cmd_user_find,          3, 3     },
+      { "user_flags_set",        cmd_user_flags_set,     3, 68    },
+      { "user_flags_clear",      cmd_user_flags_clear,   3, 68    },
 
-      { "group_create",          cmd_group_create,    3, 3     },
-      { "group_rm",              cmd_group_rm,        2, 2     },
-      { "group_mod",             cmd_group_mod,       4, 4     },
-      { "group_info",            cmd_group_info,      2, 2     },
-      { "group_find",            cmd_group_find,      3, 3     },
+      { "group_create",          cmd_group_create,       3, 3     },
+      { "group_rm",              cmd_group_rm,           2, 2     },
+      { "group_mod",             cmd_group_mod,          4, 4     },
+      { "group_info",            cmd_group_info,         2, 2     },
+      { "group_find",            cmd_group_find,         3, 3     },
 
-      { "group_adduser",         cmd_group_adduser,   3, 3     },
-      { "group_rmuser",          cmd_group_rmuser,    3, 3     },
-      { "group_members",         cmd_group_members,   2, 2     },
+      { "group_adduser",         cmd_group_adduser,      3, 3     },
+      { "group_rmuser",          cmd_group_rmuser,       3, 3     },
+      { "group_members",         cmd_group_members,      2, 2     },
 
-      { "grant_user",            cmd_grant_user,      4, 68    },
-      { "revoke_user",           cmd_revoke_user,     4, 68    },
-      { "grant_group",           cmd_grant_group,     4, 68    },
-      { "revoke_group",          cmd_revoke_group,    4, 68    },
-      { "user_perms",            cmd_user_perms,      3, 3     },
-      { "group_perms",           cmd_group_perms,     3, 3     },
-      { "perms",                 cmd_perms,           3, 3     },
+      { "grant_user",            cmd_grant_user,         4, 68    },
+      { "revoke_user",           cmd_revoke_user,        4, 68    },
+      { "grant_group",           cmd_grant_group,        4, 68    },
+      { "revoke_group",          cmd_revoke_group,       4, 68    },
+      { "user_perms",            cmd_user_perms,         3, 3     },
+      { "group_perms",           cmd_group_perms,        3, 3     },
+      { "perms",                 cmd_perms,              3, 3     },
    };
 
    const struct command_t *cmd = NULL;
