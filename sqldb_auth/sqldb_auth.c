@@ -245,7 +245,8 @@ bool sqldb_auth_user_info (sqldb_t    *db,
    if ((sqldb_scan_columns (res, sqldb_col_UINT64, id_dst,
                                  sqldb_col_TEXT,   nick_dst,
                                  sqldb_col_TEXT,   &tmp_sess,
-                                 sqldb_col_UNKNOWN))!=3) {
+                                 sqldb_col_UINT64, flags,
+                                 sqldb_col_UNKNOWN))!=4) {
       LOG_ERR ("Scan failure: [%s]\n", qstring);
       goto errorexit;
    }
@@ -349,6 +350,7 @@ bool sqldb_auth_user_mod (sqldb_t    *db,
                                          sqldb_col_TEXT, &nick,
                                          sqldb_col_TEXT, &ptr_salt,
                                          sqldb_col_TEXT, &ptr_hash,
+                                         sqldb_col_UINT64, &flags,
                                          sqldb_col_UNKNOWN);
    error = false;
 
@@ -532,7 +534,7 @@ bool sqldb_auth_user_find (sqldb_t    *db,
                            uint64_t  **flags,
                            uint64_t  **ids)
 {
-#define BASE_QS      "SELECT c_email, c_nick, c_id FROM t_user "
+#define BASE_QS      "SELECT c_email, c_nick, c_id, c_flags FROM t_user "
    bool error = true;
    const char *qstrings[] = {
       BASE_QS ";",
@@ -591,10 +593,13 @@ bool sqldb_auth_user_find (sqldb_t    *db,
    if (ids) {
       free (*ids); *ids = NULL;
    }
+   if (flags) {
+      free (*flags); *flags = NULL;
+   }
 
    while (sqldb_res_step (res) == 1) {
       char *email, *nick;
-      uint64_t id;
+      uint64_t id, flag;
 
       uint64_t newlen = *nitems + 1;
       if (emails) {
@@ -619,11 +624,18 @@ bool sqldb_auth_user_find (sqldb_t    *db,
             goto errorexit;
          *ids = tmp;
       }
+      if (flags) {
+         uint64_t *tmp = realloc ((*flags), (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         *flags = tmp;
+      }
 
       if ((sqldb_scan_columns (res, sqldb_col_TEXT,   &email,
                                     sqldb_col_TEXT,   &nick,
                                     sqldb_col_UINT64, &id,
-                                    sqldb_col_UNKNOWN))!=3)
+                                    sqldb_col_UINT64, &flag,
+                                    sqldb_col_UNKNOWN))!=4)
          goto errorexit;
 
       if (emails) {
@@ -640,6 +652,10 @@ bool sqldb_auth_user_find (sqldb_t    *db,
 
       if (ids) {
          (*ids)[newlen - 1] = id;
+      }
+
+      if (flags) {
+         (*flags)[newlen - 1] = flag;
       }
 
       *nitems = newlen;
@@ -663,6 +679,15 @@ errorexit:
          }
          free (*nicks); *nicks = NULL;
       }
+
+      if (ids) {
+         free (*ids); *ids = NULL;
+      }
+
+      if (flags) {
+         free (*flags); *flags = NULL;
+      }
+
    }
 
    sqldb_res_del (res);
@@ -863,10 +888,13 @@ bool sqldb_auth_group_members (sqldb_t    *db,
    if (ids) {
       free (*ids); *ids = NULL;
    }
+   if (flags) {
+      free (*flags); *flags = NULL;
+   }
 
    while (sqldb_res_step (res) == 1) {
       char *email, *nick;
-      uint64_t id;
+      uint64_t id, flag;
 
       uint64_t newlen = *nitems + 1;
       if (emails) {
@@ -891,11 +919,18 @@ bool sqldb_auth_group_members (sqldb_t    *db,
             goto errorexit;
          *ids = tmp;
       }
+      if (flags) {
+         uint64_t *tmp = realloc ((*flags), (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         *flags = tmp;
+      }
 
       if ((sqldb_scan_columns (res, sqldb_col_TEXT,   &email,
                                     sqldb_col_TEXT,   &nick,
                                     sqldb_col_UINT64, &id,
-                                    sqldb_col_UNKNOWN))!=3)
+                                    sqldb_col_UINT64, &flag,
+                                    sqldb_col_UNKNOWN))!=4)
          goto errorexit;
 
       if (emails) {
@@ -914,12 +949,41 @@ bool sqldb_auth_group_members (sqldb_t    *db,
          (*ids)[newlen - 1] = id;
       }
 
+      if (flags) {
+         (*flags)[newlen - 1] = flag;
+      }
+
       *nitems = newlen;
    }
 
    error = false;
 
 errorexit:
+
+   if (error) {
+      if (emails) {
+         for (size_t i=0; emails && *emails && (*emails)[i]; i++) {
+            free ((*emails)[i]);
+         }
+         free (*emails); *emails = NULL;
+      }
+
+      if (nicks) {
+         for (size_t i=0; nicks && *nicks && (*nicks)[i]; i++) {
+            free ((*nicks)[i]);
+         }
+         free (*nicks); *nicks = NULL;
+      }
+
+      if (ids) {
+         free (*ids); *ids = NULL;
+      }
+
+      if (flags) {
+         free (*flags); *flags = NULL;
+      }
+
+   }
 
    sqldb_res_del (res);
 

@@ -59,6 +59,7 @@
 "                   c_nick = #3, "\
 "                   c_salt = #4, "\
 "                   c_hash = #5, "\
+"                   c_flags = #6, "\
 "                   c_expiry = 0 "\
 " WHERE c_email = #1;"
 
@@ -66,7 +67,7 @@
 " DELETE FROM t_user WHERE c_email = #1;"
 
 #define user_info \
-" SELECT c_id, c_nick, c_session FROM t_user WHERE c_email = #1;"
+" SELECT c_id, c_nick, c_session, c_flags FROM t_user WHERE c_email = #1;"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -103,7 +104,7 @@
 "     c_user = (SELECT c_id FROM t_user WHERE c_email=#2);"
 
 #define group_membership \
-"SELECT t_user.c_email, t_user.c_nick, t_user.c_id "\
+"SELECT t_user.c_email, t_user.c_nick, t_user.c_id, t_user.c_flags "\
 "FROM t_user, t_group_membership, t_group "\
 "WHERE "\
 "     t_group.c_name=#1 "\

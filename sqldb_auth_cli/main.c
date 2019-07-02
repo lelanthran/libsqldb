@@ -559,7 +559,7 @@ PERMS_MSG,
 static bool cmd_TODO (char **args)
 {
    args = args;
-   PROG_ERR ("Unimplemented\n");
+   PROG_ERR ("Unimplemented [%s]\n", args[0]);
    return false;
 }
 
@@ -1021,8 +1021,8 @@ int main (int argc, char **argv)
       { "user_mod",              cmd_user_mod,        5, 5     },
       { "user_info",             cmd_user_info,       2, 2     },
       { "user_find",             cmd_user_find,       3, 3     },
-      { "user_perms",            cmd_TODO,            3, 68    },
       { "user_flags_set",        cmd_TODO,            3, 68    },
+      { "user_flagsf_clear",     cmd_TODO,            3, 68    },
 
       { "group_create",          cmd_group_create,    3, 3     },
       { "group_rm",              cmd_group_rm,        2, 2     },
