@@ -37,6 +37,7 @@ ifeq ($(PLATFORM),)
 	PLATFORM=POSIX
 	EXE_EXT=.elf
 	LIB_EXT=.so
+	PLATFORM_LDFLAGS= -lpthread -ldl
 endif
 
 
@@ -126,7 +127,7 @@ COMMONFLAGS=\
 CFLAGS=$(COMMONFLAGS) -std=c99
 CXXFLAGS=$(COMMONFLAGS) -std=c++x11
 LD=$(GCC)
-LDFLAGS= -lpq -lpthread -ldl -lm $(PLATFORM_LDFLAGS)
+LDFLAGS= -lpq -lm $(PLATFORM_LDFLAGS)
 AR=ar
 ARFLAGS= rcs
 
