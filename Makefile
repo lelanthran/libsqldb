@@ -18,7 +18,8 @@ endif
 	PLATFORM=Windows
 	EXE_EXT=.exe
 	LIB_EXT=.dll
-	PLATFORM_LDFLAGS=-lmingw32 -lws2_32 -lmsvcrt -lgcc
+	PLATFORM_LDFLAGS=--L$(HOME)/lib lmingw32 -lws2_32 -lmsvcrt -lgcc
+	PLATFORM_CFLAGS=-I$(HOME)/include
 endif
 
 ifneq ($(MAKEPROGRAM_MINGW),)
@@ -28,7 +29,8 @@ endif
 	PLATFORM=Windows
 	EXE_EXT=.exe
 	LIB_EXT=.dll
-	PLATFORM_LDFLAGS=-lmingw32 -lws2_32 -lmsvcrt -lgcc
+	PLATFORM_LDFLAGS=-L$(HOME)/lib -lmingw32 -lws2_32 -lmsvcrt -lgcc
+	PLATFORM_CFLAGS=-I$(HOME)/include
 endif
 
 # If neither of the above are true then we assume a working POSIX
@@ -37,6 +39,7 @@ ifeq ($(PLATFORM),)
 	PLATFORM=POSIX
 	EXE_EXT=.elf
 	LIB_EXT=.so
+	PLATFORM_LDFLAGS= -lpthread -ldl 
 endif
 
 
@@ -121,12 +124,13 @@ CXX=$(GXX)
 COMMONFLAGS=\
 	-W -Wall -c -fPIC \
 	-DPLATFORM=$(PLATFORM) -DPLATFORM_$(PLATFORM) \
-	-DSQLDB_VERSION='"$(VERSION)"'
+	-DSQLDB_VERSION='"$(VERSION)"'\
+	$(PLATFORM_CFLAGS)
 
 CFLAGS=$(COMMONFLAGS) -std=c99
 CXXFLAGS=$(COMMONFLAGS) -std=c++x11
 LD=$(GCC)
-LDFLAGS= -lpq -lpthread -ldl -lm $(PLATFORM_LDFLAGS)
+LDFLAGS= -lpq -lm $(PLATFORM_LDFLAGS)
 AR=ar
 ARFLAGS= rcs
 
