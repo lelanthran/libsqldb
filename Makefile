@@ -39,7 +39,7 @@ ifeq ($(PLATFORM),)
 	PLATFORM=POSIX
 	EXE_EXT=.elf
 	LIB_EXT=.so
-	PLATFORM_LDFLAGS= -lpthread -ldl 
+	PLATFORM_LDFLAGS= -lpthread -ldl
 endif
 
 

@@ -4,7 +4,7 @@ set -e
 
 rm -fv sqldb_auth.sql3
 
-export PROG=./sqldb_auth_cli/main-d.elf
+export PROG=test-scripts/sqldb_auth_cli.elf
 export VALGRIND="valgrind --error-exitcode=127"
 if [ -z "$VGOPTS" ]; then
    export VALGRIND=""
@@ -213,6 +213,6 @@ if [ 0 -eq "$?" ]; then
    cat tmptest
    exit 127;
 fi
-cat tmptest
+echo "SUCCESS"
 
 
