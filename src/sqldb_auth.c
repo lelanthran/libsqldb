@@ -125,7 +125,9 @@ static uint32_t getclock (uint32_t current)
 
 uint32_t sqldb_auth_random_seed (void)
 {
+#ifndef PLATFORM_Windows
    extern int main (void);
+#endif
 
    uint32_t ret = 0;
 
@@ -146,7 +148,11 @@ uint32_t sqldb_auth_random_seed (void)
    uint32_t proc_time = getclock (ret);
    uint32_t *ptr_stack = &ret;
    uint32_t (*ptr_self) (void) = sqldb_auth_random_seed;
+#ifndef PLATFORM_Windows
    int (*ptr_main) (void) = main;
+#else
+   int (*ptr_main) (void) = NULL;
+#endif
    void *(*ptr_malloc) (size_t) = malloc;
    pid_t pid = getpid ();
 
