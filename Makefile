@@ -86,7 +86,7 @@ BINOBS=\
 	$(OUTOBS)/sqldb_auth_cli.o\
 	$(OUTOBS)/sqldb_auth_test.o\
 	$(OUTOBS)/sqldb_test.o\
-	$(OUTOBS)/sqlite3.o
+	$(OUTOBS)/sqlite3_main.o
 
 
 OBS=\
@@ -94,7 +94,7 @@ OBS=\
 	$(OUTOBS)/sqldb_auth.o\
 	$(OUTOBS)/sqldb_auth_query.o\
 	$(OUTOBS)/sqldb.o\
-	$(OUTOBS)/sqlite3.o
+	$(OUTOBS)/sqlite3_main.o
 
 
 HEADERS=\
