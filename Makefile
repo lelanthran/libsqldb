@@ -70,7 +70,7 @@ BINPROGS=\
 	$(OUTBIN)/sqldb_auth_cli$(EXE_EXT)\
 	$(OUTBIN)/sqldb_auth_test$(EXE_EXT)\
 	$(OUTBIN)/sqldb_test$(EXE_EXT)\
-	$(OUTBIN)/sqlite3$(EXE_EXT)
+	$(OUTBIN)/sqlite3_main$(EXE_EXT)
 
 DYNLIB=$(OUTLIB)/$(PROJNAME)-$(VERSION)$(LIB_EXT)
 STCLIB=$(OUTLIB)/$(PROJNAME)-$(VERSION).a
@@ -94,16 +94,16 @@ OBS=\
 	$(OUTOBS)/sqldb_auth.o\
 	$(OUTOBS)/sqldb_auth_query.o\
 	$(OUTOBS)/sqldb.o\
-	$(OUTOBS)/sqlite3_main.o
+	$(OUTOBS)/sqlite3.o
 
 
 HEADERS=\
-	src/sqldb_auth/sha-256.h\
-	src/sqldb_auth/sqldb_auth.h\
-	src/sqldb_auth/sqldb_auth_query.h\
-	src/sqldb/sqldb.h\
-	src/sqlite3/sqlite3ext.h\
-	src/sqlite3/sqlite3.h
+	src/sha-256.h\
+	src/sqldb_auth.h\
+	src/sqldb_auth_query.h\
+	src/sqldb.h\
+	src/sqlite3ext.h\
+	src/sqlite3.h
 
 
 # ######################################################################
@@ -120,12 +120,13 @@ CXX=$(GXX)
 
 COMMONFLAGS=\
 	-W -Wall -c -fPIC \
-	-DPLATFORM=$(PLATFORM) -DPLATFORM_$(PLATFORM)
+	-DPLATFORM=$(PLATFORM) -DPLATFORM_$(PLATFORM) \
+	-DSQLDB_VERSION='"$(VERSION)"'
 
 CFLAGS=$(COMMONFLAGS) -std=c99
 CXXFLAGS=$(COMMONFLAGS) -std=c++x11
 LD=$(GCC)
-LDFLAGS= -lm $(PLATFORM_LDFLAGS)
+LDFLAGS= -lpq -lpthread -ldl -lm $(PLATFORM_LDFLAGS)
 AR=ar
 ARFLAGS= rcs
 

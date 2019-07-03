@@ -4,15 +4,15 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "sqldb/sqldb.h"
-#include "sqldb_auth/sqldb_auth.h"
+#include "sqldb.h"
+#include "sqldb_auth.h"
 
 // This is needed only to display the version of sqlite that we are
 // compiled with. A similar include is not possible for postgres, as libpq
 // is a runtime determination of version, and is only supported on 9.1 and
 // above. In order to prevent an artificial dependency on 9.1 and above we
 // don't print the postgres version (yet).
-#include "sqlite3/sqlite3ext.h"
+#include "sqlite3ext.h"
 
 /* ********************************************************************
  * An even more comprehensive command-line parsing mechanism. This method

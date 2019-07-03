@@ -11,10 +11,10 @@
 
 // TODO: The blob type was not tested!
 
-#include "sqlite3/sqlite3.h"
+#include "sqlite3.h"
 #include <postgresql/libpq-fe.h>
 
-#include "sqldb/sqldb.h"
+#include "sqldb.h"
 
 #define SQLDB_OOM(s)          fprintf (stderr, "OOM [%s]\n", s)
 

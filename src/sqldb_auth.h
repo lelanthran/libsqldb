@@ -11,7 +11,7 @@
  * themselves in no group at all. If we cascade group_mapping deletes then
  * a mapping delete is going to remove the user from the database.
  */
-#include "sqldb/sqldb.h"
+#include "sqldb.h"
 
 /* ********************************************************************
  * This is the authentication and authorization module. This module provides

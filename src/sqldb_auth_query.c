@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "sqldb_auth/sqldb_auth_query.h"
+#include "sqldb_auth_query.h"
 
 
 #define init_sqlite \

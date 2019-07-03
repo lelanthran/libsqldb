@@ -6,7 +6,7 @@
 #include <inttypes.h>
 #include <time.h>
 
-#include "sqldb/sqldb.h"
+#include "sqldb.h"
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")

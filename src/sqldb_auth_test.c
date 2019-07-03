@@ -4,8 +4,8 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "sqldb/sqldb.h"
-#include "sqldb_auth/sqldb_auth.h"
+#include "sqldb.h"
+#include "sqldb_auth.h"
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")

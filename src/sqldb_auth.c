@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "sqldb_auth/sqldb_auth.h"
-#include "sqldb_auth/sqldb_auth_query.h"
-#include "sqldb_auth/sha-256.h"
+#include "sqldb_auth.h"
+#include "sqldb_auth_query.h"
+#include "sha-256.h"
 
 #define LOG_ERR(...)      do {\
       fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
