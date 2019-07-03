@@ -8,6 +8,9 @@ Feature additions
    validation. Also added commands to the cli program to expose the session
    management to the end-user.
 
+3. Added Windows support. Building on Windows still requires libpq and the
+   associated headers.
+
 Other
 1. Changed build process to support cross-compiling in the future.
 

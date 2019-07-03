@@ -5,13 +5,14 @@ set -o xtrace
 
 rm -fv sqldb_auth.sql3
 
-export PROG="test-scripts/sqldb_auth_cli.exe"
+# export PROG="test-scripts/sqldb_auth_cli.exe"
+export PROG="test-scripts/sqldb_auth_cli.elf"
 export VALGRIND="valgrind --error-exitcode=127"
 if [ -z "$VGOPTS" ]; then
    export VALGRIND=""
 fi
 
-# Ensure taht the help message works
+# Ensure that the help message works
 $VALGRIND $VGOPTS $PROG --help
 
 # Create a new database for use
