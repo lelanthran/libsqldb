@@ -8,6 +8,9 @@ Feature additions
    validation. Also added commands to the cli program to expose the session
    management to the end-user.
 
+Other
+1. Changed build process to support cross-compiling in the future.
+
 ## 0.1.3 - Mon Jul  1 22:30:44 SAST 2019
 Feature additions.
 1. Added sqldb_auth module as part of this library. This feature provides
