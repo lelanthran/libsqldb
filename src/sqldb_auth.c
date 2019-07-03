@@ -109,7 +109,7 @@ static uint32_t hash_buffer (uint32_t current, void *buf, size_t len)
 
 static uint32_t getclock (uint32_t current)
 {
-   for (size_t i=0; i<0x0fff; i++) {
+   for (size_t i=0; i<0x000f; i++) {
       // Clock may not have enough resolution over repeated calls, so
       // add some entropy by counting how long it takes to change
       clock_t start = clock ();

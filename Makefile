@@ -19,7 +19,7 @@ endif
 	EXE_EXT=.exe
 	LIB_EXT=.dll
 	PLATFORM_LDFLAGS=--L$(HOME)/lib lmingw32 -lws2_32 -lmsvcrt -lgcc
-	PLATFORM_CFLAGS=-I$(HOME)/include
+	PLATFORM_CFLAGS=-I$(HOME)/include -D__USE_MINGW_ANSI_STDIO
 endif
 
 ifneq ($(MAKEPROGRAM_MINGW),)
@@ -30,7 +30,7 @@ endif
 	EXE_EXT=.exe
 	LIB_EXT=.dll
 	PLATFORM_LDFLAGS=-L$(HOME)/lib -lmingw32 -lws2_32 -lmsvcrt -lgcc
-	PLATFORM_CFLAGS=-I$(HOME)/include
+	PLATFORM_CFLAGS=-I$(HOME)/include -D__USE_MINGW_ANSI_STDIO
 endif
 
 # If neither of the above are true then we assume a working POSIX

@@ -1,10 +1,11 @@
 #!/bin/bash
 
 set -e
+set -o xtrace
 
 rm -fv sqldb_auth.sql3
 
-export PROG=test-scripts/sqldb_auth_cli.exe
+export PROG="test-scripts/sqldb_auth_cli.exe"
 export VALGRIND="valgrind --error-exitcode=127"
 if [ -z "$VGOPTS" ]; then
    export VALGRIND=""
@@ -15,8 +16,8 @@ $VALGRIND $VGOPTS $PROG --help
 
 # Create a new database for use
 $VALGRIND $VGOPTS $PROG create sqldb_auth.sql3
-# $VALGRIND $VGOPTS $PROG init sqlite sqldb_auth.sql3
-gdb $PROG init sqlite sqldb_auth.sql3
+$VALGRIND $VGOPTS $PROG init sqlite sqldb_auth.sql3
+# gdb $PROG init sqlite sqldb_auth.sql3
 
 # Add a few users
 $VALGRIND $VGOPTS $PROG user_create mone@example.com   mONE-USER    123456
@@ -186,7 +187,7 @@ $VALGRIND $VGOPTS $PROG session_authenticate one@example.com 12345 > tmptest
 if [ 0 -ne "$?" ]; then
    echo Failed to authenticate one@example.com:12345
    cat tmptest
-   exit 127;
+   exit 126;
 fi
 
 export SESS_ID=`cat tmptest`
@@ -196,7 +197,7 @@ $VALGRIND $VGOPTS $PROG session_valid one@example.com $SESS_ID > tmptest
 if [ 0 -ne "$?" ]; then
    echo Failed to validate one@example.com:$SESS_ID
    cat tmptest
-   exit 127;
+   exit 125;
 fi
 cat tmptest
 
@@ -204,7 +205,7 @@ $VALGRIND $VGOPTS $PROG session_invalidate one@example.com $SESS_ID > tmptest
 if [ 0 -ne "$?" ]; then
    echo Failed to INvalidate one@example.com:$SESS_ID
    cat tmptest
-   exit 127;
+   exit 124;
 fi
 cat tmptest
 
@@ -212,7 +213,7 @@ $VALGRIND $VGOPTS $PROG session_valid one@example.com $SESS_ID > tmptest
 if [ 0 -eq "$?" ]; then
    echo Incorrectly validated one@example.com:$SESS_ID
    cat tmptest
-   exit 127;
+   exit 123;
 fi
 echo "SUCCESS"
 

@@ -1180,6 +1180,11 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
+   if (!args || nargs < 1) {
+      PROG_ERR ("No command specified. Try --help\n");
+      goto errorexit;
+   }
+
 
    /* Find the command that was requested, run a few sanity checks */
    for (size_t i=0; i<sizeof cmds/sizeof cmds[0]; i++) {
