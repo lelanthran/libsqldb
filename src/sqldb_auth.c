@@ -82,7 +82,7 @@ bool sqldb_auth_initdb (sqldb_t *db)
    if (!init_sqlite_stmt || !create_tables_stmt)
       goto errorexit;
 
-   if (!(sqldb_batch (db, init_sqlite_stmt, create_tables_stmt))) {
+   if (!(sqldb_batch (db, init_sqlite_stmt, create_tables_stmt, NULL))) {
       LOG_ERR ("Failed to execute init/create statement.\n");
       goto errorexit;
    }

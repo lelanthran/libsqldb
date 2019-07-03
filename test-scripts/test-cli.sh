@@ -4,7 +4,7 @@ set -e
 
 rm -fv sqldb_auth.sql3
 
-export PROG=test-scripts/sqldb_auth_cli.elf
+export PROG=test-scripts/sqldb_auth_cli.exe
 export VALGRIND="valgrind --error-exitcode=127"
 if [ -z "$VGOPTS" ]; then
    export VALGRIND=""
@@ -15,7 +15,8 @@ $VALGRIND $VGOPTS $PROG --help
 
 # Create a new database for use
 $VALGRIND $VGOPTS $PROG create sqldb_auth.sql3
-$VALGRIND $VGOPTS $PROG init sqlite sqldb_auth.sql3
+# $VALGRIND $VGOPTS $PROG init sqlite sqldb_auth.sql3
+gdb $PROG init sqlite sqldb_auth.sql3
 
 # Add a few users
 $VALGRIND $VGOPTS $PROG user_create mone@example.com   mONE-USER    123456
