@@ -236,7 +236,7 @@ clean-debug:
 	rm -rfv debug
 
 clean-all:	clean-release clean-debug
-
+	rm -rfv include
 
 clean:
 	echo Choose either clean-release or clean-debug
