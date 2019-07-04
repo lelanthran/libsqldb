@@ -100,7 +100,7 @@ extern "C" {
    bool sqldb_auth_user_info (sqldb_t    *db,
                               const char *email,
                               uint64_t   *id_dst,
-                              uint64_t   *flags,
+                              uint64_t   *flags_dst,
                               char      **nick_dst,
                               char        session_dst[65]);
 
@@ -126,7 +126,11 @@ extern "C" {
 
    ///////////////////////////////////////////////////////////////////////
 
-   // Create a new group, returns the group ID.
+   // Gets the group information for the specified group. Returns
+   // true on success and false on failure. The string name and session
+   // must be freed by the caller regardless of the return value. If
+   // they are not-NULL on entry to this function, this function
+   // will free them before allocation storage for the output parameters.
    uint64_t sqldb_auth_group_create (sqldb_t    *db,
                                      const char *name,
                                      const char *description);
@@ -139,10 +143,10 @@ extern "C" {
    // 'description' must be freed by the caller regardless of the return
    // value. If it is not NULL on entry to this function, this function will
    // free it before allocation storage for the description.
-   bool sqldb_auth_group_info (sqldb_t    *db,
-                               const char *name,
-                               uint64_t   *id_dst,
-                               char      **description);
+   bool s_dstqldb_auth_group_info (sqldb_t    *db,
+                                   const char *name,
+                                   uint64_t   *id_dst,
+                                   char      **description_dst);
 
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the name parameter to find the
@@ -152,6 +156,11 @@ extern "C" {
                               const char *newname,
                               const char *description);
 
+   // Return
+   bool sqldb_auth_group_info (sqldb_t    *db,
+                               const char *name,
+                               uint64_t   *id_dst,
+                               char      **description_dst);
    ///////////////////////////////////////////////////////////////////////
 
    // Add the specified user to the specified group. Returns true on
@@ -187,11 +196,11 @@ extern "C" {
    bool sqldb_auth_user_find (sqldb_t    *db,
                               const char *email_pattern,
                               const char *nick_pattern,
-                              uint64_t   *nitems,
-                              char     ***emails,
-                              char     ***nicks,
-                              uint64_t  **flags,
-                              uint64_t  **ids);
+                              uint64_t   *nitems_dst,
+                              char     ***emails_dst,
+                              char     ***nicks_dst,
+                              uint64_t  **flags_dst,
+                              uint64_t  **ids_dst);
 
    // Generates a list of group records from the database that match the
    // email_pattern or the nick_pattern. If either pattern is NULL it is
@@ -213,10 +222,10 @@ extern "C" {
    bool sqldb_auth_group_find (sqldb_t    *db,
                                const char *name_pattern,
                                const char *description_pattern,
-                               uint64_t   *nitems,
-                               char     ***names,
-                               char     ***descriptions,
-                               uint64_t  **ids);
+                               uint64_t   *nitems_dst,
+                               char     ***names_dst,
+                               char     ***descriptions_dst,
+                               uint64_t  **ids_dst);
 
    // Generates a list of records containing all users who are members of
    // the specified group.
@@ -236,11 +245,11 @@ extern "C" {
    // element) must be freed by the caller.
    bool sqldb_auth_group_members (sqldb_t    *db,
                                   const char *name,
-                                  uint64_t   *nitems,
-                                  char     ***emails,
-                                  char     ***nicks,
-                                  uint64_t  **flags,
-                                  uint64_t  **ids);
+                                  uint64_t   *nitems_dst,
+                                  char     ***emails_dst,
+                                  char     ***nicks_dst,
+                                  uint64_t  **flags_dst,
+                                  uint64_t  **ids_dst);
 
    ///////////////////////////////////////////////////////////////////////
 

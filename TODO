@@ -1,14 +1,7 @@
-URGENT: All the functions that take pointers to dst results must be able
-to handle NULLs being passed in.
-
 1. Need to differentiate between returned columns that are NULL and
    returned columns that are empty strings.
 
-2. Fix build process to use $(OUTPUT_DIRS) in the Makefile so that
-   cross-compiling for different architectures and different releases
-   (debug vs release) works.
-
-3. Add in support in the sqldb for working with compile-time query-strings
+2. Add in support in the sqldb for working with compile-time query-strings
    such as present in the sqldb_auth module:
       1. Allow the tables to contain common query strings as well as
          query-strings specific to particular SQL backends, as each

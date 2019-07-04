@@ -142,8 +142,8 @@ ARFLAGS= rcs
 
 help: real-help
 
-debug:	CFLAGS+= -ggdb
-debug:	CXXFLAGS+= -ggdb
+debug:	CFLAGS+= -ggdb -DDEBUG
+debug:	CXXFLAGS+= -ggdb -DDEBUG
 debug:	all
 
 release:	CFLAGS+= -O3

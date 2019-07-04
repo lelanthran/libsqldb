@@ -261,8 +261,9 @@ NULL,
          PROG_ERR ("(%u) Incomplete scanning of columns\n", num_scanned);
          goto errorexit;
       }
-      printf ("Scanned in %u[%" PRIu64 "] [%s]\n", intvar, datevar,
-                                                           ctime (&datevar));
+      printf ("Scanned in %u[%" PRIu64 "] [%s]\n", intvar,
+                                                   datevar,
+                                                   ctime ((int64_t *)&datevar));
 
       rc = sqldb_res_step (res);
       if (rc==-1) {
