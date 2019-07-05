@@ -1,8 +1,11 @@
 1. Write a README.md file, maybe a document with a few examples.
 
-2. Need to differentiate between returned columns that are NULL and
+2. Create indices for the various searchable non-TEXT columns in the
+   schema.
+
+3. Need to differentiate between returned columns that are NULL and
    returned columns that are empty strings.
 
-3. Optimise the sqldb_query module to sort the queries array so that we
+4. Optimise the sqldb_query module to sort the queries array so that we
    can do a binary search when searching for a query.
 
