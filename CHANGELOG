@@ -8,7 +8,13 @@ Feature additions
    validation. Also added commands to the cli program to expose the session
    management to the end-user.
 
-3. Added Windows support. Building on Windows still requires libpq and the
+3. Added sqldb_query module to help manage query strings in the caller.
+   Query strings can now be stored by the caller in a single array and this
+   module will search for them by name and type. For example, a program
+   which stores two different query strings with the same name for postgres
+   and sqlite can use this module to find the correct one at runtime.
+
+4. Added Windows support. Building on Windows still requires libpq and the
    associated headers.
 
 Other
@@ -17,7 +23,7 @@ Other
 ## 0.1.3 - Mon Jul  1 22:30:44 SAST 2019
 Feature additions.
 1. Added sqldb_auth module as part of this library. This feature provides
-   the caller with the abiliry to perform user, group and permissions
+   the caller with the ability to perform user, group and permissions
    management using the selected SQL backend.
 
 ## 0.1.2 - Sun Jun 23 10:01:33 SAST 2019

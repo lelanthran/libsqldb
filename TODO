@@ -1,11 +1,6 @@
 1. Need to differentiate between returned columns that are NULL and
    returned columns that are empty strings.
 
-2. Add in support in the sqldb for working with compile-time query-strings
-   such as present in the sqldb_auth module:
-      1. Allow the tables to contain common query strings as well as
-         query-strings specific to particular SQL backends, as each
-         backend may have different dialects that they support.
-      2. Perform searching for query-strings using the currently selected
-         backend as a priority.
+2. Optimise the sqldb_query module to sort the queries array so that we
+   can do a binary search when searching for a query.
 
