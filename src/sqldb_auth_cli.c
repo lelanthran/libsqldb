@@ -230,10 +230,12 @@ static void print_help_msg (const char *cmd)
 "     Provide the help message for the specified command <command>.",\
 ""
 #define COMMAND_CREATE    \
-"  create ",\
-"     Creates a new, empty sqlite database. This is only needed for sqlite.",\
-"     When using a postgres database, the database must be created by the",\
-"     caller.",\
+"  create <filename>",\
+"     Creates a new empty sqlite database using <filename> as the filename",\
+"     of the new database. If this file already exists this command will fail",\
+"     even if the <filename> is already an sqlite database.",\
+"     This is only needed for sqlite. When using a postgres database, the",\
+"     database must be created using postgres commands.",\
 ""
 #define COMMAND_INIT    \
 "  init <database-type> <database>",\
@@ -1202,12 +1204,14 @@ int main (int argc, char **argv)
    if (nargs < cmd->min_args) {
       PROG_ERR ("[%s] Too few arguments: minimum is %zu, got %zu\n",
                 cmd->cmd, cmd->min_args, nargs);
+      print_help_msg (cmd->cmd);
       goto errorexit;
    }
 
    if (nargs > cmd->max_args) {
       PROG_ERR ("[%s] Too many arguments: maximum is %zu, got %zu\n",
                 cmd->cmd, cmd->max_args, nargs);
+      print_help_msg (cmd->cmd);
       goto errorexit;
    }
 
