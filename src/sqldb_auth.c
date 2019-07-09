@@ -219,8 +219,8 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
 }
 
 bool sqldb_auth_session_valid (sqldb_t     *db,
-                               const char  *email,
                                const char   session_id[65],
+                               char       **email_dst,
                                char       **nick_dst,
                                uint64_t    *flags_dst,
                                uint64_t    *id_dst)
@@ -230,10 +230,11 @@ bool sqldb_auth_session_valid (sqldb_t     *db,
    sqldb_res_t *res = NULL;
 
     char       *l_nick_dst = NULL;
+    char       *l_email_dst = NULL;
     uint64_t    l_flags_dst = 0;
     uint64_t    l_id_dst = 0;
 
-   if (!db || !SVALID (email) || !SVALID (session_id))
+   if (!db || !SVALID (session_id))
       goto errorexit;
 
    if (!(qstring = sqldb_auth_query ("session_valid"))) {
@@ -241,27 +242,32 @@ bool sqldb_auth_session_valid (sqldb_t     *db,
       goto errorexit;
    }
 
-   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
-                                        sqldb_col_TEXT, &session_id,
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &session_id,
                                         sqldb_col_UNKNOWN))) {
-      LOG_ERR ("Failed to execute session query for [%s/%s]\n%s\n",
-                email, session_id, sqldb_lasterr (db));
+      LOG_ERR ("Failed to execute session query for session [%s]\n%s\n",
+                session_id, sqldb_lasterr (db));
       goto errorexit;
    }
 
    if ((sqldb_res_step (res)) != 1) {
-      LOG_ERR ("Failed to find a session for [%s/%s]\n",
-               email, session_id);
+      LOG_ERR ("Failed to find a session for [%s]\n",
+               session_id);
       goto errorexit;
    }
 
-   if ((sqldb_scan_columns (res, sqldb_col_TEXT,    &l_nick_dst,
+   if ((sqldb_scan_columns (res, sqldb_col_TEXT,    &l_email_dst,
+                                 sqldb_col_TEXT,    &l_nick_dst,
                                  sqldb_col_UINT64,  &l_flags_dst,
                                  sqldb_col_UINT64,  &l_id_dst,
-                                 sqldb_col_UNKNOWN)) != 3) {
-      LOG_ERR ("Failed to scan 3 columns in for session [%s/%s]\n",
-               email, session_id);
+                                 sqldb_col_UNKNOWN)) != 4) {
+      LOG_ERR ("Failed to scan 4 columns in for session [%s]\n",
+               session_id);
       goto errorexit;
+   }
+
+   if (email_dst) {
+      (*email_dst) = l_email_dst;
+      l_email_dst = NULL;
    }
 
    if (nick_dst) {

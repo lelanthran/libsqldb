@@ -61,8 +61,8 @@ extern "C" {
    // strings stored at that location before populating them with new
    // values.
    bool sqldb_auth_session_valid (sqldb_t     *db,
-                                  const char  *email,
                                   const char   session_id[65],
+                                  char       **email_dst,
                                   char       **nick_dst,
                                   uint64_t    *flags_dst,
                                   uint64_t    *id_dst);

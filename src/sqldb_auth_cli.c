@@ -264,11 +264,10 @@ static void print_help_msg (const char *cmd)
 "     email combination was not found in the database.",\
 ""
 #define SESSION_VALID_MSG \
-"  session_valid <email> <session-ID>",\
-"     Checks if the session specified by <session-ID> is valid for the user",\
-"     specified by <email>. If valid, prints 'true' to stdout and returns",\
-"     zero to the caller. If not valid, prints 'false' to stdout and",\
-"     returns non-zero to the caller.",\
+"  session_valid <session-ID>",\
+"     Checks if the session specified by <session-ID> is valid If valid,",\
+"     prints 'true' to stdout and returns zero to the caller. If not valid,",\
+"     prints 'false' to stdout and returns non-zero to the caller.",\
 ""
 #define USER_NEW_MSG    \
 "  user_create <email> <nick> <password> ",\
@@ -665,15 +664,18 @@ static bool cmd_session_invalidate (char **args)
 
 static bool cmd_session_valid (char **args)
 {
-   char *nick = NULL;
+   char *nick = NULL,
+        *email = NULL;
    uint64_t id = 0, flags = 0;
 
-   if (sqldb_auth_session_valid (g_db, args[1], args[2], &nick, &flags, &id)) {
-      printf ("true:%s:%" PRIu64 ":%" PRIu64 "\n", nick, flags, id);
+   if (sqldb_auth_session_valid (g_db, args[1], &email, &nick, &flags, &id)) {
+      printf ("true:%s:%s:%" PRIu64 ":%" PRIu64 "\n", email, nick, flags, id);
+      free (email);
       free (nick);
       return true;
    }
 
+   free (email);
    free (nick);
    printf ("false\n");
    return false;
@@ -1087,7 +1089,7 @@ int main (int argc, char **argv)
 
       { "session_authenticate",  cmd_session_authenticate,  3, 3  },
       { "session_invalidate",    cmd_session_invalidate,    3, 3  },
-      { "session_valid",         cmd_session_valid,         3, 3  },
+      { "session_valid",         cmd_session_valid,         2, 2  },
 
       { "user_create",           cmd_user_create,        4, 4     },
       { "user_rm",               cmd_user_rm,            2, 2     },

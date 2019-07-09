@@ -53,8 +53,8 @@
 ///////////////////////////////////////////////////////////////////
 
 #define session_valid \
-"SELECT c_nick, c_flags, c_id FROM t_user "\
-"WHERE c_email = #1 AND c_session = #2;"
+"SELECT c_email, c_nick, c_flags, c_id FROM t_user "\
+"WHERE c_session = #1;"
 
 #define session_invalidate \
 "UPDATE t_user SET c_session = '0' WHERE c_email = #1 AND c_session = #2;"
