@@ -190,9 +190,16 @@ if [ 0 -ne "$?" ]; then
    cat tmptest
    exit 126;
 fi
-
 export SESS_ID=`cat tmptest`
 echo Using session $SESS_ID
+
+# Testing unique session ID
+$VALGRIND $VGOPTS $PROG session_authenticate two@example.com 12345 > tmptest
+if [ 0 -ne "$?" ]; then
+   echo Failed to authenticate two@example.com:12345
+   cat tmptest
+   exit 126;
+fi
 
 $VALGRIND $VGOPTS $PROG session_valid one@example.com $SESS_ID > tmptest
 if [ 0 -ne "$?" ]; then

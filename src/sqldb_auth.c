@@ -199,6 +199,12 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
 {
    static uint64_t seed = 0;
 
+#if 0
+   /* TEST CASE: Used to test unique constraints on session tables */
+   memset (dst, 0, len);
+   return;
+#endif
+
    if (!seed) {
       seed = sqldb_auth_random_seed ();
       seed <<= 4;
@@ -288,6 +294,7 @@ bool sqldb_auth_session_authenticate (sqldb_t    *db,
    bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
+   size_t retries = 0;
    sqldb_res_t *res = NULL;
 
    char *salt = NULL,
@@ -340,24 +347,31 @@ bool sqldb_auth_session_authenticate (sqldb_t    *db,
    if ((strncmp (dbhash, phash, sizeof phash))!=0)
       goto errorexit;
 
-   sqldb_auth_random_bytes (sess_id_bin, 32);
-   memset (sess_id_dst, 0, 65);
-   for (size_t i=0; i<32; i++) {
-      sprintf (&sess_id_dst[i*2], "%02x", sess_id_bin[i]);
-   }
-
    if (!(qstring = sqldb_auth_query ("user_update_session_id"))) {
       LOG_ERR ("Failed to find query-string for [user_update_session_id]\n");
       goto errorexit;
    }
 
-   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
-                                        sqldb_col_TEXT, &sess_id_dst,
-                                        sqldb_col_UNKNOWN);
+   // Make 100 attempts at most to generate a session ID that is unique.
+   // We give up after that (something is wrong).
+   for (retries=0; retries<100; retries++) {
+      sqldb_auth_random_bytes (sess_id_bin, 32);
+      memset (sess_id_dst, 0, 65);
+      for (size_t i=0; i<32; i++) {
+         sprintf (&sess_id_dst[i*2], "%02x", sess_id_bin[i]);
+      }
+
+      rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
+                                           sqldb_col_TEXT, &sess_id_dst,
+                                           sqldb_col_UNKNOWN);
+      if (rc != (uint64_t)-1)
+         break;
+   }
 
    if (rc == (uint64_t)-1) {
-      LOG_ERR ("Failed to update db with new session ID [%s:%s]\n%s\n",
-               email, sess_id_dst, sqldb_lasterr (db));
+      LOG_ERR ("Failed to update db with new session ID after %zu attempts "
+               "[%s:%s]\n%s\n",
+               retries, email, sess_id_dst, sqldb_lasterr (db));
       goto errorexit;
    }
 
