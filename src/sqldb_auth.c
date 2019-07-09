@@ -1445,7 +1445,7 @@ bool sqldb_auth_perms_get_user (sqldb_t      *db,
 
    if ((sqldb_res_step (res))!=1) {
       LOG_ERR ("Failed to retrieve query results for [%s]\n"
-               "#1=%s, #2%s\n%s\n%s\n",
+               "#1=%s, #2=%s\n%s\n%s\n",
                 qstring, email, resource, sqldb_res_lasterr (res),
                                           sqldb_lasterr (db));
       goto errorexit;

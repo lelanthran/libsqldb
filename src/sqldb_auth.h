@@ -52,7 +52,7 @@ extern "C" {
 
    ///////////////////////////////////////////////////////////////////////
 
-   // Authenticates the session specified against the user in the
+   // Authenticates the session specified against a user in the
    // database, returns the user info in nick and id if the specified
    // session is in the database and valid.
    //
