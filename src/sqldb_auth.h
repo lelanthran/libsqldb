@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define SQLDB_AUTH_GLOBAL_RESOURCE       ("_ALL_")
+
 /* TODO:
  * What ction should be default on deletion of foreign keys? If we cascade
  * group deletes all that happens is that sometimes a user will find
