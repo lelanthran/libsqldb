@@ -171,16 +171,16 @@
 #define perms_get_user \
 "SELECT c_perms FROM t_user_perm "\
 "WHERE c_user = (SELECT c_id FROM t_user WHERE c_email=#1) "\
-"AND   c_resource = #2;"
+"AND   (c_resource = #2 OR c_resource = '_ALL');"
 
 #define perms_get_group \
 "SELECT c_perms FROM t_group_perm "\
 "WHERE c_group = (SELECT c_id FROM t_group WHERE c_name=#1) "\
-"AND   c_resource = #2;"
+"AND   (c_resource = #2 OR c_resource = '_ALL')"
 
 #define perms_get_all \
 "SELECT c_perms FROM t_group_perm "\
-"WHERE c_resource = #2 "\
+"WHERE (c_resource = #2 OR c_resource = '_ALL')"\
 "AND "\
 "   c_group IN "\
 "      (SELECT c_group FROM t_group_membership "\

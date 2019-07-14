@@ -2,6 +2,8 @@
 #ifndef H_SQLDB_AUTH_QUERY
 #define H_SQLDB_AUTH_QUERY
 
+#define GLOBAL_RESOURCE       ("_ALL_")
+
 #ifdef __cplusplus
 extern "C" {
 #endif
