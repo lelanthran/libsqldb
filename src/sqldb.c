@@ -31,7 +31,7 @@
 static char *lstr_dup (const char *src)
 {
    if (!src)
-      return NULL;
+      src = "";
 
    size_t len = strlen (src) + 1;
 
