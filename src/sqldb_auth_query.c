@@ -30,22 +30,22 @@
 "   c_user    INTEGER NOT NULL," \
 "   c_group   INTEGER NOT NULL," \
 "      PRIMARY KEY (c_user, c_group),"\
-"      FOREIGN KEY (c_user) REFERENCES t_user(c_id)," \
-"      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
+"      FOREIGN KEY (c_user) REFERENCES t_user(c_id) ON DELETE CASCADE," \
+"      FOREIGN KEY (c_group) REFERENCES t_group(c_id) ON DELETE CASCADE);" \
 "" \
 "CREATE TABLE t_user_perm (" \
 "   c_resource   TEXT," \
 "   c_user       INTEGER," \
 "   c_perms      INTEGER," \
 "      PRIMARY KEY (c_user, c_resource),"\
-"      FOREIGN KEY (c_user) REFERENCES t_user(c_id));" \
+"      FOREIGN KEY (c_user) REFERENCES t_user(c_id) ON DELETE CASCADE);" \
  "" \
 "CREATE TABLE t_group_perm (" \
 "   c_resource   TEXT," \
 "   c_group      INTEGER," \
 "   c_perms      INTEGER," \
 "      PRIMARY KEY (c_group, c_resource),"\
-"      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
+"      FOREIGN KEY (c_group) REFERENCES t_group(c_id) ON DELETE CASCADE);" \
 "" \
 "COMMIT;"
 
