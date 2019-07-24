@@ -4,6 +4,7 @@ Bug fixes
    is now fixed.
 2. API changed for sqldb_auth_session_valid() to return the email instead of
    requiring the email.
+3. Foreign key bug in sqlite fixed.
 
 Feature additions
 1. Help messages corrected and made more informative where possible.

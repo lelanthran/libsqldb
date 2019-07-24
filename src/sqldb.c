@@ -168,6 +168,12 @@ static sqldb_t *sqlitedb_open (sqldb_t *ret, const char *dbname)
       goto errorexit;
    }
 
+   if (!(sqldb_batch (ret, "PRAGMA foreign_keys = ON", NULL))) {
+      const char *tmp =  sqlite3_errstr (rc);
+      PROG_ERR ("(%s) Unable to open database: %s\n", dbname, tmp);
+      goto errorexit;
+   }
+
    error = false;
 
 errorexit:
