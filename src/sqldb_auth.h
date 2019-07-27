@@ -145,10 +145,10 @@ extern "C" {
    // 'description' must be freed by the caller regardless of the return
    // value. If it is not NULL on entry to this function, this function will
    // free it before allocation storage for the description.
-   bool s_dstqldb_auth_group_info (sqldb_t    *db,
-                                   const char *name,
-                                   uint64_t   *id_dst,
-                                   char      **description_dst);
+   bool sqldb_auth_group_info (sqldb_t    *db,
+                               const char *name,
+                               uint64_t   *id_dst,
+                               char      **description_dst);
 
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the name parameter to find the
