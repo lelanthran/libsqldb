@@ -94,6 +94,12 @@ errorexit:
    return !error;
 }
 
+
+
+/* *****************************************************************
+ * Generating some entropy: see https://nullprogram.com/blog/2019/04/30/
+ */
+
 static uint32_t hash_buffer (uint32_t current, void *buf, size_t len)
 {
    uint8_t *b = buf;
@@ -217,6 +223,9 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
       b[i] = (rand () >> 8) & 0xff;
    }
 }
+
+/* ******************************************************************* */
+
 
 bool sqldb_auth_session_valid (sqldb_t     *db,
                                const char   session_id[65],

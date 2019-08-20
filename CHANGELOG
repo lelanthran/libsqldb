@@ -11,6 +11,7 @@ Feature additions
 
 Other
 1. License files for the contributed code (sha-356 and sqlite) added.
+2, Attribution for the entropy calculation in seed() function added.
 
 ## 0.1.4 - Fri Jul  5 22:30:40 SAST 2019
 Feature additions
