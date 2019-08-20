@@ -49,6 +49,11 @@ int main (void)
 
 errorexit:
 
+   if (rc) {
+      LOG_ERR ("Last error that was detected [%s]\n",
+                  sqldb_queue_strerror (rc));
+   }
+
    sqldb_queue_close (queue);
    sqldb_close (db);
 
