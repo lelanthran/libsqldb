@@ -30,22 +30,22 @@
 "   c_user    INTEGER NOT NULL," \
 "   c_group   INTEGER NOT NULL," \
 "      PRIMARY KEY (c_user, c_group),"\
-"      FOREIGN KEY (c_user) REFERENCES t_user(c_id)," \
-"      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
+"      FOREIGN KEY (c_user) REFERENCES t_user(c_id) ON DELETE CASCADE," \
+"      FOREIGN KEY (c_group) REFERENCES t_group(c_id) ON DELETE CASCADE);" \
 "" \
 "CREATE TABLE t_user_perm (" \
 "   c_resource   TEXT," \
 "   c_user       INTEGER," \
 "   c_perms      INTEGER," \
 "      PRIMARY KEY (c_user, c_resource),"\
-"      FOREIGN KEY (c_user) REFERENCES t_user(c_id));" \
+"      FOREIGN KEY (c_user) REFERENCES t_user(c_id) ON DELETE CASCADE);" \
  "" \
 "CREATE TABLE t_group_perm (" \
 "   c_resource   TEXT," \
 "   c_group      INTEGER," \
 "   c_perms      INTEGER," \
 "      PRIMARY KEY (c_group, c_resource),"\
-"      FOREIGN KEY (c_group) REFERENCES t_group(c_id));" \
+"      FOREIGN KEY (c_group) REFERENCES t_group(c_id) ON DELETE CASCADE);" \
 "" \
 "COMMIT;"
 
@@ -53,8 +53,8 @@
 ///////////////////////////////////////////////////////////////////
 
 #define session_valid \
-"SELECT c_nick, c_flags, c_id FROM t_user "\
-"WHERE c_email = #1 AND c_session = #2;"
+"SELECT c_email, c_nick, c_flags, c_id FROM t_user "\
+"WHERE c_session = #1;"
 
 #define session_invalidate \
 "UPDATE t_user SET c_session = '0' WHERE c_email = #1 AND c_session = #2;"
@@ -171,16 +171,16 @@
 #define perms_get_user \
 "SELECT c_perms FROM t_user_perm "\
 "WHERE c_user = (SELECT c_id FROM t_user WHERE c_email=#1) "\
-"AND   c_resource = #2;"
+"AND   (c_resource = #2 OR c_resource = '_ALL');"
 
 #define perms_get_group \
 "SELECT c_perms FROM t_group_perm "\
 "WHERE c_group = (SELECT c_id FROM t_group WHERE c_name=#1) "\
-"AND   c_resource = #2;"
+"AND   (c_resource = #2 OR c_resource = '_ALL')"
 
 #define perms_get_all \
 "SELECT c_perms FROM t_group_perm "\
-"WHERE c_resource = #2 "\
+"WHERE (c_resource = #2 OR c_resource = '_ALL')"\
 "AND "\
 "   c_group IN "\
 "      (SELECT c_group FROM t_group_membership "\

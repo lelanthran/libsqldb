@@ -176,7 +176,7 @@ set +e
 
 # Check for a valid session, then start a session,
 # then check if it is valid, invalidate it, then check again
-$VALGRIND $VGOPTS $PROG session_valid one@example.com 123456789 > tmptest
+$VALGRIND $VGOPTS $PROG session_valid 123456789 > tmptest
 if [ 0 -eq "$?" ]; then
    echo Incorrectly validated one@example.com:$SESS_ID
    cat tmptest
@@ -190,11 +190,18 @@ if [ 0 -ne "$?" ]; then
    cat tmptest
    exit 126;
 fi
-
 export SESS_ID=`cat tmptest`
 echo Using session $SESS_ID
 
-$VALGRIND $VGOPTS $PROG session_valid one@example.com $SESS_ID > tmptest
+# Testing unique session ID
+$VALGRIND $VGOPTS $PROG session_authenticate two@example.com 12345 > tmptest
+if [ 0 -ne "$?" ]; then
+   echo Failed to authenticate two@example.com:12345
+   cat tmptest
+   exit 126;
+fi
+
+$VALGRIND $VGOPTS $PROG session_valid $SESS_ID > tmptest
 if [ 0 -ne "$?" ]; then
    echo Failed to validate one@example.com:$SESS_ID
    cat tmptest
@@ -210,7 +217,7 @@ if [ 0 -ne "$?" ]; then
 fi
 cat tmptest
 
-$VALGRIND $VGOPTS $PROG session_valid one@example.com $SESS_ID > tmptest
+$VALGRIND $VGOPTS $PROG session_valid $SESS_ID > tmptest
 if [ 0 -eq "$?" ]; then
    echo Incorrectly validated one@example.com:$SESS_ID
    cat tmptest

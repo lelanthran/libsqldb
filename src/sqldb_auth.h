@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define SQLDB_AUTH_GLOBAL_RESOURCE       ("_ALL_")
+
 /* TODO:
  * What ction should be default on deletion of foreign keys? If we cascade
  * group deletes all that happens is that sometimes a user will find
@@ -52,7 +54,7 @@ extern "C" {
 
    ///////////////////////////////////////////////////////////////////////
 
-   // Authenticates the session specified against the user in the
+   // Authenticates the session specified against a user in the
    // database, returns the user info in nick and id if the specified
    // session is in the database and valid.
    //
@@ -61,8 +63,8 @@ extern "C" {
    // strings stored at that location before populating them with new
    // values.
    bool sqldb_auth_session_valid (sqldb_t     *db,
-                                  const char  *email,
                                   const char   session_id[65],
+                                  char       **email_dst,
                                   char       **nick_dst,
                                   uint64_t    *flags_dst,
                                   uint64_t    *id_dst);
@@ -143,10 +145,10 @@ extern "C" {
    // 'description' must be freed by the caller regardless of the return
    // value. If it is not NULL on entry to this function, this function will
    // free it before allocation storage for the description.
-   bool s_dstqldb_auth_group_info (sqldb_t    *db,
-                                   const char *name,
-                                   uint64_t   *id_dst,
-                                   char      **description_dst);
+   bool sqldb_auth_group_info (sqldb_t    *db,
+                               const char *name,
+                               uint64_t   *id_dst,
+                               char      **description_dst);
 
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the name parameter to find the

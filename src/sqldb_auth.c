@@ -94,6 +94,12 @@ errorexit:
    return !error;
 }
 
+
+
+/* *****************************************************************
+ * Generating some entropy: see https://nullprogram.com/blog/2019/04/30/
+ */
+
 static uint32_t hash_buffer (uint32_t current, void *buf, size_t len)
 {
    uint8_t *b = buf;
@@ -199,6 +205,12 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
 {
    static uint64_t seed = 0;
 
+#if 0
+   /* TEST CASE: Used to test unique constraints on session tables */
+   memset (dst, 0, len);
+   return;
+#endif
+
    if (!seed) {
       seed = sqldb_auth_random_seed ();
       seed <<= 4;
@@ -212,9 +224,12 @@ void sqldb_auth_random_bytes (void *dst, size_t len)
    }
 }
 
+/* ******************************************************************* */
+
+
 bool sqldb_auth_session_valid (sqldb_t     *db,
-                               const char  *email,
                                const char   session_id[65],
+                               char       **email_dst,
                                char       **nick_dst,
                                uint64_t    *flags_dst,
                                uint64_t    *id_dst)
@@ -224,10 +239,11 @@ bool sqldb_auth_session_valid (sqldb_t     *db,
    sqldb_res_t *res = NULL;
 
     char       *l_nick_dst = NULL;
+    char       *l_email_dst = NULL;
     uint64_t    l_flags_dst = 0;
     uint64_t    l_id_dst = 0;
 
-   if (!db || !SVALID (email) || !SVALID (session_id))
+   if (!db || !SVALID (session_id))
       goto errorexit;
 
    if (!(qstring = sqldb_auth_query ("session_valid"))) {
@@ -235,27 +251,32 @@ bool sqldb_auth_session_valid (sqldb_t     *db,
       goto errorexit;
    }
 
-   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
-                                        sqldb_col_TEXT, &session_id,
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &session_id,
                                         sqldb_col_UNKNOWN))) {
-      LOG_ERR ("Failed to execute session query for [%s/%s]\n%s\n",
-                email, session_id, sqldb_lasterr (db));
+      LOG_ERR ("Failed to execute session query for session [%s]\n%s\n",
+                session_id, sqldb_lasterr (db));
       goto errorexit;
    }
 
    if ((sqldb_res_step (res)) != 1) {
-      LOG_ERR ("Failed to find a session for [%s/%s]\n",
-               email, session_id);
+      LOG_ERR ("Failed to find a session for [%s]\n",
+               session_id);
       goto errorexit;
    }
 
-   if ((sqldb_scan_columns (res, sqldb_col_TEXT,    &l_nick_dst,
+   if ((sqldb_scan_columns (res, sqldb_col_TEXT,    &l_email_dst,
+                                 sqldb_col_TEXT,    &l_nick_dst,
                                  sqldb_col_UINT64,  &l_flags_dst,
                                  sqldb_col_UINT64,  &l_id_dst,
-                                 sqldb_col_UNKNOWN)) != 3) {
-      LOG_ERR ("Failed to scan 3 columns in for session [%s/%s]\n",
-               email, session_id);
+                                 sqldb_col_UNKNOWN)) != 4) {
+      LOG_ERR ("Failed to scan 4 columns in for session [%s]\n",
+               session_id);
       goto errorexit;
+   }
+
+   if (email_dst) {
+      (*email_dst) = l_email_dst;
+      l_email_dst = NULL;
    }
 
    if (nick_dst) {
@@ -288,6 +309,7 @@ bool sqldb_auth_session_authenticate (sqldb_t    *db,
    bool error = true;
    const char *qstring = NULL;
    uint64_t rc = 0;
+   size_t retries = 0;
    sqldb_res_t *res = NULL;
 
    char *salt = NULL,
@@ -340,24 +362,31 @@ bool sqldb_auth_session_authenticate (sqldb_t    *db,
    if ((strncmp (dbhash, phash, sizeof phash))!=0)
       goto errorexit;
 
-   sqldb_auth_random_bytes (sess_id_bin, 32);
-   memset (sess_id_dst, 0, 65);
-   for (size_t i=0; i<32; i++) {
-      sprintf (&sess_id_dst[i*2], "%02x", sess_id_bin[i]);
-   }
-
    if (!(qstring = sqldb_auth_query ("user_update_session_id"))) {
       LOG_ERR ("Failed to find query-string for [user_update_session_id]\n");
       goto errorexit;
    }
 
-   rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
-                                        sqldb_col_TEXT, &sess_id_dst,
-                                        sqldb_col_UNKNOWN);
+   // Make 100 attempts at most to generate a session ID that is unique.
+   // We give up after that (something is wrong).
+   for (retries=0; retries<100; retries++) {
+      sqldb_auth_random_bytes (sess_id_bin, 32);
+      memset (sess_id_dst, 0, 65);
+      for (size_t i=0; i<32; i++) {
+         sprintf (&sess_id_dst[i*2], "%02x", sess_id_bin[i]);
+      }
+
+      rc = sqldb_exec_ignore (db, qstring, sqldb_col_TEXT, &email,
+                                           sqldb_col_TEXT, &sess_id_dst,
+                                           sqldb_col_UNKNOWN);
+      if (rc != (uint64_t)-1)
+         break;
+   }
 
    if (rc == (uint64_t)-1) {
-      LOG_ERR ("Failed to update db with new session ID [%s:%s]\n%s\n",
-               email, sess_id_dst, sqldb_lasterr (db));
+      LOG_ERR ("Failed to update db with new session ID after %zu attempts "
+               "[%s:%s]\n%s\n",
+               retries, email, sess_id_dst, sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -1425,7 +1454,7 @@ bool sqldb_auth_perms_get_user (sqldb_t      *db,
 
    if ((sqldb_res_step (res))!=1) {
       LOG_ERR ("Failed to retrieve query results for [%s]\n"
-               "#1=%s, #2%s\n%s\n%s\n",
+               "#1=%s, #2=%s\n%s\n%s\n",
                 qstring, email, resource, sqldb_res_lasterr (res),
                                           sqldb_lasterr (db));
       goto errorexit;

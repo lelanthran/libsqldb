@@ -31,7 +31,7 @@
 static char *lstr_dup (const char *src)
 {
    if (!src)
-      return NULL;
+      src = "";
 
    size_t len = strlen (src) + 1;
 
@@ -163,6 +163,12 @@ static sqldb_t *sqlitedb_open (sqldb_t *ret, const char *dbname)
    int mode = SQLITE_OPEN_READWRITE;
    int rc = sqlite3_open_v2 (dbname, &ret->sqlite_db, mode, NULL);
    if (rc!=SQLITE_OK) {
+      const char *tmp =  sqlite3_errstr (rc);
+      PROG_ERR ("(%s) Unable to open database: %s\n", dbname, tmp);
+      goto errorexit;
+   }
+
+   if (!(sqldb_batch (ret, "PRAGMA foreign_keys = ON", NULL))) {
       const char *tmp =  sqlite3_errstr (rc);
       PROG_ERR ("(%s) Unable to open database: %s\n", dbname, tmp);
       goto errorexit;
