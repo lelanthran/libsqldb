@@ -42,6 +42,135 @@ static char *lstr_dup (const char *src)
    return strcpy (ret, src);
 }
 
+/* *****************************************************************
+ * Generating some entropy: see https://nullprogram.com/blog/2019/04/30/
+ */
+
+static uint32_t hash_buffer (uint32_t current, void *buf, size_t len)
+{
+   uint8_t *b = buf;
+   for (size_t i=0; i<len; i++) {
+      current ^= (current * 31) + b[i];
+   }
+   current = current ^ (current >> 15);
+   current = current ^ (current * 0x4e85ca7d);
+   current = current ^ (current >> 15);
+   current = current ^ (current * 0x4e85ca7d);
+   return current;
+}
+
+static uint32_t getclock (uint32_t current)
+{
+   for (size_t i=0; i<0x000f; i++) {
+      // Clock may not have enough resolution over repeated calls, so
+      // add some entropy by counting how long it takes to change
+      clock_t start = clock ();
+      uint16_t counter = 0;
+      while (start == clock()) {
+         counter++;
+      }
+      current = hash_buffer (current, &counter, sizeof counter);
+      current = hash_buffer (current, &start, sizeof start);
+   }
+   return current;
+}
+
+uint32_t sqldb_random_seed (void)
+{
+#ifndef PLATFORM_Windows
+   extern int main (void);
+#endif
+
+   uint32_t ret = 0;
+
+   char char_array[50];
+
+   /* Sources of randomness:
+    * 1. Epoch in seconds since 1970:
+    * 2. Processor time since program start:
+    * 3. Pointer to current stack position:
+    * 4. Pointer to heap:
+    * 5. Pointer to function (self):
+    * 6. Pointer to main():
+    * 7. PID:
+    * 8. tmpnam()
+    */
+
+   time_t epoch = time (NULL);
+   uint32_t proc_time = getclock (ret);
+   uint32_t *ptr_stack = &ret;
+   uint32_t (*ptr_self) (void) = sqldb_random_seed;
+#ifndef PLATFORM_Windows
+   int (*ptr_main) (void) = main;
+#else
+   int (*ptr_main) (void) = NULL;
+#endif
+   void *(*ptr_malloc) (size_t) = malloc;
+   pid_t pid = getpid ();
+
+   uint32_t int_stack = (uintptr_t)ptr_stack;
+   uint32_t *tmp = malloc (1);
+   uint32_t *ptr_heap_small = tmp ? tmp :
+                              (void *) (uintptr_t) ((int_stack >> 1) * (int_stack >> 1));
+   free (tmp);
+   tmp = malloc (1024 * 1024);
+   uint32_t *ptr_heap_large = tmp ? tmp :
+                              (void *) (uintptr_t) ((proc_time >> 1) * (proc_time >> 1));
+   free (tmp);
+
+   char *tmp_fname = tmpnam (NULL);
+   if (!tmp_fname) {
+      snprintf (char_array, sizeof char_array, "[%p]", ptr_self);
+      tmp_fname = char_array;
+   }
+
+   ret = hash_buffer (ret, &epoch, sizeof epoch);
+   ret = hash_buffer (ret, &proc_time, sizeof proc_time);
+   ret = hash_buffer (ret, &ptr_stack, sizeof ptr_stack);
+   ret = hash_buffer (ret, &ptr_self, sizeof ptr_self);
+   ret = hash_buffer (ret, &ptr_main, sizeof ptr_main);
+   ret = hash_buffer (ret, &ptr_malloc, sizeof ptr_malloc);
+   ret = hash_buffer (ret, &pid, sizeof pid);
+   ret = hash_buffer (ret, &ptr_heap_small, sizeof ptr_heap_small);
+   ret = hash_buffer (ret, &ptr_heap_large, sizeof ptr_heap_large);
+   ret = hash_buffer (ret, tmp_fname, strlen (tmp_fname));
+
+#if 0
+   fprintf (stderr, "[%p][%p][%p][%p][%p][%p]\n",
+                                          ptr_stack,
+                                          ptr_self,
+                                          ptr_main,
+                                          ptr_malloc,
+                                          ptr_heap_small,
+                                          ptr_heap_large);
+#endif
+   return ret;
+}
+
+void sqldb_random_bytes (void *dst, size_t len)
+{
+   static uint64_t seed = 0;
+
+#if 0
+   /* TEST CASE: Used to test unique constraints on session tables */
+   memset (dst, 0, len);
+   return;
+#endif
+
+   if (!seed) {
+      seed = sqldb_random_seed ();
+      seed <<= 4;
+      seed |= sqldb_random_seed ();
+      srand ((unsigned int)seed);
+   }
+
+   uint8_t *b = dst;
+   for (size_t i=0; i<len; i++) {
+      b[i] = (rand () >> 8) & 0xff;
+   }
+}
+
+/* ******************************************************************* */
 bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
 {
    sqlite3 *newdb = NULL;
@@ -1267,4 +1396,5 @@ void sqldb_print (sqldb_t *db, FILE *outf)
                                         "SQLITE" : "POSTGRES");
    PROG_ERR ("%30s: %s\n", "lasterr", db->lasterr);
 }
+
 

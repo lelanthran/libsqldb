@@ -42,6 +42,13 @@ typedef enum {
 extern "C" {
 #endif
 
+   // Return a random seed.
+   uint32_t sqldb_random_seed (void);
+
+   // Return random bytes
+   void sqldb_random_bytes (void *dst, size_t len);
+
+
    // Does nothing when type!=sqlite, otherwise creates a new sqlite3 db
    bool sqldb_create (const char *dbname, sqldb_dbtype_t type);
 
@@ -182,7 +189,6 @@ extern "C" {
 
    // For diagnostics during development
    void sqldb_print (sqldb_t *db, FILE *outf);
-
 
 #ifdef __cplusplus
 };

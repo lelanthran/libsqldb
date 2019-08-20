@@ -10,7 +10,7 @@
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
-#define TEST_BATCHFILE   ("test-file.sql")
+#define TEST_BATCHFILE   ("test-scripts/test-file.sql")
 
 #define PROG_ERR(...)      do {\
       fprintf (stderr, "%s: ", argv[1]);\

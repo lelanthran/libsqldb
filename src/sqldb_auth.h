@@ -46,12 +46,6 @@ extern "C" {
    // authorisation access.
    bool sqldb_auth_initdb (sqldb_t *db);
 
-   // Return a random seed.
-   uint32_t sqldb_auth_random_seed (void);
-
-   // Return random bytes
-   void sqldb_auth_random_bytes (void *dst, size_t len);
-
    ///////////////////////////////////////////////////////////////////////
 
    // Authenticates the session specified against a user in the

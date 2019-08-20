@@ -21,11 +21,11 @@ echo "drop table three cascade;" | psql
 echo Done.
 
 echo Starting sqlite tests
-$VGRIND sqldb/main-d.elf sqlite   || die "SQLITE test failed"
+$VGRIND test-scripts/sqldb_test.elf sqlite   || die "SQLITE test failed"
 echo Sqlite tests passed.
 
 echo Starting postgres tests
-$VGRIND sqldb/main-d.elf postgres || die "PSQL test failed"
+$VGRIND test-scripts/sqldb_test.elf postgres || die "PSQL test failed"
 echo Postgres tests passed.
 
 exit 0;
