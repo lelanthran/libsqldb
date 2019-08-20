@@ -1,4 +1,4 @@
-## 0.1.5 - ???
+## 0.1.5 - Tue Aug 20 09:01:45 SAST 2019
 Bug fixes
 1. Bug in session creation that would sometimes create duplicate session IDs
    is now fixed.
