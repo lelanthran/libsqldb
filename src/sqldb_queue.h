@@ -6,7 +6,7 @@
 
 #include "sqldb.h"
 
-#define SQLDB_QUEUE_CREATE    (1 << 0)
+#define SQLDB_QUEUE_CREATE       (1 << 0)
 
 #define  SQLDB_QUEUE_SUCCESS     (0)
 #define  SQLDB_QUEUE_EEXISTS     (1)
