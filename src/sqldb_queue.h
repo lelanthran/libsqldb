@@ -20,6 +20,10 @@ extern "C" {
    // Return a string describing the error code passed in.
    const char *sqldb_queue_strerror (int code);
 
+   // Initialise the specified database with the tables necessary to
+   // support queues
+   bool sqldb_queue_init (sqldb_t *db);
+
    // Create a new queue of the specified name. On success zero is
    // returned. On failure an errorcode will be returned.
    int sqldb_queue_create (sqldb_t *db, const char *queue_name);

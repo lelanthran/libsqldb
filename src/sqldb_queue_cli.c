@@ -105,7 +105,10 @@ static const char *find_lopt (char **lopts, const char *name)
 
    size_t namelen = strlen (name);
    for (size_t i=0; lopts[i]; i++) {
-      if ((strncmp (name, lopts[i], namelen))==0) {
+      size_t maxlen = strlen (lopts[i]);
+      if (maxlen != namelen)
+         continue;
+      if ((strncmp (name, lopts[i], maxlen))==0) {
          char *ret = strchr (lopts[i], '=');
          return ret ? &ret[1] : "";
       }
@@ -325,6 +328,10 @@ COMMAND_QUEUE_CREATE,
 
 /* ******************************************************************** */
 
+static sqldb_t *g_db = NULL;
+
+/* ******************************************************************** */
+
 static bool cmd_TODO (char **args)
 {
    args = args;
@@ -342,8 +349,7 @@ static bool cmd_help (char **args)
 
 static bool cmd_init (char **args)
 {
-   // TODO:
-   return false;
+   return sqldb_queue_init (g_db)==true ? true : false;
 }
 
 static bool cmd_queue_create (char **args)
@@ -352,10 +358,6 @@ static bool cmd_queue_create (char **args)
    return false;
 }
 
-
-/* ******************************************************************** */
-
-static sqldb_t *g_db = NULL;
 
 /* ******************************************************************** */
 
@@ -370,7 +372,7 @@ int main (int argc, char **argv)
       size_t max_args;
    } cmds[] = {
       { "help",                  cmd_help,               2, 2     },
-      { "init",                  cmd_init,               2, 2     },
+      { "init",                  cmd_init,               1, 1     },
       { "create",                cmd_queue_create,       2, 2     },
    };
 
@@ -494,7 +496,7 @@ int main (int argc, char **argv)
    /* Open the specified database, using the specified type. */
    if (!(g_db = sqldb_open (dbname, dbtype))) {
       PROG_ERR ("Unable to open [%s] database using [%s] connection\n"
-                "Error:%s\n", opt_dbtype, opt_dbconn, sqldb_lasterr (g_db));
+                "Error:%s\n", opt_dbtype, dbname, sqldb_lasterr (g_db));
       goto errorexit;
    }
 
