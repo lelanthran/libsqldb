@@ -25,28 +25,6 @@ static char *lstrdup (const char *src)
 
 /* **************************************************************** */
 
-const char *sqldb_queue_strerror (int code)
-{
-   static char unknown_error[25 + 25];
-   static const struct {
-      int code;
-      const char *msg;
-   } msgs[] = {
-      { SQLDB_QUEUE_SUCCESS,             "Success" },
-      { SQLDB_QUEUE_EEXISTS,             "Resource exists" },
-   };
-
-   for (size_t i=0; i<sizeof msgs/sizeof msgs[0]; i++) {
-      if (msgs[i].code == code)
-         return msgs[i].msg;
-   }
-
-   snprintf (unknown_error, "Unknown error %i", code);
-   return unknown_error;
-}
-
-/* **************************************************************** */
-
 struct sqldb_queue_t {
    char        *name;
    char        *description;
