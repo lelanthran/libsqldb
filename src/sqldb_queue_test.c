@@ -26,11 +26,6 @@ int main (void)
       goto errorexit;
    }
 
-   if (!(db = sqldb_open (TESTDB_NAME, sqldb_SQLITE))) {
-      LOG_ERR ("Failed to open database [%s]\n", TESTDB_NAME);
-      goto errorexit;
-   }
-
    if ((rc = sqldb_queue_create (db, TESTQUEUE_1))!=SQLDB_QUEUE_SUCCESS) {
       LOG_ERR ("Failed to create queue [%s] in [%s]\n", TESTQUEUE_1,
                                                         TESTDB_NAME);
@@ -43,7 +38,7 @@ int main (void)
       goto errorexit;
    }
 
-   // Tests start...
+   // Tests start
 
    ret = EXIT_SUCCESS;
 

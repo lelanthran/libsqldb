@@ -73,7 +73,6 @@ BINPROGS=\
 	$(OUTBIN)/sqldb_auth_cli$(EXE_EXT)\
 	$(OUTBIN)/sqldb_auth_test$(EXE_EXT)\
 	$(OUTBIN)/sqldb_query_test$(EXE_EXT)\
-	$(OUTBIN)/sqldb_queue_test$(EXE_EXT)\
 	$(OUTBIN)/sqldb_test$(EXE_EXT)\
 	$(OUTBIN)/sqlite3_main$(EXE_EXT)
 
