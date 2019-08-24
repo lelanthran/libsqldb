@@ -8,15 +8,10 @@
 #define create_tables \
 "BEGIN TRANSACTION;" \
 \
-"CREATE TABLE t_user (" \
-"   c_id         INTEGER PRIMARY KEY," \
-"   c_session    TEXT UNIQUE," \
-"   c_expiry     INTEGER," \
-"   c_email      TEXT UNIQUE," \
-"   c_nick       TEXT," \
-"   c_flags      INTEGER," \
-"   c_salt       TEXT," \
-"   c_hash       TEXT);" \
+"CREATE TABLE t_queue (" \
+"   c_id             INTEGER PRIMARY KEY," \
+"   c_name           TEXT,
+"   c_description    TEXT);" \
 "" \
 "CREATE TABLE t_group (" \
 "   c_id            INTEGER PRIMARY KEY," \
