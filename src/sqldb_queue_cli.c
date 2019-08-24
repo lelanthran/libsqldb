@@ -228,12 +228,6 @@ static void print_help_msg (const char *cmd)
 "  help <command>",\
 "     Provide the help message for the specified command <command>.",\
 ""
-#define COMMAND_INIT    \
-"  init ",\
-"     Initialises the database specified with --database and --database-type",\
-"     with all of the tables needed to support the queueing system.",\
-"", \
-""
 #define COMMAND_QUEUE_CREATE    \
 "  create <queue-name>",\
 "     Create a new queue, of name <queue-name>.",\
@@ -244,7 +238,6 @@ static void print_help_msg (const char *cmd)
       const char *msg[20];
    } cmd_help[] = {
       { "help",                  { COMMAND_HELP             }  },
-      { "init",                  { COMMAND_INIT             }  },
       { "create",                { COMMAND_QUEUE_CREATE     }  },
    };
 
@@ -295,7 +288,6 @@ static void print_help_msg (const char *cmd)
 "GENERAL COMMANDS",
 "----------------",
 COMMAND_HELP,
-COMMAND_INIT,
 COMMAND_QUEUE_CREATE,
 "",
    };
@@ -340,12 +332,6 @@ static bool cmd_help (char **args)
    return true;
 }
 
-static bool cmd_init (char **args)
-{
-   // TODO:
-   return false;
-}
-
 static bool cmd_queue_create (char **args)
 {
    // TODO:
@@ -370,7 +356,6 @@ int main (int argc, char **argv)
       size_t max_args;
    } cmds[] = {
       { "help",                  cmd_help,               2, 2     },
-      { "init",                  cmd_init,               2, 2     },
       { "create",                cmd_queue_create,       2, 2     },
    };
 
