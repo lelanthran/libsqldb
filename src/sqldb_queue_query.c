@@ -1,9 +1,6 @@
-#include <stdbool.h>
 
 #include "sqldb_query.h"
 #include "sqldb_queue_query.h"
-
-
 
 #define create_tables \
 "BEGIN TRANSACTION;" \
