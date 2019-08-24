@@ -71,9 +71,9 @@ OUTDIRS=$(OUTLIB) $(OUTBIN) $(OUTOBS)
 # Declare the final outputs
 BINPROGS=\
 	$(OUTBIN)/sqldb_auth_cli$(EXE_EXT)\
-	$(OUTBIN)/sqldb_queue_cli$(EXE_EXT)\
 	$(OUTBIN)/sqldb_auth_test$(EXE_EXT)\
 	$(OUTBIN)/sqldb_query_test$(EXE_EXT)\
+	$(OUTBIN)/sqldb_queue_test$(EXE_EXT)\
 	$(OUTBIN)/sqldb_test$(EXE_EXT)\
 	$(OUTBIN)/sqlite3_main$(EXE_EXT)
 
@@ -89,9 +89,9 @@ STCLNK_NAME=$(OUTLIB)/$(PROJNAME).a
 # Declare the intermediate outputs
 BINOBS=\
 	$(OUTOBS)/sqldb_auth_cli.o\
-	$(OUTOBS)/sqldb_queue_cli.o\
 	$(OUTOBS)/sqldb_auth_test.o\
 	$(OUTOBS)/sqldb_query_test.o\
+	$(OUTOBS)/sqldb_queue_test.o\
 	$(OUTOBS)/sqldb_test.o\
 	$(OUTOBS)/sqlite3_main.o
 
