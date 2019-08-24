@@ -90,7 +90,6 @@ BINOBS=\
 	$(OUTOBS)/sqldb_auth_cli.o\
 	$(OUTOBS)/sqldb_auth_test.o\
 	$(OUTOBS)/sqldb_query_test.o\
-	$(OUTOBS)/sqldb_queue_test.o\
 	$(OUTOBS)/sqldb_test.o\
 	$(OUTOBS)/sqlite3_main.o
 
@@ -99,8 +98,6 @@ OBS=\
 	$(OUTOBS)/sha-256.o\
 	$(OUTOBS)/sqldb_auth.o\
 	$(OUTOBS)/sqldb_auth_query.o\
-	$(OUTOBS)/sqldb_queue.o\
-	$(OUTOBS)/sqldb_queue_query.o\
 	$(OUTOBS)/sqldb_query.o\
 	$(OUTOBS)/sqldb.o\
 	$(OUTOBS)/sqlite3.o
@@ -110,8 +107,6 @@ HEADERS=\
 	src/sha-256.h\
 	src/sqldb_auth.h\
 	src/sqldb_auth_query.h\
-	src/sqldb_queue.h\
-	src/sqldb_queue_query.h\
 	src/sqldb_query.h\
 	src/sqldb.h\
 	src/sqlite3ext.h\

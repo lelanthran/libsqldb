@@ -45,8 +45,7 @@ extern "C" {
    // Return a random seed.
    uint32_t sqldb_random_seed (void);
 
-   // Return len number of random bytes in dst, which must be large enough
-   // to hold len bytes.
+   // Return random bytes
    void sqldb_random_bytes (void *dst, size_t len);
 
 
