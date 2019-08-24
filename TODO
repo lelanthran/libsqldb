@@ -14,5 +14,3 @@
 6. Optimise the sqldb_query module to sort the queries array so that we
    can do a binary search when searching for a query.
 
-7. Make the sqldb_query module understand that a query type can be for
-   both types of queries.

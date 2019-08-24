@@ -6,8 +6,8 @@
 extern "C" {
 #endif
 
-   // Returns a query string corresponding to name.
-   const char *sqldb_queue_query (const char *name);
+
+
 
 #ifdef __cplusplus
 };

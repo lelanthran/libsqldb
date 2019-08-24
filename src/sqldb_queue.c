@@ -6,22 +6,6 @@
 #include "sqldb_queue.h"
 #include "sqldb_queue_query.h"
 
-
-#ifdef DEBUG
-
-#define LOG_ERR(...)      do {\
-         fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
-         fprintf (stderr, __VA_ARGS__);\
-   } while (0)
-
-#else
-
-#define LOG_ERR(...)    (void)
-
-#endif
-
-
-
 // Redefining it here because don't want to pollute public namespace with
 // small irrelevant functions.
 static char *lstrdup (const char *src)
@@ -57,29 +41,8 @@ const char *sqldb_queue_strerror (int code)
          return msgs[i].msg;
    }
 
-   snprintf (unknown_error, sizeof unknown_error, "Unknown error %i", code);
+   snprintf (unknown_error, "Unknown error %i", code);
    return unknown_error;
-}
-
-/* **************************************************************** */
-
-bool sqldb_queue_init (sqldb_t *db)
-{
-   if (!db)
-      return false;
-
-   const char *qstring = sqldb_queue_query ("create_tables");
-   if (!qstring) {
-      LOG_ERR ("Failed to find querystring [%s]\n", "create_tables");
-      return false;
-   }
-
-   if (!(sqldb_batch (db, qstring))) {
-      LOG_ERR ("Failed to create tables:[%s]\n", sqldb_lasterr (db));
-      return false;
-   }
-
-   return true;
 }
 
 /* **************************************************************** */

@@ -18,7 +18,7 @@
 // See the file sqldb_query_test.c for an example of the usage.
 
 struct sqldb_query_t {
-   // The database type; if zero then query matches all types.
+   // The database type
    int         type;
 
    // The name of the query

@@ -42,7 +42,7 @@ const char *sqldb_query_find (struct sqldb_query_t *queries,
    for (size_t i=0; i<nqueries &&
                     queries[i].name &&
                     queries[i].query_string; i++) {
-      if (queries[i].type==0 || queries[i].rfu == hash) {
+      if (queries[i].rfu == hash) {
          if ((strcmp (queries[i].name, name))==0) {
             return queries[i].query_string;
          }
