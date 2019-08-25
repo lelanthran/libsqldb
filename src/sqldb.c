@@ -65,6 +65,26 @@ static char *lstr_cat (const char *s1, const char *s2)
    return ret;
 }
 
+static bool valid_db_char (char c)
+{
+   static const char *valid =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "abcdefghijklmnopqrstuvwxyz"
+      "0123456789"
+      "_./";
+   return (strchr (valid, c));
+}
+
+static bool valid_db_identifier (const char *ident)
+{
+   for (size_t i=0; ident && ident[i]; i++) {
+      if (!(valid_db_char (ident[i])))
+         return false;
+   }
+   return true;
+}
+
+
 /* *****************************************************************
  * Generating some entropy: see https://nullprogram.com/blog/2019/04/30/
  */
@@ -238,6 +258,11 @@ static bool pgdb_create (sqldb_t *db, const char *dbname)
 
 bool sqldb_create (sqldb_t *db, const char *dbname, sqldb_dbtype_t type)
 {
+   if (!(valid_db_identifier (dbname))) {
+      PROG_ERR ("[%s] is not a valid database name\n", dbname);
+      return false;
+   }
+
    switch (type) {
 
       case sqldb_SQLITE:   return sqlitedb_create (dbname);
