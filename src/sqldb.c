@@ -171,7 +171,7 @@ void sqldb_random_bytes (void *dst, size_t len)
 }
 
 /* ******************************************************************* */
-bool sqldb_create (const char *dbname, sqldb_dbtype_t type)
+static bool sqlitedb_create (const char *dbname, sqldb_dbtype_t type)
 {
    sqlite3 *newdb = NULL;
    bool ret = false;
@@ -203,6 +203,21 @@ errorexit:
       sqlite3_close (newdb);
 
    return ret;
+}
+
+bool sqldb_create (sqldb_t *db, const char *dbname, sqldb_dbtype_t type)
+{
+   switch (type) {
+
+      case sqldb_SQLITE:   return sqlitedb_create (dbname, type);
+
+      case sqldb_POSTGRES:
+                           printf ("TODO: postgres not implemented yet\n");
+                           return false;
+
+      default:
+         return false;
+   }
 }
 
 // TODO: Do we need a lockfile for SQLITE?

@@ -58,7 +58,7 @@ OUTDIR=release
 endif
 
 PROJNAME=libsqldb
-VERSION=0.1.5
+VERSION=0.1.6
 
 TARGET=$(shell $(GCC) -dumpmachine)
 OUTLIB=$(OUTDIR)/lib/$(TARGET)

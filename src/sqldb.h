@@ -49,8 +49,11 @@ extern "C" {
    void sqldb_random_bytes (void *dst, size_t len);
 
 
-   // Does nothing when type!=sqlite, otherwise creates a new sqlite3 db
-   bool sqldb_create (const char *dbname, sqldb_dbtype_t type);
+   // When type==sqlite:      Creates a new sqlite3 database using dbname
+   //                         as the filename. The db parameter is ignored.
+   // When type==postgres     Creates a new postgres database called
+   //                         'dbname' using the specified db to connect.
+   bool sqldb_create (sqldb_t *db, const char *dbname, sqldb_dbtype_t type);
 
    // Open a connection to the database, using the type specified. Returns
    // NULL on error.

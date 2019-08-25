@@ -230,12 +230,20 @@ static void print_help_msg (const char *cmd)
 "     Provide the help message for the specified command <command>.",\
 ""
 #define COMMAND_CREATE    \
-"  create <filename>",\
-"     Creates a new empty sqlite database using <filename> as the filename",\
-"     of the new database. If this file already exists this command will fail",\
-"     even if the <filename> is already an sqlite database.",\
-"     This is only needed for sqlite. When using a postgres database, the",\
-"     database must be created using postgres commands.",\
+"  create <database-name> <database-type",\
+"     Creates a new empty database using <database-type> as the database type",\
+"     of the new database.",\
+"",\
+"     When database-type is 'sqlite', the resulting database will be an",\
+"     SQLite database with the filename specified by database-name.",\
+"",\
+"     When database-type is 'postgres', the resulting database will be",\
+"     PostgreSQL database with the database name specified by database-name.",\
+"     For PostgreSQL databases, the caller must also specify a database",\
+"     server to connect to using the options '--database-type' and ",\
+"     '--database'.",\
+"",\
+"     If the database already exists this command will fail.",\
 ""
 #define COMMAND_INIT    \
 "  init <database-type> <database>",\
@@ -560,6 +568,11 @@ PERMS_MSG,
 
 /* ******************************************************************** */
 
+static sqldb_t *g_db = NULL;
+
+/* ******************************************************************** */
+
+
 static bool cmd_TODO (char **args)
 {
    args = args;
@@ -577,12 +590,25 @@ static bool cmd_help (char **args)
 
 static bool cmd_create (char **args)
 {
-   printf ("Creating empty sqlite database [%s]\n", args[1]);
+   sqldb_dbtype_t type = sqldb_UNKNOWN;
 
-   bool ret = sqldb_create (args[1], sqldb_SQLITE);
+   printf ("Creating empty [%s] database [%s]\n", args[2], args[1]);
+
+   if ((strcmp ("sqlite", args[2]))==0)
+      type = sqldb_SQLITE;
+
+   if ((strcmp ("postgres", args[2]))==0)
+      type = sqldb_POSTGRES;
+
+   if (type==sqldb_UNKNOWN) {
+      PROG_ERR ("Unsupported database type [%s]\n", args[2]);
+      return false;
+   }
+
+   bool ret = sqldb_create (g_db, args[1], type);
 
    if (ret) {
-      printf ("Created empty sqlite database [%s]\n", args[1]);
+      printf ("Created empty [%s] database [%s]\n", args[2], args[1]);
    } else {
       PROG_ERR ("Failed to create empty sqlite database [%s]\n", args[1]);
    }
@@ -636,8 +662,6 @@ errorexit:
 }
 
 /* ******************************************************************** */
-
-static sqldb_t *g_db = NULL;
 
 static bool cmd_session_authenticate (char **args)
 {
@@ -1084,7 +1108,7 @@ int main (int argc, char **argv)
       size_t max_args;
    } cmds[] = {
       { "help",                  cmd_help,               2, 2     },
-      { "create",                cmd_create,             2, 2     },
+      { "create",                cmd_create,             3, 3     },
       { "init",                  cmd_init,               3, 3     },
 
       { "session_authenticate",  cmd_session_authenticate,  3, 3  },
@@ -1217,36 +1241,6 @@ int main (int argc, char **argv)
       goto errorexit;
    }
 
-
-
-   /* If the command is 'init' or 'help' then we run that separately from
-    * the other commands because we must not try to open the database. All
-    * the commands other than 'help' and 'init' require the database to
-    * be opened first.
-    *
-    * We also check for 'create' if the caller wants to use an sqlite
-    * database that doesn't already exist. Create only works for sqlite.
-    */
-
-   if ((strcmp (cmd->cmd, "help"))==0) {
-      ret = cmd_help (args) ? EXIT_SUCCESS : EXIT_FAILURE;
-      goto errorexit;
-   }
-
-   if ((strcmp (cmd->cmd, "create"))==0) {
-      ret = cmd_create (args) ? EXIT_SUCCESS : EXIT_FAILURE;
-      goto errorexit;
-   }
-
-   if ((strcmp (cmd->cmd, "init"))==0) {
-      ret = cmd_init (args) ? EXIT_SUCCESS : EXIT_FAILURE;
-      goto errorexit;
-   }
-
-   opt_dbtype = opt_dbtype ? opt_dbtype : "sqlite";
-   dbname = opt_dbconn ? opt_dbconn : "sqldb_auth.sql3";
-
-
    /* Figure out what database type we are using */
    dbtype = sqldb_UNKNOWN;
 
@@ -1257,6 +1251,43 @@ int main (int argc, char **argv)
    if ((strcmp (opt_dbtype, "postgres"))==0) {
       dbtype = sqldb_POSTGRES;
    }
+
+   /* If the command is 'init' or 'help' then we run that separately from
+    * the other commands because we must not try to open the database. All
+    * the commands other than 'help' and 'init' require the database to
+    * be opened first.
+    *
+    * Additionally, we handle the create() command here as well.
+    */
+
+   if ((strcmp (cmd->cmd, "help"))==0) {
+      ret = cmd_help (args) ? EXIT_SUCCESS : EXIT_FAILURE;
+      goto errorexit;
+   }
+
+   if ((strcmp (cmd->cmd, "init"))==0) {
+      ret = cmd_init (args) ? EXIT_SUCCESS : EXIT_FAILURE;
+      goto errorexit;
+   }
+
+   if ((strcmp (cmd->cmd, "create"))==0) {
+
+      if (dbtype==sqldb_POSTGRES) {
+         if (!(g_db = sqldb_open (dbname, dbtype))) {
+            PROG_ERR ("Unable to open [%s] database using [%s] connection\n"
+                      "Error:%s\n",
+                      opt_dbtype, opt_dbconn, sqldb_lasterr (g_db));
+            goto errorexit;
+         }
+      }
+
+      ret = cmd_create (args) ? EXIT_SUCCESS : EXIT_FAILURE;
+      goto errorexit;
+   }
+
+   opt_dbtype = opt_dbtype ? opt_dbtype : "sqlite";
+   dbname = opt_dbconn ? opt_dbconn : "sqldb_auth.sql3";
+
 
    if (dbtype==sqldb_UNKNOWN) {
       PROG_ERR ("Unrecognised dbtype [%s].\n", opt_dbtype);

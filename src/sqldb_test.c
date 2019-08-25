@@ -9,7 +9,11 @@
 #include "sqldb.h"
 
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
-#define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
+
+// This database must exist!
+#define EXISTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
+// This database will be created!
+#define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/testdb")
 #define TEST_BATCHFILE   ("test-scripts/test-file.sql")
 
 #define PROG_ERR(...)      do {\
@@ -52,7 +56,7 @@ NULL,
 
    if ((strcmp (argv[1], "postgres"))==0) {
       dbtype = sqldb_POSTGRES;
-      dbname = TESTDB_POSTGRES;
+      dbname = EXISTDB_POSTGRES;
    }
 
    if (!dbname || dbtype==sqldb_UNKNOWN) {
@@ -60,10 +64,22 @@ NULL,
       return EXIT_FAILURE;
    }
 
-   if (!sqldb_create (dbname, dbtype)) {
+   if (dbtype==sqldb_POSTGRES) {
+      db = sqldb_open (dbname, dbtype);
+      if (!db) {
+         PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+         goto errorexit;
+      }
+      dbname = TESTDB_POSTGRES;
+   }
+
+   if (!sqldb_create (db, dbname, dbtype)) {
       PROG_ERR ("(%s) Could not create database file\n", dbname);
       goto errorexit;
    }
+
+   sqldb_close (db);
+   db = NULL;
 
    db = sqldb_open (dbname, dbtype);
    if (!db) {
