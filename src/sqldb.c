@@ -42,6 +42,29 @@ static char *lstr_dup (const char *src)
    return strcpy (ret, src);
 }
 
+static char *lstr_cat (const char *s1, const char *s2)
+{
+   size_t nbytes = 0;
+
+   if (s1)
+      nbytes += strlen (s1);
+
+   if (s2)
+      nbytes += strlen (s2);
+
+   nbytes++;
+
+   char *ret = malloc (nbytes);
+   if (!ret) {
+      return NULL;
+   }
+
+   strcpy (ret, s1);
+   strcat (ret, s2);
+
+   return ret;
+}
+
 /* *****************************************************************
  * Generating some entropy: see https://nullprogram.com/blog/2019/04/30/
  */
@@ -171,14 +194,11 @@ void sqldb_random_bytes (void *dst, size_t len)
 }
 
 /* ******************************************************************* */
-static bool sqlitedb_create (const char *dbname, sqldb_dbtype_t type)
+static bool sqlitedb_create (const char *dbname)
 {
    sqlite3 *newdb = NULL;
    bool ret = false;
    struct stat sb;
-
-   if (type!=sqldb_SQLITE)
-      return true;
 
    if (!dbname)
       return false;
@@ -205,15 +225,24 @@ errorexit:
    return ret;
 }
 
+static bool pgdb_create (sqldb_t *db, const char *dbname)
+{
+   if (!dbname || !db)
+      return false;
+
+   char *qstring = lstr_cat ("CREATE DATABASE ", dbname);
+   bool rc = sqldb_batch (db, qstring, NULL);
+   free (qstring);
+   return rc;
+}
+
 bool sqldb_create (sqldb_t *db, const char *dbname, sqldb_dbtype_t type)
 {
    switch (type) {
 
-      case sqldb_SQLITE:   return sqlitedb_create (dbname, type);
+      case sqldb_SQLITE:   return sqlitedb_create (dbname);
 
-      case sqldb_POSTGRES:
-                           printf ("TODO: postgres not implemented yet\n");
-                           return false;
+      case sqldb_POSTGRES: return pgdb_create (db, dbname);
 
       default:
          return false;

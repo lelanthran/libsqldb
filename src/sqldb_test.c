@@ -17,7 +17,7 @@
 #define TEST_BATCHFILE   ("test-scripts/test-file.sql")
 
 #define PROG_ERR(...)      do {\
-      fprintf (stderr, "%s: ", argv[1]);\
+      fprintf (stderr, "%s:%i:[%s]: ", __FILE__, __LINE__, argv[1]);\
       fprintf (stderr, __VA_ARGS__);\
 } while (0)
 
@@ -70,16 +70,21 @@ NULL,
          PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
          goto errorexit;
       }
-      dbname = TESTDB_POSTGRES;
+      dbname = "testdb";
    }
 
-   if (!sqldb_create (db, dbname, dbtype)) {
-      PROG_ERR ("(%s) Could not create database file\n", dbname);
+   if (!(sqldb_create (db, dbname, dbtype))) {
+      PROG_ERR ("(%s) Could not create database\n", dbname);
+      PROG_ERR ("Last error that occurred: [%s]\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
    sqldb_close (db);
    db = NULL;
+
+   if (dbtype==sqldb_POSTGRES) {
+      dbname = TESTDB_POSTGRES;
+   }
 
    db = sqldb_open (dbname, dbtype);
    if (!db) {
@@ -91,7 +96,7 @@ NULL,
       sqldb_res_t *r = sqldb_exec (db, create_stmts[i], sqldb_col_UNKNOWN);
       if (!r) {
          PROG_ERR ("(%s) Error during _exec [%s]\n", sqldb_lasterr (db),
-                                                   create_stmts[i]);
+                                                     create_stmts[i]);
          goto errorexit;
       }
       switch (sqldb_res_step (r)) {

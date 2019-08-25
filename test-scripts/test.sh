@@ -14,10 +14,11 @@ echo Removing sqlite test database...
 rm -rf /tmp/testdb.sql3
 echo Done.
 
-echo Dropping all relevant test tables in default postgres db
-echo "drop table one cascade;"   | psql
-echo "drop table two cascade;"   | psql
-echo "drop table three cascade;" | psql
+echo Dropping all relevant test tables in relevant postgres db
+echo "drop table one cascade;"   | psql testdb
+echo "drop table two cascade;"   | psql testdb
+echo "drop table three cascade;" | psql testdb
+echo "drop database testdb;"     | psql lelanthran
 echo Done.
 
 echo Starting sqlite tests
