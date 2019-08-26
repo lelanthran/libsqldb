@@ -1243,6 +1243,9 @@ int main (int argc, char **argv)
 
    /* Figure out what database type we are using */
    dbtype = sqldb_UNKNOWN;
+   opt_dbtype = opt_dbtype ? opt_dbtype : "sqlite";
+   dbname = opt_dbconn ? opt_dbconn : "sqldb_auth.sql3";
+
 
    if ((strcmp (opt_dbtype, "sqlite"))==0) {
       dbtype = sqldb_SQLITE;
@@ -1284,10 +1287,6 @@ int main (int argc, char **argv)
       ret = cmd_create (args) ? EXIT_SUCCESS : EXIT_FAILURE;
       goto errorexit;
    }
-
-   opt_dbtype = opt_dbtype ? opt_dbtype : "sqlite";
-   dbname = opt_dbconn ? opt_dbconn : "sqldb_auth.sql3";
-
 
    if (dbtype==sqldb_UNKNOWN) {
       PROG_ERR ("Unrecognised dbtype [%s].\n", opt_dbtype);
