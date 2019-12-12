@@ -8,7 +8,7 @@
 #define SQLDB_AUTH_GLOBAL_RESOURCE       ("_ALL_")
 
 /* TODO:
- * What ction should be default on deletion of foreign keys? If we cascade
+ * What action should be default on deletion of foreign keys? If we cascade
  * group deletes all that happens is that sometimes a user will find
  * themselves in no group at all. If we cascade group_mapping deletes then
  * a mapping delete is going to remove the user from the database.
@@ -92,7 +92,7 @@ extern "C" {
    // true on success and false on failure. The string destinations nick
    // and session must be freed by the caller regardless of the return
    // value. If they are not-NULL on entry to this function, this function
-   // will free them before allocation storage for the output parameters.
+   // will free them before allocating storage for the output parameters.
    bool sqldb_auth_user_info (sqldb_t    *db,
                               const char *email,
                               uint64_t   *id_dst,
