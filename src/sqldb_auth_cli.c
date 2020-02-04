@@ -273,8 +273,8 @@ static void print_help_msg (const char *cmd)
 ""
 #define SESSION_VALID_MSG \
 "  session_valid <session-ID>",\
-"     Checks if the session specified by <session-ID> is valid If valid,",\
-"     prints 'true' to stdout and returns zero to the caller. If not valid,",\
+"     Checks if the session specified by <session-ID> is valid. If valid",\
+"     prints 'true' to stdout and returns zero to the caller. If not valid",\
 "     prints 'false' to stdout and returns non-zero to the caller.",\
 ""
 #define USER_NEW_MSG    \
