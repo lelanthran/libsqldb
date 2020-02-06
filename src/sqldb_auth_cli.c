@@ -230,7 +230,7 @@ static void print_help_msg (const char *cmd)
 "     Provide the help message for the specified command <command>.",\
 ""
 #define COMMAND_CREATE    \
-"  create <database-name> <database-type>",\
+"  create <database-name> <database-type",\
 "     Creates a new empty database using <database-type> as the database type",\
 "     of the new database.",\
 "",\

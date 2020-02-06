@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export PS4='Line ${LINENO}:'
-
 set -e
 set -o xtrace
 
@@ -18,7 +16,7 @@ fi
 $VALGRIND $VGOPTS $PROG --help
 
 # Create a new database for use
-$VALGRIND $VGOPTS $PROG create sqldb_auth.sql3 sqlite
+$VALGRIND $VGOPTS $PROG create sqldb_auth.sql3
 $VALGRIND $VGOPTS $PROG init sqlite sqldb_auth.sql3
 # gdb $PROG init sqlite sqldb_auth.sql3
 
