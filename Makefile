@@ -1,34 +1,6 @@
-# ######################################################################
-# We include the user-specified variables first
-include build.config
-ifndef PROJNAME
-$(error $$PROJNAME not defined. Is the 'build.config' file missing?)
-endif
-
-VERSION?=0.0.0
-VERSION_SPACES=$(subst ., ,$(VERSION))
-VERSION_MAJOR=$(word 1, $(VERSION_SPACES))
-VERSION_MINOR=$(word 2, $(VERSION_SPACES))
-VERSION_BUILD=$(word 3, $(VERSION_SPACES))
 
 # ######################################################################
-# Set some colours for $(ECHO) to use
-NONE:=\e[0m
-INV:=\e[7m
-RED:=\e[31m
-GREEN:=\e[32m
-BLUE:=\e[34m
-CYAN:=\e[36m
-YELLOW:=\e[33m
-
-
-# ######################################################################
-# We record the start time, for determining how long the build took
-START_TIME:=$(shell date +"%s")
-
-
-# ######################################################################
-# Some housekeeping to determine if we are running on a POSIX
+# First, some housekeeping to determine if we are running on a POSIX
 # platform or on Windows
 
 MAKEPROGRAM_EXE=$(findstring exe,$(MAKE))
@@ -43,37 +15,31 @@ ifneq ($(MAKEPROGRAM_EXE),)
 ifeq ($(strip $(GITSHELL)),)
 $(error On windows this must be executed from the Git bash shell)
 endif
-	HOME=$(subst \,/,$(HOMEDRIVE)$(HOMEPATH))
-	PLATFORM:=Windows
-	EXE_EXT:=.exe
-	LIB_EXT:=.dll
-	PLATFORM_LDFLAGS:=--L$(HOME)/lib lmingw32 -lws2_32 -lmsvcrt -lgcc
-	PLATFORM_CFLAGS:= -D__USE_MINGW_ANSI_STDIO
-	ECHO:=echo -e
+	PLATFORM=Windows
+	EXE_EXT=.exe
+	LIB_EXT=.dll
+	PLATFORM_LDFLAGS=--L$(HOME)/lib lmingw32 -lws2_32 -lmsvcrt -lgcc
+	PLATFORM_CFLAGS=-I$(HOME)/include -D__USE_MINGW_ANSI_STDIO
 endif
 
 ifneq ($(MAKEPROGRAM_MINGW),)
 ifeq ($(strip $(GITSHELL)),)
 $(error On windows this must be executed from the Git bash shell)
 endif
-	HOME=$(subst \,/,$(HOMEDRIVE)$(HOMEPATH))
-	PLATFORM:=Windows
-	EXE_EXT:=.exe
-	LIB_EXT:=.dll
-	PLATFORM_LDFLAGS:=-L$(HOME)/lib -lmingw32 -lws2_32 -lmsvcrt -lgcc
-	PLATFORM_CFLAGS:= -D__USE_MINGW_ANSI_STDIO
-	ECHO:=echo -e
+	PLATFORM=Windows
+	EXE_EXT=.exe
+	LIB_EXT=.dll
+	PLATFORM_LDFLAGS=-L$(HOME)/lib -lmingw32 -lws2_32 -lmsvcrt -lgcc
+	PLATFORM_CFLAGS=-I$(HOME)/include -D__USE_MINGW_ANSI_STDIO
 endif
 
 # If neither of the above are true then we assume a working POSIX
 # platform
 ifeq ($(PLATFORM),)
-	PLATFORM:=POSIX
-	EXE_EXT:=.elf
-	LIB_EXT:=.so
-	PLATFORM_LDFLAGS:= -lpthread -ldl
-	ECHO:=echo
-	REAL_SHOW:=real-show
+	PLATFORM=POSIX
+	EXE_EXT=.elf
+	LIB_EXT=.so
+	PLATFORM_LDFLAGS= -lpthread -ldl
 endif
 
 
@@ -91,53 +57,61 @@ ifneq (,$(findstring release,$(MAKECMDGOALS)))
 OUTDIR=release
 endif
 
-TARGET:=$(shell $(GCC) -dumpmachine)
-OUTLIB:=$(OUTDIR)/lib/$(TARGET)
-OUTBIN:=$(OUTDIR)/bin/$(TARGET)
-OUTOBS:=$(OUTDIR)/obs/$(TARGET)
-OUTDIRS:=$(OUTLIB) $(OUTBIN) $(OUTOBS) include
+PROJNAME=libsqldb
+VERSION=0.1.6
+
+TARGET=$(shell $(GCC) -dumpmachine)
+OUTLIB=$(OUTDIR)/lib/$(TARGET)
+OUTBIN=$(OUTDIR)/bin/$(TARGET)
+OUTOBS=$(OUTDIR)/obs/$(TARGET)
+OUTDIRS=$(OUTLIB) $(OUTBIN) $(OUTOBS)
 
 
 # ######################################################################
 # Declare the final outputs
-BINPROGS:=\
-	$(foreach fname,$(MAIN_PROGRAM_CSOURCEFILES),$(OUTBIN)/$(fname)$(EXE_EXT))\
-	$(foreach fname,$(MAIN_PROGRAM_CPPSOURCEFILES),$(OUTBIN)/$(fname)$(EXE_EXT))
+BINPROGS=\
+	$(OUTBIN)/sqldb_auth_cli$(EXE_EXT)\
+	$(OUTBIN)/sqldb_auth_test$(EXE_EXT)\
+	$(OUTBIN)/sqldb_query_test$(EXE_EXT)\
+	$(OUTBIN)/sqldb_test$(EXE_EXT)\
+	$(OUTBIN)/sqlite3_main$(EXE_EXT)
 
-DYNLIB:=$(OUTLIB)/lib$(PROJNAME)$(LIB_EXT).$(VERSION)
-SONAME:=lib$(PROJNAME)$(LIB_EXT).$(VERSION_MAJOR)
-STCLIB:=$(OUTLIB)/lib$(PROJNAME).a
-DYNLNK_TARGET:=lib$(PROJNAME)$(LIB_EXT).$(VERSION)
-STCLNK_TARGET:=lib$(PROJNAME).a
-DYNLNK_NAME:=$(OUTLIB)/lib$(PROJNAME)$(LIB_EXT)
-STCLNK_NAME:=$(OUTLIB)/lib$(PROJNAME).a
+DYNLIB=$(OUTLIB)/$(PROJNAME)-$(VERSION)$(LIB_EXT)
+STCLIB=$(OUTLIB)/$(PROJNAME)-$(VERSION).a
+DYNLNK_TARGET=$(PROJNAME)-$(VERSION)$(LIB_EXT)
+STCLNK_TARGET=$(PROJNAME)-$(VERSION).a
+DYNLNK_NAME=$(OUTLIB)/$(PROJNAME)$(LIB_EXT)
+STCLNK_NAME=$(OUTLIB)/$(PROJNAME).a
 
 
 # ######################################################################
 # Declare the intermediate outputs
-BIN_COBS:=\
-	$(foreach fname,$(MAIN_PROGRAM_CSOURCEFILES),$(OUTOBS)/$(fname).o)
+BINOBS=\
+	$(OUTOBS)/sqldb_auth_cli.o\
+	$(OUTOBS)/sqldb_auth_test.o\
+	$(OUTOBS)/sqldb_query_test.o\
+	$(OUTOBS)/sqldb_test.o\
+	$(OUTOBS)/sqlite3_main.o
 
-BIN_CPPOBS:=\
-	$(foreach fname,$(MAIN_PROGRAM_CPPSOURCEFILES),$(OUTOBS)/$(fname).o)
 
-BINOBS:=$(BIN_COBS) $(BIN_CPPOBS)
+OBS=\
+	$(OUTOBS)/sha-256.o\
+	$(OUTOBS)/sqldb_auth.o\
+	$(OUTOBS)/sqldb_auth_query.o\
+	$(OUTOBS)/sqldb_query.o\
+	$(OUTOBS)/sqldb.o\
+	$(OUTOBS)/sqlite3.o
 
-COBS:=\
-	$(foreach fname,$(LIBRARY_OBJECT_CSOURCEFILES),$(OUTOBS)/$(fname).o)
 
-CPPOBS:=\
-	$(foreach fname,$(LIBRARY_OBJECT_CPPSOURCEFILES),$(OUTOBS)/$(fname).o)
+HEADERS=\
+	src/sha-256.h\
+	src/sqldb_auth.h\
+	src/sqldb_auth_query.h\
+	src/sqldb_query.h\
+	src/sqldb.h\
+	src/sqlite3ext.h\
+	src/sqlite3.h
 
-OBS:=$(COBS) $(CPPOBS)
-ALL_OBS:=$(OBS) $(BINOBS)
-DEPS:=\
-	$(subst $(OUTOBS),src,$(subst .o,.d,$(ALL_OBS)))
-
-# ######################################################################
-# Find all the source files so that we can do dependencies properly
-SOURCES:=\
-	$(shell find . | grep -E "\.(c|cpp)\$$")
 
 # ######################################################################
 # Declare the build programs
@@ -147,48 +121,25 @@ endif
 ifndef GXX
 	GXX=g++
 endif
-ifndef LD_PROG
-	LD_PROG=gcc
-endif
-ifndef LD_LIB
-	LD_LIB=gcc
-endif
 
-# ######################################################################
-# Declare all the flags we need to compile and link
-BUILD_TIMESTAMP:=$(shell date +"%Y%m%d%H%M%S")
-CC:=$(GCC)
-CXX:=$(GXX)
-PROG_LD=$(GCC_LD_PROG)
-LIB_LD=$(GCC_LD_LIB)
+CC=$(GCC)
+CXX=$(GXX)
 
-INCLUDE_DIRS:=\
-	$(foreach ipath,$(INCLUDE_PATHS),-I$(ipath))
-
-LIBDIRS:=\
-	$(foreach lpath,$(LIBRARY_PATHS),-L$(lpath))
-
-LIBFILES:=\
-	$(foreach lfile,$(LIBRARY_FILES),-l$(lfile))
-
-COMMONFLAGS:=\
-	$(EXTRA_COMPILER_FLAGS)\
+COMMONFLAGS=\
 	-W -Wall -c -fPIC \
 	-DPLATFORM=$(PLATFORM) -DPLATFORM_$(PLATFORM) \
-	-D$(PROJNAME)_version='"$(VERSION)"'\
-	-DBUILD_TIMESTAMP='"$(BUILD_TIMESTAMP)"'\
-	$(PLATFORM_CFLAGS)\
-	$(INCLUDE_DIRS)
+	-DSQLDB_VERSION='"$(VERSION)"'\
+	$(PLATFORM_CFLAGS)
 
-CFLAGS:=$(COMMONFLAGS) $(EXTRA_CFLAGS)
-CXXFLAGS:=$(COMMONFLAGS) $(EXTRA_CXXFLAGS)
-LD:=$(GCC)
-LDFLAGS:= $(LIBDIRS) $(LIBFILES) -lm $(PLATFORM_LDFLAGS)
-AR:=ar
-ARFLAGS:= rcs
+CFLAGS=$(COMMONFLAGS)
+CXXFLAGS=$(COMMONFLAGS) -std=c++x11
+LD=$(GCC)
+LDFLAGS= -lpq -lm $(PLATFORM_LDFLAGS)
+AR=ar
+ARFLAGS= rcs
 
 
-.PHONY:	help real-help show real-show debug release clean-all deps
+.PHONY:	help real-help show real-show debug release clean-all
 
 # ######################################################################
 # All the conditional targets
@@ -207,149 +158,90 @@ release:	all
 # Finally, build the system
 
 real-help:
-	@$(ECHO) "Possible targets:"
-	@$(ECHO) "help:                This message."
-	@$(ECHO) "show:                Display all the variable values that will be"
-	@$(ECHO) "                     used during execution. Also 'show debug' or"
-	@$(ECHO) "                     'show release' works."
-	@$(ECHO) "deps:                Make the dependencies only."
-	@$(ECHO) "debug:               Build debug binaries."
-	@$(ECHO) "release:             Build release binaries."
-	@$(ECHO) "clean-debug:         Clean a debug build (release is ignored)."
-	@$(ECHO) "clean-release:       Clean a release build (debug is ignored)."
-	@$(ECHO) "clean-all:           Clean everything."
+	@echo "Possible targets:"
+	@echo "help:                This message."
+	@echo "show:                Display all the variable values that will be"
+	@echo "                     used during execution. Also 'show debug' or"
+	@echo "                     'show release' works."
+	@echo "debug:               Build debug binaries."
+	@echo "release:             Build release binaries."
+	@echo "clean-debug:         Clean a debug build (debug is ignored)."
+	@echo "clean-release:       Clean a release build (release is ignored)."
+	@echo "clean-all:           Clean everything."
 
-
-real-all:	$(OUTDIRS) $(DYNLIB) $(STCLIB) $(BINPROGS)
+real-all:	real-show  $(DYNLIB) $(STCLIB) $(BINPROGS)
 
 all:	real-all
-	@$(ECHO) "[$(CYAN)Soft linking$(NONE)]    [$(STCLNK_TARGET)]"
-	@# ln -f -s $(STCLNK_TARGET) $(STCLNK_NAME)
-	@$(ECHO) "[$(CYAN)Soft linking$(NONE)]    [$(DYNLNK_TARGET)]"
-	@ln -f -s $(DYNLNK_TARGET) $(DYNLNK_NAME)
-	@$(ECHO) "[$(CYAN)Copying$(NONE)     ]    [ -> $(OUTDIR)/lib]"
-	@cp $(OUTLIB)/* $(OUTDIR)/lib
-	@$(ECHO) "[$(CYAN)Copying$(NONE)     ]    [ -> ./include/]"
-	@cp -R $(HEADERS) include
-	@$(ECHO) "$(INV)$(YELLOW)Build completed: `date`$(NONE)"
-	@$(ECHO) "$(YELLOW)Total build time:  $$((`date +"%s"` - $(START_TIME)))s"\
-		"$(NONE)"
+	mkdir -p include
+	cp -Rv $(HEADERS) include
+	ln -f -s $(STCLNK_TARGET) $(STCLNK_NAME)
+	ln -f -s $(DYNLNK_TARGET) $(DYNLNK_NAME)
+	cp $(OUTLIB)/* $(OUTDIR)/lib
 
-
-real-show:
-	@$(ECHO) "$(GREEN)HOME$(NONE)         $(HOME)"
-	@$(ECHO) "$(GREEN)SHELL$(NONE)        $(SHELL)"
-	@$(ECHO) "$(GREEN)EXE_EXT$(NONE)      $(EXE_EXT)"
-	@$(ECHO) "$(GREEN)LIB_EXT$(NONE)      $(LIB_EXT)"
-	@$(ECHO) "$(GREEN)DYNLIB$(NONE)       $(DYNLIB)"
-	@$(ECHO) "$(GREEN)STCLIB$(NONE)       $(STCLIB)"
-	@$(ECHO) "$(GREEN)CC$(NONE)           $(CC)"
-	@$(ECHO) "$(GREEN)CXX$(NONE)          $(CXX)"
-	@$(ECHO) "$(GREEN)CFLAGS$(NONE)       $(CFLAGS)"
-	@$(ECHO) "$(GREEN)CXXFLAGS$(NONE)     $(CXXFLAGS)"
-	@$(ECHO) "$(GREEN)LD_LIB$(NONE)       $(LD_LIB)"
-	@$(ECHO) "$(GREEN)LD_PROG$(NONE)      $(LD_PROG)"
-	@$(ECHO) "$(GREEN)LDFLAGS$(NONE)      $(LDFLAGS)"
-	@$(ECHO) "$(GREEN)AR$(NONE)           $(AR)"
-	@$(ECHO) "$(GREEN)ARFLAGS$(NONE)      $(ARFLAGS)"
-	@$(ECHO) "$(GREEN)"
-	@$(ECHO) "$(GREEN)PLATFORM$(NONE)     $(PLATFORM)"
-	@$(ECHO) "$(GREEN)TARGET$(NONE)       $(TARGET)"
-	@$(ECHO) "$(GREEN)OUTBIN$(NONE)       $(OUTBIN)"
-	@$(ECHO) "$(GREEN)OUTLIB$(NONE)       $(OUTLIB)"
-	@$(ECHO) "$(GREEN)OUTOBS$(NONE)       $(OUTOBS)"
-	@$(ECHO) "$(GREEN)OUTDIRS$(NONE)      "
-	@for X in $(OUTDIRS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)DEPS$(NONE)      "
-	@for X in $(DEPS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)HEADERS$(NONE)      "
-	@for X in $(HEADERS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)COBS$(NONE)          "
-	@for X in $(COBS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)CPPOBS$(NONE)          "
-	@for X in $(CPPOBS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)OBS$(NONE)          "
-	@for X in $(OBS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)BIN_COBS$(NONE)       "
-	@for X in $(BIN_COBS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)BIN_CPPOBS$(NONE)       "
-	@for X in $(BIN_CPPOBS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)BINOBS$(NONE)       "
-	@for X in $(BINOBS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)BINPROGS$(NONE)     "
-	@for X in $(BINPROGS); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)SOURCES$(NONE)     "
-	@for X in $(SOURCES); do $(ECHO) "              $$X"; done
-	@$(ECHO) "$(GREEN)PWD$(NONE)          $(PWD)"
-	@$(ECHO) "$(GREEN)VERSION_MAJOR$(NONE)          $(VERSION_MAJOR)"
-	@$(ECHO) "$(GREEN)VERSION_MINOR$(NONE)          $(VERSION_MINOR)"
-	@$(ECHO) "$(GREEN)VERSION_BUILD$(NONE)          $(VERSION_BUILD)"
+real-show:	$(OUTDIRS)
+	@echo "SHELL:        $(GITSHELL)"
+	@echo "EXE_EXT:      $(EXE_EXT)"
+	@echo "LIB_EXT:      $(LIB_EXT)"
+	@echo "DYNLIB:       $(DYNLIB)"
+	@echo "STCLIB:       $(STCLIB)"
+	@echo "CC:           $(CC)"
+	@echo "CXX:          $(CXX)"
+	@echo "CFLAGS:       $(CFLAGS)"
+	@echo "CXXFLAGS:     $(CXXFLAGS)"
+	@echo "LD:           $(LD)"
+	@echo "LDFLAGS:      $(LDFLAGS)"
+	@echo "AR:           $(AR)"
+	@echo "ARFLAGS:      $(ARFLAGS)"
+	@echo ""
+	@echo "PLATFORM:     $(PLATFORM)"
+	@echo "TARGET:       $(TARGET)"
+	@echo "OUTBIN:       $(OUTBIN)"
+	@echo "OUTLIB:       $(OUTLIB)"
+	@echo "OUTOBS:       $(OUTOBS)"
+	@echo "OUTDIRS:      "
+	@for X in $(OUTDIRS); do echo "              $$X"; done
+	@echo "HEADERS:      "
+	@for X in $(HEADERS); do echo "              $$X"; done
+	@echo "OBS:          "
+	@for X in $(OBS); do echo "              $$X"; done
+	@echo "BINOBS:       "
+	@for X in $(BINOBS); do echo "              $$X"; done
+	@echo "BINPROGS:     "
+	@for X in $(BINPROGS); do echo "              $$X"; done
+	@echo "PWD:          $(PWD)"
 
 show:	real-show
-	@$(ECHO) "Only target 'show' selected, ending now."
+	@echo "Only target 'show' selected, ending now."
 	@false
 
-$(DEPS): $(HEADERS)
+$(BINOBS) $(OBS):	$(OUTOBS)/%.o:	src/%.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
-deps: $(DEPS)
 
-src/%.d: src/%.c
-	@$(ECHO) "[$(RED)Dependency$(NONE)  ]    [$@]"
-	@$(CC) $(CFLAGS) -MM -MF $@ -MT $(OUTOBS)/$*.o $< ||\
-		($(ECHO) "$(INV)$(RED)[Depend failure ]   [$@]$(NONE)" ; exit 127)
+$(OUTBIN)/%.exe:	$(OUTOBS)/%.o $(OBS) $(OUTDIRS)
+	$(LD) $< $(OBS) -o $@ $(LDFLAGS)
 
-src/%.d: src/%.cpp
-	@$(ECHO) "[$(RED)Dependency$(NONE)  ]    [$@]"
-	@$(CXX) $(CXXFLAGS) -MM -MF $@ $< ||\
-		($(ECHO) "$(INV)$(RED)[Depend failure ]   [$@]$(NONE)" ; exit 127)
-
-$(BIN_COBS) $(COBS):	$(OUTOBS)/%.o:	src/%.c src/%.d
-	@$(ECHO) "[$(BLUE)Building$(NONE)    ]    [$@]"
-	@$(CC) $(CFLAGS) -o $@ $< ||\
-		($(ECHO) "$(INV)$(RED)[Compile failure]   [$@]$(NONE)" ; exit 127)
-
-$(BIN_CPPOBS) $(CPPOBS):	$(OUTOBS)/%.o:	src/%.cpp src/%.d
-	@$(ECHO) "[$(BLUE)Building$(NONE)    ]    [$@]"
-	@$(CXX) $(CXXFLAGS) -o $@ $< ||\
-		($(ECHO) "$(INV)$(RED)[Compile failure]   [$@]$(NONE)" ; exit 127)
-
-$(OUTBIN)/%.exe:	$(OUTOBS)/%.o $(OBS)
-	@$(ECHO) "[$(GREEN)Linking$(NONE)     ]    [$@]"
-	@$(LD_PROG) $< $(OBS) -o $@ $(LDFLAGS) $(EXTRA_PROG_LDFLAGS) ||\
-		($(ECHO) "$(INV)$(RED)[Link failure]   [$@]$(NONE)" ; exit 127)
-
-$(OUTBIN)/%.elf:	$(OUTOBS)/%.o $(OBS)
-	@$(ECHO) "[$(GREEN)Linking$(NONE)     ]    [$@]"
-	@$(LD_PROG) $< $(OBS) -o $@ $(LDFLAGS) $(EXTRA_PROG_LDFLAGS) ||\
-		($(ECHO) "$(INV)$(RED)[Link failure]   [$@]$(NONE)" ; exit 127)
+$(OUTBIN)/%.elf:	$(OUTOBS)/%.o $(OBS) $(OUTDIRS)
+	$(LD) $< $(OBS) -o $@ $(LDFLAGS)
 
 $(DYNLIB):	$(OBS)
-	@$(ECHO) "[$(GREEN)Linking$(NONE)     ]    [$@]"
-	@$(LD_LIB) -shared $^ -o $@ $(LDFLAGS) $(EXTRA_LIB_LDFLAGS) \
-		-Wl,-soname=$(SONAME) ||\
-		($(ECHO) "$(INV)$(RED)[Link failure]   [$@]$(NONE)" ; exit 127)
+	$(LD) -shared $^ -o $@ $(LDFLAGS)
 
 $(STCLIB):	$(OBS)
-	@$(ECHO) "[$(GREEN)Linking$(NONE)     ]    [$@]"
-	@$(AR) $(ARFLAGS) $@ $^ ||\
-		($(ECHO) "$(INV)$(RED)[Link failure]   [$@]$(NONE)" ; exit 127)
+	$(AR) $(ARFLAGS) $@ $^
 
 $(OUTDIRS):
-	@$(ECHO) "[$(CYAN)Creating dir$(NONE)]    [$@]"
-	@mkdir -p $@ ||\
-		($(ECHO) "$(INV)$(RED)[mkdir failure]   [$@]$(NONE)" ; exit 127)
+	mkdir -p $@
 
 clean-release:
-	@rm -rfv release
+	rm -rfv release
 
 clean-debug:
-	@rm -rfv debug
+	rm -rfv debug
 
 clean-all:	clean-release clean-debug
-	@rm -rfv include
-	@rm -rfv `find . | grep "\.d$$"`
+	rm -rfv include
 
 clean:
-	@$(ECHO) Choose either clean-release or clean-debug
+	echo Choose either clean-release or clean-debug
 
-include $(DEPS)
