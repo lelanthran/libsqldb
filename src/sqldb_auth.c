@@ -426,6 +426,78 @@ errorexit:
    return !error;
 }
 
+bool sqldb_auth_user_membership (sqldb_t    *db,
+                                 const char *email,
+                                 uint64_t   *nitems_dst,
+                                 char     ***groups_dst)
+{
+   bool error = true;
+
+   uint64_t nitems = 0;
+   const char *qstring;
+
+   sqldb_res_t *res = NULL;
+
+   if (groups_dst)
+      *groups_dst = NULL;
+
+   if (nitems_dst)
+      *nitems_dst = NULL;
+
+   if (!db || !email)
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("user_group_membership"))) {
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute [%s]: %s\n", qstring, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   while (sqldb_res_step (res) == 1) {
+      uint64_t newlen = nitems + 1;
+      if (groups_dst) {
+         char *gname = NULL;
+         char **tmp = realloc (*groups_dst, (newlen + 1) * (sizeof *tmp));
+         if (!tmp)
+            goto errorexit;
+         (*groups_dst) = tmp;
+         tmp[newlen - 1] = NULL;
+         tmp[newlen] = NULL;
+         if ((sqldb_scan_columns (res, sqldb_col_TEXT,   &gname,
+                                       sqldb_col_UNKNOWN))!=1)
+            goto errorexit;
+         tmp[nitems] = gname;
+      }
+      nitems++;
+   }
+
+   *nitems_dst = nitems;
+
+   error = false;
+
+errorexit:
+
+   sqldb_res_del (res);
+
+   if (error) {
+      for (size_t i=0; groups_dst && *groups_dst && (*groups_dst)[i]; i++) {
+         free ((*groups_dst)[i]);
+      }
+      if (groups_dst) {
+         free (*groups_dst);
+         *groups_dst = NULL;
+      }
+      if (nitems_dst)
+         *nitems_dst = 0;
+   }
+
+   return !error;
+}
+
 bool sqldb_auth_user_mod (sqldb_t    *db,
                           const char *old_email,
                           const char *new_email,
@@ -1032,13 +1104,13 @@ errorexit:
 
 }
 
-bool sqldb_auth_group_members (sqldb_t    *db,
-                               const char *name,
-                               uint64_t   *nitems_dst,
-                               char     ***emails_dst,
-                               char     ***nicks_dst,
-                               uint64_t  **flags_dst,
-                               uint64_t  **ids_dst)
+bool sqldb_auth_group_membership (sqldb_t    *db,
+                                  const char *name,
+                                  uint64_t   *nitems_dst,
+                                  char     ***emails_dst,
+                                  char     ***nicks_dst,
+                                  uint64_t  **flags_dst,
+                                  uint64_t  **ids_dst)
 
 {
    bool error = true;

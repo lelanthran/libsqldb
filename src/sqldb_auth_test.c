@@ -248,11 +248,11 @@ static bool list_memberships (sqldb_t *db)
 
       sprintf (name, "%s-%zu", groups[i].name, i);
 
-      if (!(sqldb_auth_group_members (db, name, &nitems,
-                                                &emails,
-                                                &nicks,
-                                                &flags,
-                                                &ids))) {
+      if (!(sqldb_auth_group_membership (db, name, &nitems,
+                                                   &emails,
+                                                   &nicks,
+                                                   &flags,
+                                                   &ids))) {
          PROG_ERR ("Failed to get membership for [%s]: %s\n",
                    name,
                    sqldb_lasterr (db));
@@ -296,11 +296,11 @@ static bool list_memberships (sqldb_t *db)
 
       sprintf (name, "%s-%zu", groups[i].name, i);
 
-      if (!(sqldb_auth_group_members (db, name, &nitems,
-                                                &emails,
-                                                &nicks,
-                                                &flags,
-                                                &ids))) {
+      if (!(sqldb_auth_group_membership (db, name, &nitems,
+                                                   &emails,
+                                                   &nicks,
+                                                   &flags,
+                                                   &ids))) {
          PROG_ERR (">>Failed to get membership for [%s]: %s\n",
                    name,
                    sqldb_lasterr (db));
@@ -333,6 +333,40 @@ errorexit:
    return !error;
 }
 
+static bool list_user_membership (sqldb_t *db)
+{
+   bool error = true;
+   uint64_t n_groups = 0;
+   char **groups = NULL;
+
+   for (size_t i=0; i<sizeof users/sizeof users[0]; i++) {
+      if (!(sqldb_auth_user_membership (db, users[i].email, &n_groups,
+                                                            &groups))) {
+         PROG_ERR ("Failed to find groups for [%s]\n", users[i].email);
+         goto errorexit;
+      }
+
+      printf ("[%s/%" PRIu64 "]:", users[i].email, n_groups);
+      for (size_t i=0; groups && groups[i]; i++) {
+         printf (" %s", groups[i]);
+         free (groups[i]);
+      }
+      printf ("\n");
+      free (groups);
+      groups = NULL;
+   }
+
+   error = false;
+
+errorexit:
+
+   for (size_t i=0; groups && groups[i]; i++) {
+      free (groups[i]);
+   }
+   free (groups);
+
+   return !error;
+}
 
 int main (int argc, char **argv)
 {
@@ -365,7 +399,7 @@ int main (int argc, char **argv)
    }
 
    if (!(db = sqldb_open (dbname, dbtype))) {
-      PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      PROG_ERR ("Unable to open database - (%m) %s\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -398,6 +432,11 @@ int main (int argc, char **argv)
 
    if (!(list_memberships (db))) {
       PROG_ERR ("Failed to list the group members. aborting\n");
+      goto errorexit;
+   }
+
+   if (!(list_user_membership (db))) {
+      PROG_ERR ("Failed to list the groups that a member belongs to. abort\n");
       goto errorexit;
    }
 

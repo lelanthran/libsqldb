@@ -78,6 +78,12 @@
 #define user_info \
 " SELECT c_id, c_nick, c_session, c_flags FROM t_user WHERE c_email = #1;"
 
+#define user_group_membership \
+" SELECT c_name FROM t_group "\
+" WHERE c_id IN "\
+"     (SELECT c_group from t_group_membership "\
+"        WHERE c_user = (SELECT c_id from t_user where c_email=#1));"
+
 #define user_flags_set \
 "  UPDATE t_user SET c_flags = c_flags | #2 WHERE c_email = #1;"
 
@@ -208,6 +214,7 @@ static const struct {
    STMT (user_mod),
    STMT (user_rm),
    STMT (user_info),
+   STMT (user_group_membership),
    STMT (user_flags_set),
    STMT (user_flags_clear),
    STMT (user_salt_nick_hash),

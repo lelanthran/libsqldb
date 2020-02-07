@@ -1,3 +1,12 @@
+## 1.0.0-rc1 - ???
+Feature Additions
+1. Added function sqldb_auth_user_membership() to retrieve all of the groups
+   that a user belongs to.
+
+Other
+1. Changed the name of the function sqldb_auth_group_members() to
+   sqldb_auth_group_membership() to be more consistent.
+
 ## 0.1.6 - Thu Dec 12 22:21:19 SAST 2019
 Bug fixes
 1. Fixed test script (broken since v0.1.3).

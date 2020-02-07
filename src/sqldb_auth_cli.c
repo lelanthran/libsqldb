@@ -923,8 +923,8 @@ static bool cmd_group_members (char **args)
 
    bool ret = false;
 
-   ret = sqldb_auth_group_members (g_db, args[1],
-                                   &nitems, &emails, &nicks, &flags, &ids);
+   ret = sqldb_auth_group_membership (g_db, args[1],
+                                      &nitems, &emails, &nicks, &flags, &ids);
    if (!ret) {
       PROG_ERR ("Failed to list users in group [%s]\n", args[1]);
    } else {

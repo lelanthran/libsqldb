@@ -100,6 +100,19 @@ extern "C" {
                               char      **nick_dst,
                               char        session_dst[65]);
 
+   // Gets the groups that the user is a member of. Returns true on success
+   // and false on error. The list of groups is stored in groups_dst and the
+   // caller must free each element of the array as well as the array itself.
+   // On success the returned array is guaranteed to be non-null even if there
+   // are no members. The returned array is NULL-terminated.
+   //
+   // The number of elements in the array is returned in nitems_dst if
+   // nitems_dst is non-NULL.
+   bool sqldb_auth_user_membership (sqldb_t    *db,
+                                    const char *email,
+                                    uint64_t   *nitems_dst,
+                                    char     ***groups_dst);
+
    // Updates the non-NULL parameters in the database. Returns true on
    // success and false on error. Uses the old_email parameter to find the
    // record to update.
@@ -152,7 +165,9 @@ extern "C" {
                               const char *newname,
                               const char *description);
 
-   // Return
+   // Gets the information for the specified group. Returns true on success
+   // and false on error. The caller must free description_dst regardless of
+   // the return value.
    bool sqldb_auth_group_info (sqldb_t    *db,
                                const char *name,
                                uint64_t   *id_dst,
@@ -239,13 +254,13 @@ extern "C" {
    //
    // The ids array stores each ID and the entire array (but not each
    // element) must be freed by the caller.
-   bool sqldb_auth_group_members (sqldb_t    *db,
-                                  const char *name,
-                                  uint64_t   *nitems_dst,
-                                  char     ***emails_dst,
-                                  char     ***nicks_dst,
-                                  uint64_t  **flags_dst,
-                                  uint64_t  **ids_dst);
+   bool sqldb_auth_group_membership (sqldb_t    *db,
+                                     const char *name,
+                                     uint64_t   *nitems_dst,
+                                     char     ***emails_dst,
+                                     char     ***nicks_dst,
+                                     uint64_t  **flags_dst,
+                                     uint64_t  **ids_dst);
 
    ///////////////////////////////////////////////////////////////////////
 
