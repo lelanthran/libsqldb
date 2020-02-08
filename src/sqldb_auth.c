@@ -442,7 +442,7 @@ bool sqldb_auth_user_membership (sqldb_t    *db,
       *groups_dst = NULL;
 
    if (nitems_dst)
-      *nitems_dst = NULL;
+      *nitems_dst = 0;
 
    if (!db || !email)
       goto errorexit;

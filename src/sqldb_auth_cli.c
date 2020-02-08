@@ -573,14 +573,6 @@ static sqldb_t *g_db = NULL;
 /* ******************************************************************** */
 
 
-static bool cmd_TODO (char **args)
-{
-   args = args;
-   PROG_ERR ("Unimplemented [%s]\n", args[0]);
-   return false;
-}
-
-
 static bool cmd_help (char **args)
 {
    printf ("\n\nHow to use command [%s]:\n", args[1]);

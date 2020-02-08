@@ -46,8 +46,6 @@ int main (void)
 
    ret = EXIT_SUCCESS;
 
-errorexit:
-
    return ret;
 }
 

@@ -126,8 +126,6 @@ uint32_t sqldb_random_seed (void)
 
    uint32_t ret = 0;
 
-   char char_array[50];
-
    /* Sources of randomness:
     * 1. Epoch in seconds since 1970:
     * 2. Processor time since program start:
@@ -136,7 +134,7 @@ uint32_t sqldb_random_seed (void)
     * 5. Pointer to function (self):
     * 6. Pointer to main():
     * 7. PID:
-    * 8. tmpnam()
+    * 8. mkstemp()
     */
 
    time_t epoch = time (NULL);
@@ -161,10 +159,10 @@ uint32_t sqldb_random_seed (void)
                               (void *) (uintptr_t) ((proc_time >> 1) * (proc_time >> 1));
    free (tmp);
 
-   char *tmp_fname = tmpnam (NULL);
-   if (!tmp_fname) {
-      snprintf (char_array, sizeof char_array, "[%p]", ptr_self);
-      tmp_fname = char_array;
+   char tmp_fname[] = "tmpfileXXXXXX";
+   int fd = mkstemp (tmp_fname);
+   if (fd >= 0) {
+      close (fd);
    }
 
    ret = hash_buffer (ret, &epoch, sizeof epoch);
