@@ -32,6 +32,8 @@ int main (void)
 
    int ret = EXIT_FAILURE;
 
+   printf ("sqldb_query_test %s\nCopyright L. Manickum 2020\n", SQLDB_VERSION);
+
    sqldb_query_init (queries, nqueries);
 
    for (size_t i=0; i<nqueries; i++) {

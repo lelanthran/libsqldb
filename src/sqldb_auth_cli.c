@@ -572,9 +572,15 @@ static sqldb_t *g_db = NULL;
 
 /* ******************************************************************** */
 
+static void print_version (void)
+{
+   printf ("sqldb_auth_cli\nversion %s\n"
+           "Copyright L. Manickum (2020)\n\n", SQLDB_VERSION);
+}
 
 static bool cmd_help (char **args)
 {
+   print_version ();
    printf ("\n\nHow to use command [%s]:\n", args[1]);
    print_help_msg (args[1]);
    return true;
@@ -1195,6 +1201,7 @@ int main (int argc, char **argv)
    }
 
    if (opt_help) {
+      print_version ();
       print_help_msg (NULL);
       ret = EXIT_SUCCESS;
       goto errorexit;
