@@ -163,6 +163,10 @@ uint32_t sqldb_random_seed (void)
    int fd = mkstemp (tmp_fname);
    if (fd >= 0) {
       close (fd);
+      if ((remove (tmp_fname))!=0) {
+         PROG_ERR ("Failed to remove temporary file [%s]: %m\n"
+                   "Please delete this file manually\n", tmp_fname);
+      }
    }
 
    ret = hash_buffer (ret, &epoch, sizeof epoch);
