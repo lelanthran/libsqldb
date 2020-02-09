@@ -426,6 +426,30 @@ errorexit:
    return !error;
 }
 
+static bool reset_arrayptr (int caller, void *arrayptr, ...)
+{
+   size_t i=0;
+
+   if (!arrayptr)
+      return true;
+
+   va_list ap;
+
+   va_start (ap, arrayptr);
+
+   do {
+      free (*(char ***)arrayptr);
+      if (!(*(char ***)arrayptr = malloc (sizeof **(char ***)arrayptr))) {
+         LOG_ERR ("Memory allocation #%zu failure: %i\n", i, caller);
+         return false;
+      }
+      (*(char ***)arrayptr)[0] = NULL;
+      i++;
+   } while ((arrayptr = va_arg (ap, void ***))!=NULL);
+
+   return true;
+}
+
 bool sqldb_auth_user_membership (sqldb_t    *db,
                                  const char *email,
                                  uint64_t   *nitems_dst,
@@ -438,8 +462,8 @@ bool sqldb_auth_user_membership (sqldb_t    *db,
 
    sqldb_res_t *res = NULL;
 
-   if (groups_dst)
-      *groups_dst = NULL;
+   if (!(reset_arrayptr (__LINE__, groups_dst, NULL)))
+      goto errorexit;
 
    if (nitems_dst)
       *nitems_dst = 0;
@@ -453,7 +477,7 @@ bool sqldb_auth_user_membership (sqldb_t    *db,
 
    if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
                                         sqldb_col_UNKNOWN))) {
-      LOG_ERR ("Failed to execute [%s]: %s\n", qstring, sqldb_lasterr (db));
+      printf ("Failed to execute [%s]: %s\n", qstring, sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -834,18 +858,10 @@ bool sqldb_auth_user_find (sqldb_t    *db,
 
    *nitems_dst = 0;
 
-   if (emails_dst) {
-      free (*emails_dst); *emails_dst = NULL;
-   }
-   if (nicks_dst) {
-      free (*nicks_dst); *nicks_dst = NULL;
-   }
-   if (ids_dst) {
-      free (*ids_dst); *ids_dst = NULL;
-   }
-   if (flags_dst) {
-      free (*flags_dst); *flags_dst = NULL;
-   }
+   if (!(reset_arrayptr (__LINE__, emails_dst, nicks_dst,
+                                   ids_dst, flags_dst,
+                                   NULL)))
+      goto errorexit;
 
    while (sqldb_res_step (res) == 1) {
       char *email, *nick;
@@ -1005,15 +1021,10 @@ bool sqldb_auth_group_find (sqldb_t    *db,
 
    *nitems_dst = 0;
 
-   if (names_dst) {
-      free (*names_dst); *names_dst = NULL;
-   }
-   if (descriptions_dst) {
-      free (*descriptions_dst); *descriptions_dst = NULL;
-   }
-   if (ids_dst) {
-      free (*ids_dst); *ids_dst = NULL;
-   }
+   if (!(reset_arrayptr (__LINE__, names_dst, descriptions_dst, ids_dst,
+                                   NULL)))
+      goto errorexit;
+
 
    while (sqldb_res_step (res) == 1) {
       char *name, *description;
@@ -1130,18 +1141,9 @@ bool sqldb_auth_group_membership (sqldb_t    *db,
 
    *nitems_dst = 0;
 
-   if (emails_dst) {
-      free (*emails_dst); *emails_dst = NULL;
-   }
-   if (nicks_dst) {
-      free (*nicks_dst); *nicks_dst = NULL;
-   }
-   if (ids_dst) {
-      free (*ids_dst); *ids_dst = NULL;
-   }
-   if (flags_dst) {
-      free (*flags_dst); *flags_dst = NULL;
-   }
+   if (!(reset_arrayptr (__LINE__, emails_dst, nicks_dst,
+                                   ids_dst, flags_dst, NULL)))
+      goto errorexit;
 
    while (sqldb_res_step (res) == 1) {
       char *email, *nick;
