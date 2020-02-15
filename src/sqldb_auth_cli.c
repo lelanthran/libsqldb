@@ -263,6 +263,12 @@ static void print_help_msg (const char *cmd)
 "     authentication. Any existing session is invalidated on a successful",\
 "     authentication only.",\
 ""
+#define SESSION_VALID_MSG \
+"  session_valid <session-ID>",\
+"     Checks if the session specified by <session-ID> is valid. If valid",\
+"     prints 'true' to stdout and returns zero to the caller. If not valid",\
+"     prints 'false' to stdout and returns non-zero to the caller.",\
+""
 #define SESSION_INVALIDATE_MSG \
 "  session_invalidate <email> <session-ID>",\
 "     Invalidates the user specified with <email> if and only if the",\
@@ -271,11 +277,11 @@ static void print_help_msg (const char *cmd)
 "     database, or prints 'false' and returns non-zero if the session-id and",\
 "     email combination was not found in the database.",\
 ""
-#define SESSION_VALID_MSG \
-"  session_valid <session-ID>",\
-"     Checks if the session specified by <session-ID> is valid. If valid",\
-"     prints 'true' to stdout and returns zero to the caller. If not valid",\
-"     prints 'false' to stdout and returns non-zero to the caller.",\
+#define USER_PASSWORD_VALID_MSG \
+"  password_value <email> <password>",\
+"     Checks if the supplied password is valid for the specified email and",\
+"     if it is, prints 'true'. If the password is not valid 'false' is",\
+"     printed.",\
 ""
 #define USER_NEW_MSG    \
 "  user_create <email> <nick> <password> ",\
@@ -409,6 +415,7 @@ static void print_help_msg (const char *cmd)
       { "session_invalidate",    { SESSION_INVALIDATE_MSG   }  },
       { "session_valid",         { SESSION_VALID_MSG        }  },
 
+      { "password_valid",        { USER_PASSWORD_VALID_MSG  }  },
       { "user_create",           { USER_NEW_MSG             }  },
       { "user_rm",               { USER_RM_MSG              }  },
       { "user_mod",              { USER_MOD_MSG             }  },
@@ -703,6 +710,12 @@ static bool cmd_session_valid (char **args)
    return false;
 }
 
+static bool cmd_password_valid (char **args)
+{
+   bool ret = sqldb_auth_user_password_valid (g_db, args[1], args[2]);
+   printf ("%s\n", ret ? "true" : "false");
+   return ret;
+}
 
 static bool cmd_user_create (char **args)
 {
@@ -1113,6 +1126,7 @@ int main (int argc, char **argv)
       { "session_invalidate",    cmd_session_invalidate,    3, 3  },
       { "session_valid",         cmd_session_valid,         2, 2  },
 
+      { "password_valid",        cmd_password_valid,     3, 3     },
       { "user_create",           cmd_user_create,        4, 4     },
       { "user_rm",               cmd_user_rm,            2, 2     },
       { "user_mod",              cmd_user_mod,           5, 5     },

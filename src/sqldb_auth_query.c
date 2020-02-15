@@ -61,6 +61,9 @@
 
 ///////////////////////////////////////////////////////////////////
 
+#define password_valid \
+"SELECT c_salt, c_nick, c_hash FROM t_user WHERE c_email = #1;"
+
 #define user_create \
 " INSERT INTO t_user (c_email, c_hash, c_flags) VALUES (#1, '00000000', 0);"
 
@@ -210,6 +213,7 @@ static const struct {
    STMT (session_valid),
    STMT (session_invalidate),
 
+   STMT (password_valid),
    STMT (user_create),
    STMT (user_mod),
    STMT (user_rm),

@@ -176,6 +176,20 @@ $VALGRIND $VGOPTS $PROG perms one@example.com Resource-1
 
 set +e
 
+# Check for a valid password, then check for an invalid password
+$VALGRIND $VGOPTS $PROG password_valid one@example.com 12345 > tmptest
+if [ "`cat tmptest`" != 'true' ]; then
+   echo "Password validation failed for one@example.com/12345"
+   cat tmptest
+   exit 127
+fi
+$VALGRIND $VGOPTS $PROG password_valid one@example.com 12344 > tmptest
+if [ "`cat tmptest`" != 'false' ]; then
+   echo "Password validation succeeded for one@example.com/12344"
+   cat tmptest
+   exit 127
+fi
+
 # Check for a valid session, then start a session,
 # then check if it is valid, invalidate it, then check again
 $VALGRIND $VGOPTS $PROG session_valid 123456789 > tmptest

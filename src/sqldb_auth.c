@@ -298,6 +298,64 @@ bool sqldb_auth_session_invalidate (sqldb_t      *db,
 
 }
 
+bool sqldb_auth_user_password_valid (sqldb_t *db, const char *email,
+                                                  const char *password)
+{
+   bool valid = false;
+
+   const char *qstring = NULL;
+   sqldb_res_t *res = NULL;
+
+   char *l_salt = NULL,
+        *l_nick = NULL,
+        *l_hash = NULL;
+
+   char calc_hash[65];
+
+   if (!db || !SVALID (email) || !SVALID(password))
+      goto errorexit;
+
+   if (!(qstring = sqldb_auth_query ("password_valid"))) {
+      LOG_ERR ("Failed to get query-string [password_valid]\n");
+      goto errorexit;
+   }
+
+   if (!(res = sqldb_exec (db, qstring, sqldb_col_TEXT, &email,
+                                        sqldb_col_UNKNOWN))) {
+      LOG_ERR ("Failed to execute password-valid query for email [%s]\n%s\n",
+                email, sqldb_lasterr (db));
+      goto errorexit;
+   }
+
+   if ((sqldb_res_step (res)) != 1) {
+      LOG_ERR ("Failed to find a record for email [%s]\n",
+               email);
+      goto errorexit;
+   }
+
+   if ((sqldb_scan_columns (res, sqldb_col_TEXT, &l_salt,
+                                 sqldb_col_TEXT, &l_nick,
+                                 sqldb_col_TEXT, &l_hash,
+                                 sqldb_col_UNKNOWN)) != 3) {
+      LOG_ERR ("Failed to scan 3 columns in for email [%s]\n",
+               email);
+      goto errorexit;
+   }
+
+   if (!(make_password_hash (calc_hash, l_salt, email, l_nick, password))) {
+      LOG_ERR ("Failed to generate password salt for [%s]\n", email);
+      goto errorexit;
+   }
+
+   if ((strcmp (l_hash, calc_hash))==0)
+      valid = true;
+
+errorexit:
+
+   sqldb_res_del (res);
+   return valid;
+}
+
 uint64_t sqldb_auth_user_create (sqldb_t    *db,
                                  const char *email,
                                  const char *nick,

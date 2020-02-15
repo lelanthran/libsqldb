@@ -78,6 +78,12 @@ extern "C" {
 
    ///////////////////////////////////////////////////////////////////////
 
+   // Checks that the provided password is valid for the email specified.
+   // Returns true if the password is valid, false if it is not or if there
+   // was an error.
+   bool sqldb_auth_user_password_valid (sqldb_t *db, const char *email,
+                                                     const char *password);
+
    // Create a new user, returns the user ID. Returns (uint64_t)-1 on
    // error.
    uint64_t sqldb_auth_user_create (sqldb_t    *db,
