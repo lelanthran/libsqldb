@@ -2,6 +2,8 @@
 Feature Additions
 1. Added function sqldb_auth_user_membership() to retrieve all of the groups
    that a user belongs to.
+2. Added function sqldb_auth_user_password_valid() to check if a supplied
+   password is correct for the specified user.
 
 Other
 1. Changed the name of the function sqldb_auth_group_members() to

@@ -1,13 +1,17 @@
-+ rm -fv sqldb_auth.sql3
+Line 8:rm -fv sqldb_auth.sql3
 removed 'sqldb_auth.sql3'
-+ export PROG=test-scripts/sqldb_auth_cli.elf
-+ PROG=test-scripts/sqldb_auth_cli.elf
-+ export 'VALGRIND=valgrind --error-exitcode=127'
-+ VALGRIND='valgrind --error-exitcode=127'
-+ '[' -z '' ']'
-+ export VALGRIND=
-+ VALGRIND=
-+ test-scripts/sqldb_auth_cli.elf --help
+Line 11:export PROG=test-scripts/sqldb_auth_cli.elf
+Line 11:PROG=test-scripts/sqldb_auth_cli.elf
+Line 12:export 'VALGRIND=valgrind --error-exitcode=127'
+Line 12:VALGRIND='valgrind --error-exitcode=127'
+Line 13:'[' -z '' ']'
+Line 14:export VALGRIND=
+Line 14:VALGRIND=
+Line 18:test-scripts/sqldb_auth_cli.elf --help
+sqldb_auth_cli
+version 1.0.0-rc1
+Copyright L. Manickum (2020)
+
 sqldb_auth: A command-line program to manage user, groups and permissions
 using the sqldb_auth module.
 
@@ -60,12 +64,20 @@ GENERAL COMMANDS
   help <command>
      Provide the help message for the specified command <command>.
 
-  create <filename>
-     Creates a new empty sqlite database using <filename> as the filename
-     of the new database. If this file already exists this command will fail
-     even if the <filename> is already an sqlite database.
-     This is only needed for sqlite. When using a postgres database, the
-     database must be created using postgres commands.
+  create <database-name> <database-type>
+     Creates a new empty database using <database-type> as the database type
+     of the new database.
+
+     When database-type is 'sqlite', the resulting database will be an
+     SQLite database with the filename specified by database-name.
+
+     When database-type is 'postgres', the resulting database will be
+     PostgreSQL database with the database name specified by database-name.
+     For PostgreSQL databases, the caller must also specify a database
+     server to connect to using the options '--database-type' and 
+     '--database'.
+
+     If the database already exists this command will fail.
 
   init <database-type> <database>
      Initialises a database with the necessary tables. The <database-type>
@@ -96,8 +108,8 @@ SESSION COMMANDS
      email combination was not found in the database.
 
   session_valid <session-ID>
-     Checks if the session specified by <session-ID> is valid If valid,
-     prints 'true' to stdout and returns zero to the caller. If not valid,
+     Checks if the session specified by <session-ID> is valid. If valid
+     prints 'true' to stdout and returns zero to the caller. If not valid
      prints 'false' to stdout and returns non-zero to the caller.
 
 
@@ -218,53 +230,53 @@ PERMISSION COMMANDS
 
 
 
-+ test-scripts/sqldb_auth_cli.elf create sqldb_auth.sql3
-Creating empty sqlite database [sqldb_auth.sql3]
-Created empty sqlite database [sqldb_auth.sql3]
-+ test-scripts/sqldb_auth_cli.elf init sqlite sqldb_auth.sql3
+Line 21:test-scripts/sqldb_auth_cli.elf create sqldb_auth.sql3 sqlite
+Creating empty [sqlite] database [sqldb_auth.sql3]
+Created empty [sqlite] database [sqldb_auth.sql3]
+Line 22:test-scripts/sqldb_auth_cli.elf init sqlite sqldb_auth.sql3
 Initialising [sqlite] database on [sqldb_auth.sql3]
 Initialised [sqlite] database [sqldb_auth.sql3] for use with sqldb_auth.
-+ test-scripts/sqldb_auth_cli.elf user_create mone@example.com mONE-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mtwo@example.com mTWO-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mthree@example.com mTHREE-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mfour@example.com mFOUR-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mfive@example.com mFIVE-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create msix@example.com mSIX-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mseven@example.com mSEVEN-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create meight@example.com mEIGHT-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mnine@example.com mNINE-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_create mten@example.com mTEN-USER 123456
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mone@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mtwo@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mthree@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mfour@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mfive@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set msix@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mseven@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set meight@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mnine@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_set mten@example.com 0 1 2 3 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mone@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mtwo@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mthree@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mfour@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mfive@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear msix@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mseven@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear meight@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mnine@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_flags_clear mten@example.com 0 2 4 5
-+ test-scripts/sqldb_auth_cli.elf user_rm mseven@example.com
-+ test-scripts/sqldb_auth_cli.elf user_rm meight@example.com
-+ test-scripts/sqldb_auth_cli.elf user_rm mnine@example.com
-+ test-scripts/sqldb_auth_cli.elf user_mod mone@example.com one@example.com ONE-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_mod mtwo@example.com two@example.com TWO-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_mod mthree@example.com three@example.com THREE-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_mod mfour@example.com four@example.com FOUR-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_mod mfive@example.com five@example.com FIVE-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_mod msix@example.com six@example.com SIX-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_mod mten@example.com ten@example.com TEN-USER 12345
-+ test-scripts/sqldb_auth_cli.elf user_info four@example.com
+Line 26:test-scripts/sqldb_auth_cli.elf user_create mone@example.com mONE-USER 123456
+Line 27:test-scripts/sqldb_auth_cli.elf user_create mtwo@example.com mTWO-USER 123456
+Line 28:test-scripts/sqldb_auth_cli.elf user_create mthree@example.com mTHREE-USER 123456
+Line 29:test-scripts/sqldb_auth_cli.elf user_create mfour@example.com mFOUR-USER 123456
+Line 30:test-scripts/sqldb_auth_cli.elf user_create mfive@example.com mFIVE-USER 123456
+Line 31:test-scripts/sqldb_auth_cli.elf user_create msix@example.com mSIX-USER 123456
+Line 32:test-scripts/sqldb_auth_cli.elf user_create mseven@example.com mSEVEN-USER 123456
+Line 33:test-scripts/sqldb_auth_cli.elf user_create meight@example.com mEIGHT-USER 123456
+Line 34:test-scripts/sqldb_auth_cli.elf user_create mnine@example.com mNINE-USER 123456
+Line 35:test-scripts/sqldb_auth_cli.elf user_create mten@example.com mTEN-USER 123456
+Line 38:test-scripts/sqldb_auth_cli.elf user_flags_set mone@example.com 0 1 2 3 4 5
+Line 39:test-scripts/sqldb_auth_cli.elf user_flags_set mtwo@example.com 0 1 2 3 4 5
+Line 40:test-scripts/sqldb_auth_cli.elf user_flags_set mthree@example.com 0 1 2 3 4 5
+Line 41:test-scripts/sqldb_auth_cli.elf user_flags_set mfour@example.com 0 1 2 3 4 5
+Line 42:test-scripts/sqldb_auth_cli.elf user_flags_set mfive@example.com 0 1 2 3 4 5
+Line 43:test-scripts/sqldb_auth_cli.elf user_flags_set msix@example.com 0 1 2 3 4 5
+Line 44:test-scripts/sqldb_auth_cli.elf user_flags_set mseven@example.com 0 1 2 3 4 5
+Line 45:test-scripts/sqldb_auth_cli.elf user_flags_set meight@example.com 0 1 2 3 4 5
+Line 46:test-scripts/sqldb_auth_cli.elf user_flags_set mnine@example.com 0 1 2 3 4 5
+Line 47:test-scripts/sqldb_auth_cli.elf user_flags_set mten@example.com 0 1 2 3 4 5
+Line 50:test-scripts/sqldb_auth_cli.elf user_flags_clear mone@example.com 0 2 4 5
+Line 51:test-scripts/sqldb_auth_cli.elf user_flags_clear mtwo@example.com 0 2 4 5
+Line 52:test-scripts/sqldb_auth_cli.elf user_flags_clear mthree@example.com 0 2 4 5
+Line 53:test-scripts/sqldb_auth_cli.elf user_flags_clear mfour@example.com 0 2 4 5
+Line 54:test-scripts/sqldb_auth_cli.elf user_flags_clear mfive@example.com 0 2 4 5
+Line 55:test-scripts/sqldb_auth_cli.elf user_flags_clear msix@example.com 0 2 4 5
+Line 56:test-scripts/sqldb_auth_cli.elf user_flags_clear mseven@example.com 0 2 4 5
+Line 57:test-scripts/sqldb_auth_cli.elf user_flags_clear meight@example.com 0 2 4 5
+Line 58:test-scripts/sqldb_auth_cli.elf user_flags_clear mnine@example.com 0 2 4 5
+Line 59:test-scripts/sqldb_auth_cli.elf user_flags_clear mten@example.com 0 2 4 5
+Line 62:test-scripts/sqldb_auth_cli.elf user_rm mseven@example.com
+Line 63:test-scripts/sqldb_auth_cli.elf user_rm meight@example.com
+Line 64:test-scripts/sqldb_auth_cli.elf user_rm mnine@example.com
+Line 67:test-scripts/sqldb_auth_cli.elf user_mod mone@example.com one@example.com ONE-USER 12345
+Line 68:test-scripts/sqldb_auth_cli.elf user_mod mtwo@example.com two@example.com TWO-USER 12345
+Line 69:test-scripts/sqldb_auth_cli.elf user_mod mthree@example.com three@example.com THREE-USER 12345
+Line 70:test-scripts/sqldb_auth_cli.elf user_mod mfour@example.com four@example.com FOUR-USER 12345
+Line 71:test-scripts/sqldb_auth_cli.elf user_mod mfive@example.com five@example.com FIVE-USER 12345
+Line 72:test-scripts/sqldb_auth_cli.elf user_mod msix@example.com six@example.com SIX-USER 12345
+Line 73:test-scripts/sqldb_auth_cli.elf user_mod mten@example.com ten@example.com TEN-USER 12345
+Line 76:test-scripts/sqldb_auth_cli.elf user_info four@example.com
 --------------------------
 User:    [four@example.com]
 ID:      [4]
@@ -272,7 +284,7 @@ Flags:   [10]
 Nick:    [FOUR-USER]
 Session: []
 --------------------------
-+ test-scripts/sqldb_auth_cli.elf user_info five@example.com
+Line 77:test-scripts/sqldb_auth_cli.elf user_info five@example.com
 --------------------------
 User:    [five@example.com]
 ID:      [5]
@@ -280,7 +292,7 @@ Flags:   [10]
 Nick:    [FIVE-USER]
 Session: []
 --------------------------
-+ test-scripts/sqldb_auth_cli.elf user_info six@example.com
+Line 78:test-scripts/sqldb_auth_cli.elf user_info six@example.com
 --------------------------
 User:    [six@example.com]
 ID:      [6]
@@ -288,18 +300,18 @@ Flags:   [10]
 Nick:    [SIX-USER]
 Session: []
 --------------------------
-+ test-scripts/sqldb_auth_cli.elf user_find f% ''
+Line 81:test-scripts/sqldb_auth_cli.elf user_find f% ''
 Matches [f%][]
 4:10:four@example.com:FOUR-USER
 5:10:five@example.com:FIVE-USER
 ..........................
-+ test-scripts/sqldb_auth_cli.elf user_find '' t%
+Line 82:test-scripts/sqldb_auth_cli.elf user_find '' t%
 Matches [][t%]
 2:10:two@example.com:TWO-USER
 3:10:three@example.com:THREE-USER
 10:10:ten@example.com:TEN-USER
 ..........................
-+ test-scripts/sqldb_auth_cli.elf user_find t% f%
+Line 83:test-scripts/sqldb_auth_cli.elf user_find t% f%
 Matches [t%][f%]
 2:10:two@example.com:TWO-USER
 3:10:three@example.com:THREE-USER
@@ -307,56 +319,56 @@ Matches [t%][f%]
 5:10:five@example.com:FIVE-USER
 10:10:ten@example.com:TEN-USER
 ..........................
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-One 'mGroup One Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Two 'mGroup Two Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Three 'mGroup Three Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Four 'mGroup Four Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Five 'mGroup Five Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Six 'mGroup Six Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Seven 'mGroup Seven Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Eight 'mGroup Eight Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Nine 'mGroup Nine Description'
-+ test-scripts/sqldb_auth_cli.elf group_create mGroup-Ten 'mGroup Ten Description'
-+ test-scripts/sqldb_auth_cli.elf group_rm mGroup-Seven
-+ test-scripts/sqldb_auth_cli.elf group_rm mGroup-Eight
-+ test-scripts/sqldb_auth_cli.elf group_rm mGroup-Nine
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-One Group-One 'Group One Description'
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-Two Group-Two 'Group Two Description'
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-Three Group-Three 'Group Three Description'
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-Four Group-Four 'Group Four Description'
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-Five Group-Five 'Group Five Description'
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-Six Group-Six 'Group Six Description'
-+ test-scripts/sqldb_auth_cli.elf group_mod mGroup-Ten Group-Ten 'Group Ten Description'
-+ test-scripts/sqldb_auth_cli.elf group_info Group-One
+Line 87:test-scripts/sqldb_auth_cli.elf group_create mGroup-One 'mGroup One Description'
+Line 88:test-scripts/sqldb_auth_cli.elf group_create mGroup-Two 'mGroup Two Description'
+Line 89:test-scripts/sqldb_auth_cli.elf group_create mGroup-Three 'mGroup Three Description'
+Line 90:test-scripts/sqldb_auth_cli.elf group_create mGroup-Four 'mGroup Four Description'
+Line 91:test-scripts/sqldb_auth_cli.elf group_create mGroup-Five 'mGroup Five Description'
+Line 92:test-scripts/sqldb_auth_cli.elf group_create mGroup-Six 'mGroup Six Description'
+Line 93:test-scripts/sqldb_auth_cli.elf group_create mGroup-Seven 'mGroup Seven Description'
+Line 94:test-scripts/sqldb_auth_cli.elf group_create mGroup-Eight 'mGroup Eight Description'
+Line 95:test-scripts/sqldb_auth_cli.elf group_create mGroup-Nine 'mGroup Nine Description'
+Line 96:test-scripts/sqldb_auth_cli.elf group_create mGroup-Ten 'mGroup Ten Description'
+Line 99:test-scripts/sqldb_auth_cli.elf group_rm mGroup-Seven
+Line 100:test-scripts/sqldb_auth_cli.elf group_rm mGroup-Eight
+Line 101:test-scripts/sqldb_auth_cli.elf group_rm mGroup-Nine
+Line 104:test-scripts/sqldb_auth_cli.elf group_mod mGroup-One Group-One 'Group One Description'
+Line 105:test-scripts/sqldb_auth_cli.elf group_mod mGroup-Two Group-Two 'Group Two Description'
+Line 106:test-scripts/sqldb_auth_cli.elf group_mod mGroup-Three Group-Three 'Group Three Description'
+Line 107:test-scripts/sqldb_auth_cli.elf group_mod mGroup-Four Group-Four 'Group Four Description'
+Line 108:test-scripts/sqldb_auth_cli.elf group_mod mGroup-Five Group-Five 'Group Five Description'
+Line 109:test-scripts/sqldb_auth_cli.elf group_mod mGroup-Six Group-Six 'Group Six Description'
+Line 110:test-scripts/sqldb_auth_cli.elf group_mod mGroup-Ten Group-Ten 'Group Ten Description'
+Line 114:test-scripts/sqldb_auth_cli.elf group_info Group-One
 --------------------------
 Group:    [Group-One]
 ID:       [1]
 Descr:    [Group One Description]
 --------------------------
-+ test-scripts/sqldb_auth_cli.elf group_info Group-Two
+Line 115:test-scripts/sqldb_auth_cli.elf group_info Group-Two
 --------------------------
 Group:    [Group-Two]
 ID:       [2]
 Descr:    [Group Two Description]
 --------------------------
-+ test-scripts/sqldb_auth_cli.elf group_info Group-Four
+Line 116:test-scripts/sqldb_auth_cli.elf group_info Group-Four
 --------------------------
 Group:    [Group-Four]
 ID:       [4]
 Descr:    [Group Four Description]
 --------------------------
-+ test-scripts/sqldb_auth_cli.elf group_find group-t% ''
+Line 119:test-scripts/sqldb_auth_cli.elf group_find group-t% ''
 Matches [group-t%][]
 2:Group-Two:Group Two Description
 3:Group-Three:Group Three Description
 10:Group-Ten:Group Ten Description
 ..........................
-+ test-scripts/sqldb_auth_cli.elf group_find '' 'group f%'
+Line 120:test-scripts/sqldb_auth_cli.elf group_find '' 'group f%'
 Matches [][group f%]
 4:Group-Four:Group Four Description
 5:Group-Five:Group Five Description
 ..........................
-+ test-scripts/sqldb_auth_cli.elf group_find group-t% 'group f%'
+Line 121:test-scripts/sqldb_auth_cli.elf group_find group-t% 'group f%'
 Matches [group-t%][group f%]
 2:Group-Two:Group Two Description
 3:Group-Three:Group Three Description
@@ -364,16 +376,16 @@ Matches [group-t%][group f%]
 5:Group-Five:Group Five Description
 10:Group-Ten:Group Ten Description
 ..........................
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One one@example.com
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One two@example.com
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One three@example.com
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One four@example.com
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One five@example.com
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One six@example.com
-+ test-scripts/sqldb_auth_cli.elf group_adduser Group-One ten@example.com
-+ test-scripts/sqldb_auth_cli.elf group_rmuser Group-One three@example.com
-+ test-scripts/sqldb_auth_cli.elf group_rmuser Group-One five@example.com
-+ test-scripts/sqldb_auth_cli.elf group_members Group-One
+Line 125:test-scripts/sqldb_auth_cli.elf group_adduser Group-One one@example.com
+Line 126:test-scripts/sqldb_auth_cli.elf group_adduser Group-One two@example.com
+Line 127:test-scripts/sqldb_auth_cli.elf group_adduser Group-One three@example.com
+Line 128:test-scripts/sqldb_auth_cli.elf group_adduser Group-One four@example.com
+Line 129:test-scripts/sqldb_auth_cli.elf group_adduser Group-One five@example.com
+Line 130:test-scripts/sqldb_auth_cli.elf group_adduser Group-One six@example.com
+Line 131:test-scripts/sqldb_auth_cli.elf group_adduser Group-One ten@example.com
+Line 134:test-scripts/sqldb_auth_cli.elf group_rmuser Group-One three@example.com
+Line 135:test-scripts/sqldb_auth_cli.elf group_rmuser Group-One five@example.com
+Line 138:test-scripts/sqldb_auth_cli.elf group_members Group-One
 Membership of [Group-One]
 1:10:one@example.com:ONE-USER
 2:10:two@example.com:TWO-USER
@@ -381,54 +393,61 @@ Membership of [Group-One]
 6:10:six@example.com:SIX-USER
 10:10:ten@example.com:TEN-USER
 ..........................
-+ test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 0
-+ test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 1
-+ test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 2
-+ test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 3
-+ test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 4
-+ test-scripts/sqldb_auth_cli.elf revoke_user one@example.com Resource-1 1
-+ test-scripts/sqldb_auth_cli.elf revoke_user one@example.com Resource-1 3
-+ test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 0
-+ test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 1
-+ test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 2
-+ test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 3
-+ test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 4
-+ test-scripts/sqldb_auth_cli.elf revoke_group Group-One Resource-1 2
-+ test-scripts/sqldb_auth_cli.elf revoke_group Group-One Resource-1 4
-+ test-scripts/sqldb_auth_cli.elf user_perms one@example.com Resource-1
+Line 141:test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 0
+Line 142:test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 1
+Line 143:test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 2
+Line 144:test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 3
+Line 145:test-scripts/sqldb_auth_cli.elf grant_user one@example.com Resource-1 4
+Line 148:test-scripts/sqldb_auth_cli.elf revoke_user one@example.com Resource-1 1
+Line 149:test-scripts/sqldb_auth_cli.elf revoke_user one@example.com Resource-1 3
+Line 154:test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 0
+Line 155:test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 1
+Line 156:test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 2
+Line 157:test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 3
+Line 158:test-scripts/sqldb_auth_cli.elf grant_group Group-One Resource-1 4
+Line 161:test-scripts/sqldb_auth_cli.elf revoke_group Group-One Resource-1 2
+Line 162:test-scripts/sqldb_auth_cli.elf revoke_group Group-One Resource-1 4
+Line 167:test-scripts/sqldb_auth_cli.elf user_perms one@example.com Resource-1
 Perms for resource [one@example.com] user [Resource-1]: 0000000000000000000000000000000000000000000000000000000000010101
 21
-+ test-scripts/sqldb_auth_cli.elf group_perms Group-One Resource-1
+Line 172:test-scripts/sqldb_auth_cli.elf group_perms Group-One Resource-1
 Perms for resource [Group-One] group [Resource-1]: 0000000000000000000000000000000000000000000000000000000000001011
-+ test-scripts/sqldb_auth_cli.elf perms one@example.com Resource-1
+Line 175:test-scripts/sqldb_auth_cli.elf perms one@example.com Resource-1
 Effective perms for resource [one@example.com] user [Resource-1]: 0000000000000000000000000000000000000000000000000000000000011111
-+ set +e
-+ test-scripts/sqldb_auth_cli.elf session_valid 123456789
-:src/sqldb_auth.c:253: Failed to find a session for [123456789]
-:src/sqldb_auth_cli.c:1286: Command [session_valid] failed
-+ '[' 0 -eq 1 ']'
-+ cat tmptest
+Line 177:set +e
+Line 180:test-scripts/sqldb_auth_cli.elf password_valid one@example.com 12345
+LLine 181:cat tmptest
+Line 181:'[' true '!=' true ']'
+Line 186:test-scripts/sqldb_auth_cli.elf password_valid one@example.com 12344
+:src/sqldb_auth_cli.c:1329: Command [password_valid] failed
+LLine 187:cat tmptest
+Line 187:'[' false '!=' false ']'
+Line 195:test-scripts/sqldb_auth_cli.elf session_valid 123456789
+:src/sqldb_auth.c:129: Failed to find a session for [123456789]
+:src/sqldb_auth_cli.c:1329: Command [session_valid] failed
+Line 196:'[' 0 -eq 1 ']'
+Line 201:cat tmptest
 false
-+ test-scripts/sqldb_auth_cli.elf session_authenticate one@example.com 12345
-+ '[' 0 -ne 0 ']'
-++ cat tmptest
-+ export SESS_ID=3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-+ SESS_ID=3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-+ echo Using session 3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-Using session 3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-+ test-scripts/sqldb_auth_cli.elf session_authenticate two@example.com 12345
-+ '[' 0 -ne 0 ']'
-+ test-scripts/sqldb_auth_cli.elf session_valid 3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-+ '[' 0 -ne 0 ']'
-+ cat tmptest
+Line 203:test-scripts/sqldb_auth_cli.elf session_authenticate one@example.com 12345
+Line 204:'[' 0 -ne 0 ']'
+LLine 209:cat tmptest
+Line 209:export SESS_ID=ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+Line 209:SESS_ID=ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+Line 210:echo Using session ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+Using session ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+Line 213:test-scripts/sqldb_auth_cli.elf session_authenticate two@example.com 12345
+Line 214:'[' 0 -ne 0 ']'
+Line 220:test-scripts/sqldb_auth_cli.elf session_valid ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+Line 221:'[' 0 -ne 0 ']'
+Line 226:cat tmptest
 true:one@example.com:ONE-USER:10:1
-+ test-scripts/sqldb_auth_cli.elf session_invalidate one@example.com 3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-+ '[' 0 -ne 0 ']'
-+ cat tmptest
+Line 228:test-scripts/sqldb_auth_cli.elf session_invalidate one@example.com ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+Line 229:'[' 0 -ne 0 ']'
+Line 234:cat tmptest
 true
-+ test-scripts/sqldb_auth_cli.elf session_valid 3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e
-:src/sqldb_auth.c:253: Failed to find a session for [3352bec463dffa70da84f1959ba8b1da67435d58cf9b5c46b5e5e6ea2ac40f5e]
-:src/sqldb_auth_cli.c:1286: Command [session_valid] failed
-+ '[' 0 -eq 1 ']'
-+ echo SUCCESS
+Line 236:test-scripts/sqldb_auth_cli.elf session_valid ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18
+:src/sqldb_auth.c:129: Failed to find a session for [ae2900cfcd71844eb09674f6d3fbd459823e3ce094397eb9df6499b069692d18]
+:src/sqldb_auth_cli.c:1329: Command [session_valid] failed
+Line 237:'[' 0 -eq 1 ']'
+Line 242:echo SUCCESS
 SUCCESS
