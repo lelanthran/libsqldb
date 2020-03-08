@@ -8,6 +8,7 @@ Feature Additions
 Other
 1. Changed the name of the function sqldb_auth_group_members() to
    sqldb_auth_group_membership() to be more consistent.
+2. Fixed incorrect documentation comment in the header.
 
 ## 0.1.6 - Thu Dec 12 22:21:19 SAST 2019
 Bug fixes

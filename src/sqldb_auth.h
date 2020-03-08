@@ -141,11 +141,9 @@ extern "C" {
 
    ///////////////////////////////////////////////////////////////////////
 
-   // Gets the group information for the specified group. Returns
-   // true on success and false on failure. The string name and session
-   // must be freed by the caller regardless of the return value. If
-   // they are not-NULL on entry to this function, this function
-   // will free them before allocation storage for the output parameters.
+   // Creates a new group with the specified name and the specified
+   // description. Returns (uint64_t)-1 on error, or the ID of the newly
+   // created group on success.
    uint64_t sqldb_auth_group_create (sqldb_t    *db,
                                      const char *name,
                                      const char *description);
