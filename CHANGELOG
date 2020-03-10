@@ -1,4 +1,4 @@
-## 1.0.0-rc1 - ???
+## 1.0.0-rc1 - Tue Mar 10 20:41:41 SAST 2020
 Feature Additions
 1. Added function sqldb_auth_user_membership() to retrieve all of the groups
    that a user belongs to.
