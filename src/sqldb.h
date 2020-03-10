@@ -24,6 +24,7 @@ typedef enum {
    sqldb_UNKNOWN = 0,
    sqldb_SQLITE,
    sqldb_POSTGRES,
+   sqldb_MYSQL,
 } sqldb_dbtype_t;
 
 typedef enum {

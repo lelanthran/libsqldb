@@ -8,12 +8,20 @@
 
 #include "sqldb.h"
 
+// This database will be created!
 #define TESTDB_SQLITE    ("/tmp/testdb.sql3")
 
 // This database must exist!
 #define EXISTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/lelanthran")
 // This database will be created!
 #define TESTDB_POSTGRES  ("postgresql://lelanthran:a@localhost:5432/testdb")
+
+// This database must exist!
+#define EXISTDB_MYSQL  ("mysql://lelanthran:a@localhost:3306/lelanthran")
+// This database will be created!
+#define TESTDB_MYSQL  ("mysql://lelanthran:a@localhost:3306/testdb")
+
+
 #define TEST_BATCHFILE   ("test-scripts/test-file.sql")
 
 #define PROG_ERR(...)      do {\
@@ -59,12 +67,17 @@ NULL,
       dbname = EXISTDB_POSTGRES;
    }
 
+   if ((strcmp (argv[1], "mysql"))==0) {
+      dbtype = sqldb_MYSQL;
+      dbname = EXISTDB_MYSQL;
+   }
+
    if (!dbname || dbtype==sqldb_UNKNOWN) {
       fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;
    }
 
-   if (dbtype==sqldb_POSTGRES) {
+   if (dbtype==sqldb_POSTGRES || dbtype==sqldb_MYSQL) {
       db = sqldb_open (dbname, dbtype);
       if (!db) {
          PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
@@ -84,6 +97,10 @@ NULL,
 
    if (dbtype==sqldb_POSTGRES) {
       dbname = TESTDB_POSTGRES;
+   }
+
+   if (dbtype==sqldb_MYSQL) {
+      dbname = TESTDB_MYSQL;
    }
 
    db = sqldb_open (dbname, dbtype);
