@@ -105,7 +105,7 @@ NULL,
 
    db = sqldb_open (dbname, dbtype);
    if (!db) {
-      PROG_ERR ("Unable to open database - %s\n", sqldb_lasterr (db));
+      PROG_ERR ("Unable to open database [%s] - %s\n", dbname, sqldb_lasterr (db));
       goto errorexit;
    }
 

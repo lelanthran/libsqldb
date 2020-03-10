@@ -270,7 +270,9 @@ bool sqldb_create (sqldb_t *db, const char *dbname, sqldb_dbtype_t type)
 
       case sqldb_SQLITE:   return sqlitedb_create (dbname);
 
+      case sqldb_MYSQL:    // Uses pgdb_create
       case sqldb_POSTGRES: return pgdb_create (db, dbname);
+
 
       default:
          return false;
@@ -416,7 +418,7 @@ errorexit:
    return ret;
 }
 
-static sqldb_t *mysqldb_open (sqldb_t *ret, const char *dbname)
+static sqldb_t *mydb_open (sqldb_t *ret, const char *dbname)
 {
    bool error = true;
 
@@ -429,7 +431,7 @@ static sqldb_t *mysqldb_open (sqldb_t *ret, const char *dbname)
         *local_socket = NULL;
 
    unsigned int port = 3306;
-   unsigned long flags = 0;
+   unsigned long flags = CLIENT_MULTI_STATEMENTS;
 
    char *copy = NULL;
    char *term = NULL;
@@ -485,9 +487,6 @@ static sqldb_t *mysqldb_open (sqldb_t *ret, const char *dbname)
       goto errorexit;
    }
 
-   PROG_ERR ("Using host=%s, user=%s, passwd=%s, db=%s, port=%s\n",
-               host, user, passwd, db, sport);
-
    if (!(mysql_real_connect (ret->my_db, host,
                                          user,
                                          passwd,
@@ -531,7 +530,7 @@ sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
    switch (type) {
       case sqldb_SQLITE:   return sqlitedb_open (ret, dbname);
       case sqldb_POSTGRES: return pgdb_open (ret, dbname);
-      case sqldb_MYSQL:    return mysqldb_open (ret, dbname);
+      case sqldb_MYSQL:    return mydb_open (ret, dbname);
 
       default:             PROG_ERR ("Error: dbtype [%u] is unknown\n",
                                             type);
@@ -589,6 +588,7 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
    switch (type) {
       case sqldb_SQLITE:      r = '?'; break;
       case sqldb_POSTGRES:    r = '$'; break;
+      case sqldb_MYSQL:       r = '?'; break;
       default:                r = 0;   break;
    }
 
@@ -1031,7 +1031,8 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
    switch (db->type) {
       case sqldb_SQLITE:   ret = sqlitedb_exec (db, qstring, ap);       break;
       case sqldb_POSTGRES: ret = pgdb_exec (db, qstring, ap);           break;
-      default:             db_err_printf (db, "(%i) Unknown type\n", db->type);
+      case sqldb_MYSQL:    ret = mydb_exec (db, qstring, ap);           break;
+      default:             db_err_printf (db, "(%i) DB unsupported\n", db->type);
                            goto errorexit;
    }
    if (!ret) {
@@ -1118,7 +1119,7 @@ static bool pgdb_batch (sqldb_t *db, va_list ap)
    if (!db->pg_db)
       return false;
 
-   char *qstring = va_arg (ap, char *);
+   const char *qstring = va_arg (ap, const char *);
 
    while (ret && qstring) {
       PGresult *result = PQexec (db->pg_db, qstring);
@@ -1142,12 +1143,44 @@ static bool pgdb_batch (sqldb_t *db, va_list ap)
       }
 
       PQclear (result);
-      qstring =  va_arg (ap, char *);
+      qstring =  va_arg (ap, const char *);
    }
 
    return ret;
 }
 
+static bool mydb_batch (sqldb_t *db, va_list ap)
+{
+   bool ret = true;
+
+   if (!db->my_db)
+      return false;
+
+   const char *qstring = va_arg (ap, const char *);
+
+   while (ret && qstring) {
+      int rc = mysql_query (db->my_db, qstring);
+      if (rc) {
+         db_err_printf (db, "Failed to exec [%s]: %s\n",
+                            qstring,
+                            mysql_error (db->my_db));
+         ret = false;
+         goto errorexit;
+      }
+      MYSQL_RES *res = mysql_store_result (db->my_db);
+      if (res) {
+         mysql_free_result (res);
+      }
+      qstring = va_arg (ap, const char *);
+   }
+
+
+errorexit:
+
+   va_end (ap);
+
+   return ret;
+}
 
 bool sqldb_batch (sqldb_t *db, ...)
 {
@@ -1165,7 +1198,9 @@ bool sqldb_batch (sqldb_t *db, ...)
 
       case sqldb_POSTGRES: ret = pgdb_batch (db, ap);       break;
 
-      default:             db_err_printf (db, "(%i) Format unsupported\n",
+      case sqldb_MYSQL:    ret = mydb_batch (db, ap);       break;
+
+      default:             db_err_printf (db, "(%i) DB unsupported\n",
                                               db->type);
                            ret = false;
                            break;
