@@ -13,6 +13,7 @@
 
 #include "sqlite3.h"
 #include <postgresql/libpq-fe.h>
+#include <mysql/mysql.h>
 
 #include "sqldb.h"
 
@@ -287,6 +288,9 @@ struct sqldb_t {
    // Used for postgres only
    PGconn *pg_db;
    uint64_t nchanges;
+
+   // Used for MySQL only
+   MYSQL *my_db;
 };
 
 struct sqldb_res_t {
@@ -331,6 +335,7 @@ static void err_printf (char **dst, const char *fmts, va_list ap)
    (*dst) = tmp;
 
    va_end (apc);
+   va_end (ap);
 }
 
 static void db_err_printf (sqldb_t *db, const char *fmts, ...)
@@ -411,6 +416,103 @@ errorexit:
    return ret;
 }
 
+static sqldb_t *mysqldb_open (sqldb_t *ret, const char *dbname)
+{
+   bool error = true;
+
+   char *saveptr = NULL;
+   char *host = NULL,
+        *user = NULL,
+        *passwd = NULL,
+        *db = NULL,
+        *sport = NULL,
+        *local_socket = NULL;
+
+   unsigned int port = 3306;
+   unsigned long flags = 0;
+
+   char *copy = NULL;
+   char *term = NULL;
+
+   if (!(copy = lstr_dup (dbname))) {
+      SQLDB_OOM (dbname);
+      goto errorexit;
+   }
+
+   if ((memcmp (copy, "mysql://", 8))!=0) {
+      PROG_ERR ("dbname [%s] is not a mysql connection string "
+                "(must start with 'mysql:.//')\n", dbname);
+      goto errorexit;
+   }
+
+   user = &copy[8];
+
+   if (!(term = strchr (user, ':'))) {
+      PROG_ERR ("dbname [%s] only has username\n", dbname);
+      goto errorexit;
+   }
+   *term++ = 0;
+
+   passwd = term;
+   if (!(term = strchr (passwd, '@'))) {
+      PROG_ERR ("dbname [%s] does not have host\n", dbname);
+      goto errorexit;
+   }
+   *term++ = 0;
+
+   host = term;
+   if (!(term = strchr (host, ':'))) {
+      PROG_ERR ("dbname [%s] does not have port number\n", dbname);
+      goto errorexit;
+   }
+   *term++ = 0;
+
+   sport = term;
+   if (!(term = strchr (sport, '/'))) {
+      PROG_ERR ("dbname [%s] does not have database name\n", dbname);
+      goto errorexit;
+   }
+   *term++ = 0;
+   db = term;
+
+   if ((sscanf (sport, "%u", &port))!=1) {
+      PROG_ERR ("Warning: port [%s] is not a valid port number, "
+                "using default of %u\n", sport, port);
+   }
+
+   if (!(ret->my_db = mysql_init (NULL))) {
+      SQLDB_OOM (dbname);
+      goto errorexit;
+   }
+
+   PROG_ERR ("Using host=%s, user=%s, passwd=%s, db=%s, port=%s\n",
+               host, user, passwd, db, sport);
+
+   if (!(mysql_real_connect (ret->my_db, host,
+                                         user,
+                                         passwd,
+                                         db,
+                                         port,
+                                         local_socket,
+                                         flags))) {
+      PROG_ERR ("Failed to connect to server: %s\n", mysql_error (ret->my_db));
+      goto errorexit;
+   }
+
+   error = false;
+
+errorexit:
+
+   free (copy);
+
+   if (error) {
+      sqldb_close (ret);
+      ret = NULL;
+   }
+
+   return ret;
+}
+
 sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
 {
    sqldb_t *ret = malloc (sizeof *ret);
@@ -429,6 +531,8 @@ sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
    switch (type) {
       case sqldb_SQLITE:   return sqlitedb_open (ret, dbname);
       case sqldb_POSTGRES: return pgdb_open (ret, dbname);
+      case sqldb_MYSQL:    return mysqldb_open (ret, dbname);
+
       default:             PROG_ERR ("Error: dbtype [%u] is unknown\n",
                                             type);
                            goto errorexit;
@@ -452,6 +556,8 @@ void sqldb_close (sqldb_t *db)
    switch (db->type) {
       case sqldb_SQLITE:   sqlite3_close (db->sqlite_db);               break;
       case sqldb_POSTGRES: PQfinish (db->pg_db);                        break;
+      case sqldb_MYSQL:    mysql_close (db->my_db);                     break;
+
       default:             db_err_printf (db, "Unknown type %i\n", db->type);
                            break;
    }
