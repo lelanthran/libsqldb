@@ -305,9 +305,15 @@ struct sqldb_res_t {
 
    // For postgres
    PGresult *pgr;
+
+   // For mysql
+   MYSQL_RES *myr;
+
+   // For both postgres and mysql
    int current_row;
    int nrows;
    uint64_t last_id;
+
 };
 
 
@@ -1017,11 +1023,18 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
    MYSQL_BIND *params = NULL;
    va_list ac;
    size_t nparams = 0;
+   size_t idx = 0;
 
    if (!db || !qstring || !ap) {
       PROG_ERR ("Invalid Parameters\n");
       goto errorexit;
    }
+
+   if (!(ret = calloc (1, sizeof *ret))) {
+      SQLDB_OOM ("No error for result object\n");
+      goto errorexit;
+   }
+   ret->type = sqldb_MYSQL;
 
    if (!(stmt = mysql_stmt_init (db->my_db))) {
       PROG_ERR ("Failed to create prepared statement\n");
@@ -1032,7 +1045,7 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
    qstring_len = strlen (qstring);
 
    if ((mysql_stmt_prepare (stmt, qstring, qstring_len))!=0) {
-      db_err_printf (db, "Failed to prepare [%s]\n", qstring);
+      db_err_printf (db, "Failed to prepare [%s]\n", mysql_stmt_error (stmt));
       goto errorexit;
    }
 
@@ -1054,11 +1067,103 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
 
 
    nparams = 0;
+   idx = 0;
+
    coltype = va_arg (*ap, sqldb_coltype_t);
    while (coltype!=sqldb_col_UNKNOWN) {
-      // TODO: Stopped here last.
+      uint32_t *v_uint;
+      uint64_t *v_uint64;
+      int32_t *v_int;
+      int64_t *v_int64;
+      char **v_text;
+      void *v_blob;
+      void *v_ptr;
+      uint32_t *v_bloblen;
+
+      switch (coltype) {
+         case sqldb_col_UNKNOWN:
+            db_err_printf (db, "Impossible error\n");
+            goto errorexit;
+
+         case sqldb_col_UINT32:
+            v_uint = va_arg (*ap, uint32_t *);
+            params[idx].buffer_type = MYSQL_TYPE_LONG;
+            params[idx].buffer = &v_uint;
+            params[idx].is_unsigned = true;
+            break;
+
+         case sqldb_col_INT32:
+            v_int = va_arg (*ap, int32_t *);
+            params[idx].buffer_type = MYSQL_TYPE_LONGLONG;
+            params[idx].buffer = &v_int;
+            params[idx].is_unsigned = false;
+            break;
+
+         case sqldb_col_UINT64:
+            v_uint64 = va_arg (*ap, uint64_t *);
+            params[idx].buffer_type = MYSQL_TYPE_LONGLONG;
+            params[idx].buffer = &v_uint64;
+            params[idx].is_unsigned = true;
+            break;
+
+         case sqldb_col_INT64:
+            v_int64 = va_arg (*ap, int64_t *);
+            params[idx].buffer_type = MYSQL_TYPE_LONGLONG;
+            params[idx].buffer = &v_int64;
+            params[idx].is_unsigned = false;
+            break;
+
+         case sqldb_col_DATETIME:
+            // TODO: ???
+
+         case sqldb_col_TEXT:
+            v_text = va_arg (*ap, char **);
+            params[idx].buffer_type = MYSQL_TYPE_STRING;
+            params[idx].buffer = *v_text;
+            params[idx].buffer_length = strlen (*v_text);
+            break;
+
+         case sqldb_col_BLOB:
+            v_blob = va_arg (*ap, void *);
+            v_bloblen = va_arg (*ap, uint32_t *);
+            // TODO: ???
+            v_bloblen = v_bloblen;
+            v_blob = v_blob;
+            break;
+
+         case sqldb_col_NULL:
+            v_ptr = va_arg (*ap, void *); // Discard the next argument
+            v_ptr = v_ptr;
+            break;
+
+         default:
+            db_err_printf (db, "Unknown column type: %u\n", coltype);
+            break;
+      }
+
+      idx++;
       coltype = va_arg (*ap, sqldb_coltype_t);
    }
+
+   if ((mysql_stmt_bind_param (stmt, params))!=0) {
+      PROG_ERR ("Failed to bind params: %s\n", mysql_error (db->my_db));
+      db_err_printf (db, "Failed to bind params: %s", mysql_error (db->my_db));
+      goto errorexit;
+   }
+
+   if ((mysql_stmt_execute (stmt))!=0) {
+      PROG_ERR ("Failed to exec stmt: %s\n", mysql_error (db->my_db));
+      db_err_printf (db, "Failed to exec stmt: %s", mysql_error (db->my_db));
+      goto errorexit;
+   }
+
+   ret->last_id = mysql_insert_id (db->my_db);
+   if ((ret->myr = mysql_store_result (db->my_db))!=NULL) {
+      ret->nrows = mysql_num_rows (ret->myr);
+   }
+   ret->current_row = 0;
+
+   error = false;
 
 errorexit:
 
@@ -1379,6 +1484,11 @@ static int pgdb_res_step (sqldb_res_t *res)
    return res->nrows - res->current_row ? 1 : 0;
 }
 
+static int mydb_res_step (sqldb_res_t *res)
+{
+   return res->nrows - res->current_row ? 1 : 0;
+}
+
 int sqldb_res_step (sqldb_res_t *res)
 {
    int ret = -1;
@@ -1388,6 +1498,7 @@ int sqldb_res_step (sqldb_res_t *res)
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_res_step (res);  break;
       case sqldb_POSTGRES: ret = pgdb_res_step (res);    break;
+      case sqldb_MYSQL:    ret = mydb_res_step (res);    break;
       default:             ret = -1;                     break;
    }
 

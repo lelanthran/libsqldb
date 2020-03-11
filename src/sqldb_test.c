@@ -41,6 +41,8 @@ int main (int argc, char **argv)
 NULL,
    };
 
+   const char *begin_stmt = "BEGIN TRANSACTION;";
+
    sqldb_dbtype_t dbtype = sqldb_UNKNOWN;
    const char *dbname = NULL;
    FILE *inf = NULL;
@@ -70,6 +72,7 @@ NULL,
    if ((strcmp (argv[1], "mysql"))==0) {
       dbtype = sqldb_MYSQL;
       dbname = EXISTDB_MYSQL;
+      begin_stmt = "BEGIN;";
    }
 
    if (!dbname || dbtype==sqldb_UNKNOWN) {
@@ -124,7 +127,7 @@ NULL,
       sqldb_res_del (r);
    }
 
-   res = sqldb_exec (db, "BEGIN TRANSACTION;", sqldb_col_UNKNOWN);
+   res = sqldb_exec (db, begin_stmt, sqldb_col_UNKNOWN);
    if (!res) {
       PROG_ERR ("(%s) Error during _exec []\n", sqldb_lasterr (db));
       goto errorexit;

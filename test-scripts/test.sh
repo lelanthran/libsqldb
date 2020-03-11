@@ -40,6 +40,7 @@ echo PostgreSQL tests passed.
 
 echo Starting mysql tests
 $VGRIND test-scripts/sqldb_test.elf mysql || die "MySQL test failed"
+# gdb test-scripts/sqldb_test.elf
 echo MySQL tests passed.
 
 exit 0;
