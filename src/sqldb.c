@@ -603,11 +603,20 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
       return NULL;
    }
 
+   size_t retlen = strlen (ret);
+
    char *tmp = ret;
    while (*tmp) {
       if (*tmp=='#')
          *tmp = r;
+      // TODO: Do we remove the digits after the marker for MySQL?
       tmp++;
+   }
+
+   if (type==sqldb_MYSQL) {
+      if (ret[retlen - 1]==';') {
+         ret[retlen - 1] = 0; // TODO check this
+      }
    }
 
    return ret;
@@ -998,6 +1007,72 @@ errorexit:
    }
    return ret;
 }
+
+static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
+{
+   bool error = true;
+   sqldb_res_t *ret = NULL;
+   MYSQL_STMT *stmt = NULL;
+   size_t qstring_len = 0;
+   MYSQL_BIND *params = NULL;
+   va_list ac;
+   size_t nparams = 0;
+
+   if (!db || !qstring || !ap) {
+      PROG_ERR ("Invalid Parameters\n");
+      goto errorexit;
+   }
+
+   if (!(stmt = mysql_stmt_init (db->my_db))) {
+      PROG_ERR ("Failed to create prepared statement\n");
+      db_err_printf (db, "Failed to prepare statement [%s]\n", qstring);
+      goto errorexit;
+   }
+
+   qstring_len = strlen (qstring);
+
+   if ((mysql_stmt_prepare (stmt, qstring, qstring_len))!=0) {
+      db_err_printf (db, "Failed to prepare [%s]\n", qstring);
+      goto errorexit;
+   }
+
+   va_copy (ac, (*ap));
+   sqldb_coltype_t coltype = va_arg (ac, sqldb_coltype_t);
+   while (coltype!=sqldb_col_UNKNOWN) {
+      nparams++;
+      const void *ignore = va_arg (ac, const void *);
+      ignore = ignore;
+      coltype = va_arg (ac, sqldb_coltype_t);
+   }
+   va_end (ac);
+
+   if (!(params = calloc (nparams, sizeof *params))) {
+      SQLDB_OOM ("Failed to allocate params\n");
+      db_err_printf (db, "OOM error\n");
+      goto errorexit;
+   }
+
+
+   nparams = 0;
+   coltype = va_arg (*ap, sqldb_coltype_t);
+   while (coltype!=sqldb_col_UNKNOWN) {
+      // TODO: Stopped here last.
+      coltype = va_arg (*ap, sqldb_coltype_t);
+   }
+
+errorexit:
+
+   mysql_stmt_close (stmt);
+   free (params);
+
+   if (error) {
+      sqldb_res_del (ret);
+      ret = NULL;
+   }
+
+   return ret;
+}
+
 
 sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...)
 {
