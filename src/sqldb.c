@@ -586,6 +586,35 @@ void sqldb_clearerr (sqldb_t *db)
    db->lasterr = NULL;
 }
 
+static size_t count_params (sqldb_dbtype_t type, const char *string)
+{
+   size_t ret = 0;
+   char r = 0;
+
+   switch (type) {
+      case sqldb_SQLITE:      r = '?'; break;
+      case sqldb_POSTGRES:    r = '$'; break;
+      case sqldb_MYSQL:       r = '?'; break;
+      default:                r = 0;   break;
+   }
+
+   if (!r) {
+      PROG_ERR ("(%i) Unknown type\n", type);
+      return 0;
+   }
+
+   for (size_t i=0; string[i]; i++) {
+      if (string[i]==r) {
+         if (i && string[i]=='\\')
+            continue;
+         ret++;
+      }
+   }
+
+   return ret;
+}
+
+
 static char *fix_string (sqldb_dbtype_t type, const char *string)
 {
    char *ret = NULL;
@@ -1196,11 +1225,16 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
    bool error = true;
    sqldb_res_t *ret = NULL;
    char *qstring = NULL;
+   size_t nparams = 0;
 
    if (!db || !query)
       return NULL;
 
-   qstring = fix_string (db->type, query);
+   if ((nparams = count_params (db->type, query))) {
+      qstring = fix_string (db->type, query);
+   } else {
+      qstring = lstr_dup (query);
+   }
    if (!qstring) {
       SQLDB_OOM (query);
       goto errorexit;
@@ -1208,6 +1242,8 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
 
    sqldb_clearerr (db);
 
+   // TODO: Stopped here last - must find a way to dispatch to simpler
+   // functions (not prepared statements) when there are no params.
    switch (db->type) {
       case sqldb_SQLITE:   ret = sqlitedb_exec (db, qstring, ap);       break;
       case sqldb_POSTGRES: ret = pgdb_exec (db, qstring, ap);           break;
