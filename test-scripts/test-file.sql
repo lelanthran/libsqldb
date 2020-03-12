@@ -9,7 +9,7 @@
 insert into one values (1001, 'script;test');
 insert into two values (2001, 1001);
 
--- Try out the upsert functionality
+-- Try out the upsert functionality (doesn't work on mysql)
 insert into one values (1001, 'new;value1')
    on conflict (col_a) do update set col_b='new;''value2';
 

@@ -183,16 +183,19 @@ NULL,
 
    PROG_ERR ("Completed parameterised insertion\n");
 
-   if (!(inf = fopen (TEST_BATCHFILE, "r"))) {
-      PROG_ERR ("Cannot open batchfile [%s] for reading: %m\n",
-                  TEST_BATCHFILE);
-      goto errorexit;
-   }
+   // TODO: Have a different input script for each database type.
+   if (dbtype!=sqldb_MYSQL) {
+      if (!(inf = fopen (TEST_BATCHFILE, "r"))) {
+         PROG_ERR ("Cannot open batchfile [%s] for reading: %m\n",
+               TEST_BATCHFILE);
+         goto errorexit;
+      }
 
-   if (!(sqldb_batchfile (db, inf))) {
-      PROG_ERR ("Batchfile [%s] failed with error [%s]\n",
-                  TEST_BATCHFILE, sqldb_lasterr (db));
-      goto errorexit;
+      if (!(sqldb_batchfile (db, inf))) {
+         PROG_ERR ("Batchfile [%s] failed with error [%s]\n",
+               TEST_BATCHFILE, sqldb_lasterr (db));
+         goto errorexit;
+      }
    }
 
    res = sqldb_exec (db, "select * from one;", sqldb_col_UNKNOWN);
