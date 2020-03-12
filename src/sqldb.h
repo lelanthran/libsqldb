@@ -98,6 +98,11 @@ extern "C" {
    // On error NULL is returned.
    char **sqldb_res_column_names (sqldb_res_t *res);
 
+   // Execute a non-parameterised query. NULL is returned on error and the
+   // error message is available using sqldb_lasterr(). On success a result
+   // object is returned that must be freed with sqldb_res_del().
+   sqldb_res_t *sqldb_query (sqldb_t *db, const char *query);
+
    // Uses the specified parameterised querystring and tuples in the
    // variadic arguments to construct a query that is executed on the
    // database. See explanation of tuple format in scan_columns below.

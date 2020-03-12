@@ -310,8 +310,9 @@ struct sqldb_res_t {
    MYSQL_RES *myr;
 
    // For both postgres and mysql
-   int current_row;
-   int nrows;
+   int64_t current_row;
+   int64_t nrows;
+   int64_t nfields;
    uint64_t last_id;
 
 };
@@ -428,7 +429,6 @@ static sqldb_t *mydb_open (sqldb_t *ret, const char *dbname)
 {
    bool error = true;
 
-   char *saveptr = NULL;
    char *host = NULL,
         *user = NULL,
         *passwd = NULL,
@@ -586,35 +586,6 @@ void sqldb_clearerr (sqldb_t *db)
    db->lasterr = NULL;
 }
 
-static size_t count_params (sqldb_dbtype_t type, const char *string)
-{
-   size_t ret = 0;
-   char r = 0;
-
-   switch (type) {
-      case sqldb_SQLITE:      r = '?'; break;
-      case sqldb_POSTGRES:    r = '$'; break;
-      case sqldb_MYSQL:       r = '?'; break;
-      default:                r = 0;   break;
-   }
-
-   if (!r) {
-      PROG_ERR ("(%i) Unknown type\n", type);
-      return 0;
-   }
-
-   for (size_t i=0; string[i]; i++) {
-      if (string[i]==r) {
-         if (i && string[i]=='\\')
-            continue;
-         ret++;
-      }
-   }
-
-   return ret;
-}
-
-
 static char *fix_string (sqldb_dbtype_t type, const char *string)
 {
    char *ret = NULL;
@@ -639,19 +610,26 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
    }
 
    size_t retlen = strlen (ret);
+   size_t remain = retlen - 1;
 
    char *tmp = ret;
    while (*tmp) {
-      if (*tmp=='#')
+      if (*tmp=='#') {
          *tmp = r;
-      // TODO: Do we remove the digits after the marker for MySQL?
+         if (type==sqldb_MYSQL) {
+            memmove (&tmp[1], &tmp[2], remain);
+            remain--;
+         }
+      }
       tmp++;
+      remain--;
    }
 
    if (type==sqldb_MYSQL) {
       if (ret[retlen - 1]==';') {
          ret[retlen - 1] = 0; // TODO check this
       }
+      PROG_ERR ("Fixed string: [%s]\n", ret);
    }
 
    return ret;
@@ -694,6 +672,7 @@ uint64_t sqldb_count_changes (sqldb_t *db)
       case sqldb_SQLITE:   ret = sqlite3_changes (db->sqlite_db);
                            break;
 
+      case sqldb_MYSQL:    // Uses the same field as POSTGRES
       case sqldb_POSTGRES: ret = db->nchanges;
                            break;
 
@@ -714,6 +693,8 @@ uint64_t sqldb_res_last_id (sqldb_res_t *res)
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite3_last_insert_rowid (res->dbcon->sqlite_db);
                            break;
+
+      case sqldb_MYSQL:    // Uses the same field as POSTGRES
 
       case sqldb_POSTGRES: ret = res->last_id;
                            break;
@@ -736,8 +717,10 @@ uint32_t sqldb_res_num_columns (sqldb_res_t *res)
       case  sqldb_SQLITE:  ret = sqlite3_column_count (res->sqlite_stmt);
                            break;
 
-      case sqldb_POSTGRES: ret = PQnfields (res->pgr);
+      case sqldb_MYSQL:    // Uses the same field as POSTGRES
+      case sqldb_POSTGRES: ret = res->nfields;
                            break;
+
 
       default:             ret = 0;
                            break;
@@ -772,6 +755,7 @@ char **sqldb_res_column_names (sqldb_res_t *res)
          case sqldb_POSTGRES: tmp = PQfname (res->pgr, i);
                               break;
 
+         case sqldb_MYSQL:    // TODO: MySQL implementation
          default:             tmp = NULL;
                               break;
       }
@@ -792,6 +776,101 @@ errorexit:
 
    return ret;
 }
+
+
+
+/* ******************************************************************** */
+
+
+
+sqldb_res_t *sqlitedb_query (sqldb_t *db, const char *query)
+{
+
+}
+
+sqldb_res_t *pgdb_query (sqldb_t *db, const char *query)
+{
+
+}
+
+sqldb_res_t *mydb_query (sqldb_t *db, const char *query)
+{
+   bool error = true;
+   sqldb_res_t *ret = NULL;
+   int rc = 0;
+
+   if ((rc = mysql_query (db->my_db, query))!=0) {
+      db_err_printf (db, "Error executing [%s]: %s\n",
+                         query,
+                         mysql_error (db->my_db));
+      goto errorexit;
+   }
+
+   if (!(ret = calloc (1, sizeof *ret))) {
+      SQLDB_OOM ("Error allocating result object\n");
+      goto errorexit;
+   }
+
+   ret->last_id = mysql_insert_id (db->my_db);
+   ret->nfields = mysql_field_count (db->my_db);
+   if ((ret->myr = mysql_store_result (db->my_db))!=NULL) {
+      ret->nrows = mysql_num_rows (ret->myr);
+   }
+   ret->current_row = 0;
+
+   error = false;
+
+errorexit:
+
+   if (error) {
+      sqldb_res_del (ret);
+      ret = NULL;
+   }
+
+   return ret;
+}
+
+
+sqldb_res_t *sqldb_query (sqldb_t *db, const char *query)
+{
+   bool error = true;
+   sqldb_res_t *ret = NULL;
+
+   if (!db || !query)
+      return NULL;
+
+   sqldb_clearerr (db);
+
+   switch (db->type) {
+      case sqldb_SQLITE:   ret = sqlitedb_query (db, query);       break;
+      case sqldb_POSTGRES: ret = pgdb_query (db, query);           break;
+      case sqldb_MYSQL:    ret = mydb_query (db, query);           break;
+      default:             db_err_printf (db, "(%i) DB unsupported\n", db->type);
+                           goto errorexit;
+   }
+   if (!ret)
+      goto errorexit;
+
+   ret->dbcon = db;
+   ret->type = db->type;
+
+   error = false;
+
+errorexit:
+
+   if (error) {
+      sqldb_res_del (ret);
+      ret = NULL;
+   }
+   return ret;
+
+}
+
+
+
+/* ******************************************************************** */
+
+
 
 static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
 {
@@ -922,8 +1001,6 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
       goto errorexit;
    memset (paramValues, 0, (sizeof *paramValues) * (nParams + 1));
 
-   ret->type = sqldb_POSTGRES;
-
    size_t index = 0;
    coltype = va_arg (*ap, sqldb_coltype_t);
    while (coltype!=sqldb_col_UNKNOWN) {
@@ -1017,6 +1094,7 @@ static sqldb_res_t *pgdb_exec (sqldb_t *db, char *qstring, va_list *ap)
 
    ret->current_row = 0;
    ret->nrows = PQntuples (ret->pgr);
+   ret->nfields = PQnfields (ret->pgr);
    const char *tmp = PQcmdTuples (ret->pgr);
    if (tmp) {
       sscanf (tmp, "%" PRIu64, &db->nchanges);
@@ -1117,28 +1195,28 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
          case sqldb_col_UINT32:
             v_uint = va_arg (*ap, uint32_t *);
             params[idx].buffer_type = MYSQL_TYPE_LONG;
-            params[idx].buffer = &v_uint;
+            params[idx].buffer = v_uint;
             params[idx].is_unsigned = true;
             break;
 
          case sqldb_col_INT32:
             v_int = va_arg (*ap, int32_t *);
             params[idx].buffer_type = MYSQL_TYPE_LONGLONG;
-            params[idx].buffer = &v_int;
+            params[idx].buffer = v_int;
             params[idx].is_unsigned = false;
             break;
 
          case sqldb_col_UINT64:
             v_uint64 = va_arg (*ap, uint64_t *);
             params[idx].buffer_type = MYSQL_TYPE_LONGLONG;
-            params[idx].buffer = &v_uint64;
+            params[idx].buffer = v_uint64;
             params[idx].is_unsigned = true;
             break;
 
          case sqldb_col_INT64:
             v_int64 = va_arg (*ap, int64_t *);
             params[idx].buffer_type = MYSQL_TYPE_LONGLONG;
-            params[idx].buffer = &v_int64;
+            params[idx].buffer = v_int64;
             params[idx].is_unsigned = false;
             break;
 
@@ -1187,6 +1265,7 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
    }
 
    ret->last_id = mysql_insert_id (db->my_db);
+   ret->nfields = mysql_field_count (db->my_db);
    if ((ret->myr = mysql_store_result (db->my_db))!=NULL) {
       ret->nrows = mysql_num_rows (ret->myr);
    }
@@ -1225,15 +1304,20 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
    bool error = true;
    sqldb_res_t *ret = NULL;
    char *qstring = NULL;
-   size_t nparams = 0;
+   va_list ac;
 
    if (!db || !query)
       return NULL;
 
-   if ((nparams = count_params (db->type, query))) {
+   va_copy (ac, (*ap));
+
+   if ((va_arg (ac, sqldb_coltype_t))!=sqldb_col_UNKNOWN) {
       qstring = fix_string (db->type, query);
    } else {
-      qstring = lstr_dup (query);
+      ret = sqldb_query (db, query);
+      va_end (ac);
+      ret->dbcon = db;
+      return ret;
    }
    if (!qstring) {
       SQLDB_OOM (query);
@@ -1257,9 +1341,14 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
    }
 
    ret->dbcon = db;
+   ret->type = db->type;
+
    error = false;
 
 errorexit:
+
+   va_end (ac);
+
    free (qstring);
    if (error) {
       sqldb_res_del (ret);
@@ -1267,6 +1356,12 @@ errorexit:
    }
    return ret;
 }
+
+
+
+/* ******************************************************************** */
+
+
 
 uint64_t sqldb_exec_ignore (sqldb_t *db, const char *query, ...)
 {
@@ -1302,6 +1397,13 @@ errorexit:
    return ret;
 
 }
+
+
+
+
+/* ******************************************************************** */
+
+
 
 
 static bool sqlitedb_batch (sqldb_t *db, va_list ap)
@@ -1390,7 +1492,6 @@ static bool mydb_batch (sqldb_t *db, va_list ap)
       qstring = va_arg (ap, const char *);
    }
 
-
 errorexit:
 
    va_end (ap);
@@ -1409,13 +1510,9 @@ bool sqldb_batch (sqldb_t *db, ...)
    va_start (ap, db);
 
    switch (db->type) {
-
       case sqldb_SQLITE:   ret = sqlitedb_batch (db, ap);   break;
-
       case sqldb_POSTGRES: ret = pgdb_batch (db, ap);       break;
-
       case sqldb_MYSQL:    ret = mydb_batch (db, ap);       break;
-
       default:             db_err_printf (db, "(%i) DB unsupported\n",
                                               db->type);
                            ret = false;
@@ -1490,7 +1587,6 @@ bool sqldb_batchfile (sqldb_t *db, FILE *inf)
    while ((stmt = read_stmt (inf))) {
       printf ("FOUND STATEMENT: [%s]\n", stmt);
       if (!(sqldb_batch (db, stmt, NULL))) {
-         db_err_printf (db, "Batchfile statement failed: \n%s\n", stmt);
          free (stmt);
          return false;
       }
@@ -1520,11 +1616,6 @@ static int pgdb_res_step (sqldb_res_t *res)
    return res->nrows - res->current_row ? 1 : 0;
 }
 
-static int mydb_res_step (sqldb_res_t *res)
-{
-   return res->nrows - res->current_row ? 1 : 0;
-}
-
 int sqldb_res_step (sqldb_res_t *res)
 {
    int ret = -1;
@@ -1533,8 +1624,8 @@ int sqldb_res_step (sqldb_res_t *res)
 
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_res_step (res);  break;
+      case sqldb_MYSQL:    // Uses pg_res_step
       case sqldb_POSTGRES: ret = pgdb_res_step (res);    break;
-      case sqldb_MYSQL:    ret = mydb_res_step (res);    break;
       default:             ret = -1;                     break;
    }
 
@@ -1748,6 +1839,7 @@ uint32_t sqldb_scan_columnsv (sqldb_res_t *res, va_list *ap)
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_scan (res, ap);  break;
       case sqldb_POSTGRES: ret = pgdb_scan (res, ap);    break;
+      case sqldb_MYSQL:    // TODO: Implement for MySQL
       default:             ret = (uint32_t)-1;           break;
    }
 
@@ -1807,6 +1899,7 @@ void sqldb_res_del (sqldb_res_t *res)
    switch (res->type) {
       case sqldb_SQLITE:   sqlite3_finalize (res->sqlite_stmt);         break;
       case sqldb_POSTGRES: PQclear (res->pgr);                          break;
+      case sqldb_MYSQL:    // TODO: Implement for MySQL
       default:             res_err_printf (res, "(%i) Unknown type\n",
                                                 res->type);
                            // TODO: Store value in result
@@ -1817,6 +1910,8 @@ void sqldb_res_del (sqldb_res_t *res)
 
 void sqldb_print (sqldb_t *db, FILE *outf)
 {
+   const char *type_str = "???";
+
    if (!outf) {
       outf = stdout;
    }
@@ -1826,8 +1921,13 @@ void sqldb_print (sqldb_t *db, FILE *outf)
       return;
    }
 
-   PROG_ERR ("%30s: %s\n", "type", db->type==sqldb_SQLITE ?
-                                        "SQLITE" : "POSTGRES");
+   switch (db->type) {
+      case sqldb_SQLITE:      type_str = "sqlite";    break;
+      case sqldb_POSTGRES:    type_str = "postgres";  break;
+      case sqldb_MYSQL:       type_str = "mysql";     break;
+   }
+
+   PROG_ERR ("%30s: %s\n", "type", type_str);
    PROG_ERR ("%30s: %s\n", "lasterr", db->lasterr);
 }
 
