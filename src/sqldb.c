@@ -629,7 +629,7 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
       if (ret[retlen - 1]==';') {
          ret[retlen - 1] = 0; // TODO check this
       }
-      PROG_ERR ("Fixed string: [%s]\n", ret);
+      // PROG_ERR ("Fixed string: [%s]\n", ret);
    }
 
    return ret;
