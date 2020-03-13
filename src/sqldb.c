@@ -735,6 +735,8 @@ char **sqldb_res_column_names (sqldb_res_t *res)
    char **ret = NULL;
    uint32_t ncols = 0;
 
+   MYSQL_FIELD *field = NULL;
+
    if (!res)
       goto errorexit;
 
@@ -755,7 +757,10 @@ char **sqldb_res_column_names (sqldb_res_t *res)
          case sqldb_POSTGRES: tmp = PQfname (res->pgr, i);
                               break;
 
-         case sqldb_MYSQL:    // TODO: MySQL implementation
+         case sqldb_MYSQL:    field = mysql_fetch_field_direct (res->myr, i);
+                              tmp = field->name;
+                              break;
+
          default:             tmp = NULL;
                               break;
       }
@@ -817,6 +822,7 @@ sqldb_res_t *mydb_query (sqldb_t *db, const char *query)
       ret->nrows = mysql_num_rows (ret->myr);
    }
    ret->current_row = 0;
+
 
    error = false;
 
