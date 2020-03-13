@@ -626,10 +626,14 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
    }
 
    if (type==sqldb_MYSQL) {
-      if (ret[retlen - 1]==';') {
-         ret[retlen - 1] = 0; // TODO check this
+      char *tmp = &ret[retlen];
+      while (tmp > ret) {
+         if (*tmp==';') {
+            *tmp = 0;
+            break;
+         }
+         tmp--;
       }
-      // PROG_ERR ("Fixed string: [%s]\n", ret);
    }
 
    return ret;
@@ -695,7 +699,6 @@ uint64_t sqldb_res_last_id (sqldb_res_t *res)
                            break;
 
       case sqldb_MYSQL:    // Uses the same field as POSTGRES
-
       case sqldb_POSTGRES: ret = res->last_id;
                            break;
 
@@ -886,8 +889,6 @@ static sqldb_res_t *sqlitedb_exec (sqldb_t *db, char *qstring, va_list *ap)
    if (!ret)
       return NULL;
    memset (ret, 0, sizeof *ret);
-
-   ret->type = sqldb_SQLITE;
 
    int rc = sqlite3_prepare_v2 (db->sqlite_db, qstring, -1,
                                 &ret->sqlite_stmt, NULL);
@@ -1147,7 +1148,6 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
       SQLDB_OOM ("No error for result object\n");
       goto errorexit;
    }
-   ret->type = sqldb_MYSQL;
 
    if (!(stmt = mysql_stmt_init (db->my_db))) {
       PROG_ERR ("Failed to create prepared statement\n");
@@ -1203,6 +1203,7 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
             params[idx].buffer_type = MYSQL_TYPE_LONG;
             params[idx].buffer = v_uint;
             params[idx].is_unsigned = true;
+            PROG_ERR ("Binding [%s]: [%" PRIu32 "]\n", qstring, *v_uint);
             break;
 
          case sqldb_col_INT32:
@@ -1275,6 +1276,7 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
    if ((ret->myr = mysql_store_result (db->my_db))!=NULL) {
       ret->nrows = mysql_num_rows (ret->myr);
    }
+   PROG_ERR ("Result for store_result: [%s]\n", mysql_error (db->my_db));
    ret->current_row = 0;
 
    error = false;
@@ -1749,7 +1751,7 @@ uint32_t pgdb_scan (sqldb_res_t *res, va_list *ap)
 
    sqldb_coltype_t coltype = va_arg (*ap, sqldb_coltype_t);
 
-   int numcols = PQnfields (res->pgr);
+   int numcols = res->nfields;
    int index = 0;
 
    while (coltype!=sqldb_col_UNKNOWN && numcols--) {
@@ -1762,6 +1764,101 @@ uint32_t pgdb_scan (sqldb_res_t *res, va_list *ap)
       uint64_t u64;
 
       const char *value = PQgetvalue (res->pgr, res->current_row, index++);
+      if (!value)
+         return (uint32_t)-1;
+
+      switch (coltype) {
+
+         case sqldb_col_UNKNOWN:
+            res_err_printf (res, "Possibly corrupt stack");
+            // TODO: Store value in result
+            return (uint32_t)-1;
+
+         case sqldb_col_UINT32:
+            if ((sscanf (value, "%u", &u32))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = u32;
+            break;
+
+         case sqldb_col_INT32:
+            if ((sscanf (value, "%i", &i32))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = i32;
+            break;
+
+         case sqldb_col_UINT64:
+            if ((sscanf (value, "%" PRIu64, &u64))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = u64;
+            break;
+
+         case sqldb_col_INT64:
+            if ((sscanf (value, "%" PRIu64, &i64))!=1)
+               return (uint32_t)-1;
+            *(uint32_t *)dst = i64;
+            break;
+
+         case sqldb_col_TEXT:
+            if ((*(char **)dst = lstr_dup (value))==NULL)
+               return (uint32_t)-1;
+            break;
+
+         case sqldb_col_DATETIME:
+            *(uint64_t *)dst = convert_ISO8601_to_uint64 (value);
+            if ((*(uint64_t *)dst) == (uint64_t)-1)
+               return (uint32_t)-1;
+            break;
+
+         case sqldb_col_BLOB:
+            res_err_printf (res, "Error: BLOB type not supported\n");
+            // TODO: Store value in result
+            return (uint32_t)-1;
+
+         case sqldb_col_NULL:
+            res_err_printf (res, "Error: NULL type not supported\n");
+            // TODO: Store value in result
+            return (uint32_t)-1;
+
+      }
+      coltype = va_arg (*ap, sqldb_coltype_t);
+      ret++;
+   }
+
+   res->current_row++;
+   return ret;
+}
+
+uint32_t mydb_scan (sqldb_res_t *res, va_list *ap)
+{
+   uint32_t ret = 0;
+   MYSQL_ROW row;
+
+   if (!res)
+      return (uint32_t)-1;
+
+   mysql_data_seek (res->myr, res->current_row);
+
+   if ((row = mysql_fetch_row (res->myr))==NULL) {
+      res_err_printf (res, "Unable to fetch row: %s",
+                           mysql_error (res->dbcon->my_db));
+      return (uint32_t)-1;
+   }
+
+   sqldb_coltype_t coltype = va_arg (*ap, sqldb_coltype_t);
+
+   int numcols = res->nfields;
+   int index = 0;
+
+   while (coltype!=sqldb_col_UNKNOWN && numcols--) {
+
+      void *dst = va_arg (*ap, void *);
+
+      int32_t  i32;
+      uint32_t u32;
+      int64_t  i64;
+      uint64_t u64;
+
+      const char *value = row [index++];
       if (!value)
          return (uint32_t)-1;
 
@@ -1845,7 +1942,7 @@ uint32_t sqldb_scan_columnsv (sqldb_res_t *res, va_list *ap)
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_scan (res, ap);  break;
       case sqldb_POSTGRES: ret = pgdb_scan (res, ap);    break;
-      case sqldb_MYSQL:    // TODO: Implement for MySQL
+      case sqldb_MYSQL:    ret = mydb_scan (res, ap);    break;
       default:             ret = (uint32_t)-1;           break;
    }
 
@@ -1866,6 +1963,7 @@ uint32_t sqldb_exec_and_fetch (sqldb_t *db, const char *query, ...)
    if (!res) {
       db_err_printf (db, "[%s] - sql exection failed: %s\n",
                          query, sqldb_lasterr (db));
+      PROG_ERR ("Failed to execv [%s]\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
@@ -1873,16 +1971,19 @@ uint32_t sqldb_exec_and_fetch (sqldb_t *db, const char *query, ...)
    if (step==0) {
       db_err_printf (db, "[%s] - No results (%s)!\n",
                          query, sqldb_lasterr (db));
+      PROG_ERR ("No results [%s]\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (step==-1) {
       db_err_printf (db, "[%s] - Error during fetch (%s)\n",
                          query, sqldb_lasterr (db));
+      PROG_ERR ("Error getting rows [%s]\n", sqldb_lasterr (db));
       goto errorexit;
    }
    if (step!=1) {
       db_err_printf (db, "[%s] - Unknown error (%s)\n",
                          query, sqldb_lasterr (db));
+      PROG_ERR ("Unknown error getting rows [%s]\n", sqldb_lasterr (db));
       goto errorexit;
    }
 
