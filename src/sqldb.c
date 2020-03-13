@@ -2006,7 +2006,7 @@ void sqldb_res_del (sqldb_res_t *res)
    switch (res->type) {
       case sqldb_SQLITE:   sqlite3_finalize (res->sqlite_stmt);         break;
       case sqldb_POSTGRES: PQclear (res->pgr);                          break;
-      case sqldb_MYSQL:    // TODO: Implement for MySQL
+      case sqldb_MYSQL:    mysql_free_result (res->myr);                break;
       default:             res_err_printf (res, "(%i) Unknown type\n",
                                                 res->type);
                            // TODO: Store value in result
