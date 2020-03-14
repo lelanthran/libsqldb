@@ -1,0 +1,18 @@
+Problem with the mysql bits
+---------------------------
+
+The interface, after exec, is:
+1. Caller calls step(), and that says whether there are records or not.
+2. Caller calls scan_columns(), and that retrieves the next row into the the
+bound results variables.
+
+With MySQL, the caller must first bind values, then call store_result() which
+will give us the number of rows. Unfortunately the caller simply calls step
+without knowing what will be bound (that comes later).
+
+The only way around this is to make a breaking change to the interface:
+1. The caller must first call bind() to bind all the results.
+2. The caller can then call step() for each record and the values will then
+be filled in.
+
+What to do, what to do, what to do???

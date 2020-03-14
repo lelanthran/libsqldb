@@ -308,6 +308,8 @@ struct sqldb_res_t {
 
    // For mysql
    MYSQL_RES *myr;
+   MYSQL_STMT *stmt;
+   uint32_t bound;
 
    // For both postgres and mysql
    int64_t current_row;
@@ -1132,7 +1134,6 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
 {
    bool error = true;
    sqldb_res_t *ret = NULL;
-   MYSQL_STMT *stmt = NULL;
    size_t qstring_len = 0;
    MYSQL_BIND *params = NULL;
    va_list ac;
@@ -1149,7 +1150,7 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
       goto errorexit;
    }
 
-   if (!(stmt = mysql_stmt_init (db->my_db))) {
+   if (!(ret->stmt = mysql_stmt_init (db->my_db))) {
       PROG_ERR ("Failed to create prepared statement\n");
       db_err_printf (db, "Failed to prepare statement [%s]\n", qstring);
       goto errorexit;
@@ -1157,8 +1158,9 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
 
    qstring_len = strlen (qstring);
 
-   if ((mysql_stmt_prepare (stmt, qstring, qstring_len))!=0) {
-      db_err_printf (db, "Failed to prepare [%s]\n", mysql_stmt_error (stmt));
+   if ((mysql_stmt_prepare (ret->stmt, qstring, qstring_len))!=0) {
+      db_err_printf (db, "Failed to prepare [%s]\n",
+                           mysql_stmt_error (ret->stmt));
       goto errorexit;
    }
 
@@ -1259,31 +1261,37 @@ static sqldb_res_t *mydb_exec (sqldb_t *db, char *qstring, va_list *ap)
       coltype = va_arg (*ap, sqldb_coltype_t);
    }
 
-   if ((mysql_stmt_bind_param (stmt, params))!=0) {
-      PROG_ERR ("Failed to bind params: %s\n", mysql_error (db->my_db));
-      db_err_printf (db, "Failed to bind params: %s", mysql_error (db->my_db));
+   if ((mysql_stmt_bind_param (ret->stmt, params))!=0) {
+      PROG_ERR ("Failed to bind params: %s\n",
+                           mysql_stmt_error (ret->stmt));
+      db_err_printf (db, "Failed to bind params: %s",
+                           mysql_stmt_error (ret->stmt));
       goto errorexit;
    }
 
-   if ((mysql_stmt_execute (stmt))!=0) {
-      PROG_ERR ("Failed to exec stmt: %s\n", mysql_error (db->my_db));
-      db_err_printf (db, "Failed to exec stmt: %s", mysql_error (db->my_db));
+   if ((mysql_stmt_execute (ret->stmt))!=0) {
+      PROG_ERR ("Failed to exec stmt: %s\n",
+                           mysql_stmt_error (ret->stmt));
+      db_err_printf (db, "Failed to exec stmt: %s",
+                           mysql_stmt_error (ret->stmt));
       goto errorexit;
    }
 
    ret->last_id = mysql_insert_id (db->my_db);
    ret->nfields = mysql_field_count (db->my_db);
-   if ((ret->myr = mysql_store_result (db->my_db))!=NULL) {
+   // This must be called only after binding return values
+   /*
+   if ((mysql_stmt_store_result (ret->stmt))!=0) {
       ret->nrows = mysql_num_rows (ret->myr);
    }
    PROG_ERR ("Result for store_result: [%s]\n", mysql_error (db->my_db));
+   */
    ret->current_row = 0;
 
    error = false;
 
 errorexit:
 
-   mysql_stmt_close (stmt);
    free (params);
 
    if (error) {
@@ -1334,8 +1342,6 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
 
    sqldb_clearerr (db);
 
-   // TODO: Stopped here last - must find a way to dispatch to simpler
-   // functions (not prepared statements) when there are no params.
    switch (db->type) {
       case sqldb_SQLITE:   ret = sqlitedb_exec (db, qstring, ap);       break;
       case sqldb_POSTGRES: ret = pgdb_exec (db, qstring, ap);           break;
@@ -1621,7 +1627,13 @@ static int sqlite_res_step (sqldb_res_t *res)
 
 static int pgdb_res_step (sqldb_res_t *res)
 {
+   PROG_ERR ("Stepping: %zu/%zu\n", res->current_row, res->nrows);
    return res->nrows - res->current_row ? 1 : 0;
+}
+
+static int mydb_res_step (sqldb_res_t *res)
+{
+
 }
 
 int sqldb_res_step (sqldb_res_t *res)
@@ -1632,8 +1644,8 @@ int sqldb_res_step (sqldb_res_t *res)
 
    switch (res->type) {
       case sqldb_SQLITE:   ret = sqlite_res_step (res);  break;
-      case sqldb_MYSQL:    // Uses pg_res_step
       case sqldb_POSTGRES: ret = pgdb_res_step (res);    break;
+      case sqldb_MYSQL:    ret = mydb_res_step (res);    break;
       default:             ret = -1;                     break;
    }
 
@@ -1828,6 +1840,50 @@ uint32_t pgdb_scan (sqldb_res_t *res, va_list *ap)
    return ret;
 }
 
+static uint32_t mydb_bind_stmt (sqldb_res_t *res, va_list *ap)
+{
+   uint32_t ret = (uint32_t)-1;
+   va_list ac;
+   MYSQL_BIND *results = NULL;
+   sqldb_coltype_t coltype;
+   size_t nargs = 0;
+
+   va_copy (ac, *ap);
+
+   while ((coltype = va_arg (ac, sqldb_coltype_t))!=sqldb_col_UNKNOWN) {
+      nargs++;
+   }
+
+   if (nargs>res->nfields) {
+      PROG_ERR ("Too many fields (expected <= %zu, got %zu)\n",
+                  res->nfields, nargs);
+      res_err_printf (res, "Too many fields (expected <= %zu, got %zu)\n",
+                        res->nfields, nargs);
+      goto errorexit;
+   }
+
+   if (!(results = calloc (res->nfields + 1, sizeof *results))) {
+      SQLDB_OOM ("Unable to allocate results array\n");
+      goto errorexit;
+   }
+
+   if ((mysql_stmt_bind_result (res->stmt, results))!=0) {
+      PROG_ERR ("Unable to bind results: %s\n",
+                  mysql_stmt_error (res->stmt));
+      res_err_printf (res, "Unable to bind results: %s\n",
+                              mysql_stmt_error (res->stmt));
+      goto errorexit;
+   }
+
+   ret = nargs;
+
+errorexit:
+   free (results);
+   va_end (ac);
+
+   return ret;
+}
+
 uint32_t mydb_scan (sqldb_res_t *res, va_list *ap)
 {
    uint32_t ret = 0;
@@ -1835,6 +1891,28 @@ uint32_t mydb_scan (sqldb_res_t *res, va_list *ap)
 
    if (!res)
       return (uint32_t)-1;
+
+   if (res->stmt) {
+      if (res->current_row == 0) {
+         if ((res->bound = mydb_bind_stmt (res, ap))==(uint32_t)-1) {
+            PROG_ERR ("Failed to bind results: %s\n",
+                        mysql_stmt_error (res->stmt));
+            res_err_printf (res, "Bind failure: %s",
+                                 mysql_stmt_error (res->stmt));
+            return (uint32_t)-1;
+         }
+         PROG_ERR ("NUM ROWS: %zu\n", res->nrows);
+      }
+      if ((mysql_stmt_fetch (res->stmt))!=0) {
+         PROG_ERR ("Failed to execute fetch: %s\n",
+                     mysql_stmt_error (res->stmt));
+         res_err_printf (res, "Fetch failure: %s",
+                                 mysql_stmt_error (res->stmt));
+         return (uint32_t)-1;
+      }
+      res->current_row++;
+      return res->bound;
+   }
 
    mysql_data_seek (res->myr, res->current_row);
 
@@ -2006,7 +2084,11 @@ void sqldb_res_del (sqldb_res_t *res)
    switch (res->type) {
       case sqldb_SQLITE:   sqlite3_finalize (res->sqlite_stmt);         break;
       case sqldb_POSTGRES: PQclear (res->pgr);                          break;
-      case sqldb_MYSQL:    mysql_free_result (res->myr);                break;
+      case sqldb_MYSQL:    if (res->myr)
+                              mysql_free_result (res->myr);
+                           if (res->stmt)
+                              mysql_stmt_close (res->stmt);
+                           break;
       default:             res_err_printf (res, "(%i) Unknown type\n",
                                                 res->type);
                            // TODO: Store value in result
