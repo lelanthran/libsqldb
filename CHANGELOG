@@ -1,6 +1,8 @@
 ## 1.0.0-rc2 - ???
 Feature additions
-1. 
+1. Results can now be retrieved in a single exec call, returned as
+   a matrix of strings with the first row of the matrix set to the
+   names of the columns.
 
 Other
 1. Updated README.md with positional parameter information.
