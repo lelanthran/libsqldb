@@ -43,6 +43,8 @@ NULL,
 
    char **colnames = NULL;
 
+   char ***matrix = NULL;
+
    printf ("Testing sqldb version [%s]\n", SQLDB_VERSION);
    if (argc <= 1) {
       fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
@@ -306,8 +308,25 @@ NULL,
       goto errorexit;
    }
 
+   // Test the functions that return matrices
+   if (!(matrix = sqldb_matrix_exec (db, "select * from one;", sqldb_col_UNKNOWN))) {
+      fprintf (stderr, "Failed to execute the matrix statement\n");
+      goto errorexit;
+   }
+
+   printf ("Results of matrix usage\n");
+   for (size_t i=0; matrix[i]; i++) {
+      for (size_t j=0; matrix[i][j]; j++) {
+         printf ("[%s] ", matrix[i][j]);
+      }
+      printf ("\n");
+   }
+   printf ("Matrix passed\n");
+
    ret = EXIT_SUCCESS;
 errorexit:
+
+   sqldb_matrix_free (matrix);
 
    if (inf)
       fclose (inf);
