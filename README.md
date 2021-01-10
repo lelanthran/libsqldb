@@ -8,6 +8,11 @@ This is a work in progress; you probably do not want to use this. If you
 are going to use this, use the master branch as the most recent stable
 version.
 
+Queries are all parameterised, using positional parameters only with each
+parameter in the query string specified with a '#' symbol. For example:
+```
+   SELECT * FROM tblname WHERE col1=#1 and col2 like #2
+```
 
 ## Overview
 This is a library with a `C` interface that acts as a single-interface
