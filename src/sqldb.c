@@ -85,6 +85,43 @@ static bool valid_db_identifier (const char *ident)
 }
 
 
+static bool row_append (char ***dst, size_t dstlen, const char *string)
+{
+   if (!dst || !string)
+      return false;
+
+   size_t newlen = dstlen + 2;
+   char **tmp = realloc (*dst, sizeof *tmp * newlen);
+   if (!tmp)
+      return false;
+
+   *dst = tmp;
+
+   tmp[dstlen+1] = NULL;
+   if (!(tmp[dstlen] = lstr_dup (string)))
+      return false;
+
+   return true;
+}
+
+static bool matrix_append (char ****dst, size_t dstlen, char **row)
+{
+   if (!dst || !row)
+      return false;
+
+   size_t newlen = dstlen + 2;
+   char ***tmp = realloc (*dst, sizeof *tmp * newlen);
+   if (!tmp)
+      return false;
+
+   *dst = tmp;
+
+   tmp[dstlen+1] = NULL;
+   tmp[dstlen] = row;
+
+   return true;
+}
+
 /* *****************************************************************
  * Generating some entropy: see https://nullprogram.com/blog/2019/04/30/
  */
@@ -353,6 +390,79 @@ static void res_err_printf (sqldb_res_t *res, const char *fmts, ...)
    va_start (ap, fmts);
    err_printf (&res->lasterr, fmts, ap);
    va_end (ap);
+}
+
+static char **sqlitedb_row_get (sqldb_res_t *res)
+{
+   bool error = true;
+   char **ret = NULL;
+   char *tmpstring = NULL;
+
+   sqlite3_stmt *stmt = res->sqlite_stmt;
+
+   int numcols = sqlite3_column_count (stmt);
+
+   for (int i=0; i<numcols; i++) {
+      if (!(tmpstring = ((char *)sqlite3_column_text (stmt, i)))) {
+         SQLDB_OOM (sqlite3_column_text (stmt, i));
+         goto errorexit;
+      }
+      if (!(row_append (&ret, i, tmpstring))) {
+         SQLDB_OOM (tmpstring);
+         goto errorexit;
+      }
+   }
+
+   error = false;
+errorexit:
+   if (error) {
+      sqldb_row_free (ret);
+      ret = NULL;
+   }
+   return ret;
+}
+
+static char **pgdb_row_get (sqldb_res_t *res)
+{
+   bool error = true;
+   char **ret = NULL;
+
+   int numcols = PQnfields (res->pgr);
+   int index = 0;
+
+   for (int i=0; i<numcols; i++) {
+      const char *value = PQgetvalue (res->pgr, res->current_row, i);
+      if (!(row_append (&ret, i, value))) {
+         SQLDB_OOM (value);
+         goto errorexit;
+      }
+   }
+
+   res->current_row++;
+   error = false;
+errorexit:
+   if (error) {
+      sqldb_row_free (ret);
+      ret = NULL;
+   }
+   return ret;
+}
+
+static char **row_get (sqldb_res_t *res)
+{
+   char **ret = NULL;
+   switch (res->type) {
+      case sqldb_SQLITE:   ret = sqlitedb_row_get (res);
+                           break;
+
+      case sqldb_POSTGRES: ret = pgdb_row_get (res);
+                           break;
+
+      default:             ret = NULL;
+                           break;
+   }
+
+   return ret;
 }
 
 // A lot of the following functions will be refactored only when working
@@ -893,18 +1003,6 @@ errorexit:
    return ret;
 }
 
-sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...)
-{
-   sqldb_res_t *ret = NULL;
-   va_list ap;
-
-   va_start (ap, query);
-   ret = sqldb_execv (db, query, &ap);
-   va_end (ap);
-
-   return ret;
-}
-
 sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
 {
    bool error = true;
@@ -944,6 +1042,125 @@ errorexit:
    }
    return ret;
 }
+
+sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...)
+{
+   sqldb_res_t *ret = NULL;
+   va_list ap;
+
+   va_start (ap, query);
+   ret = sqldb_execv (db, query, &ap);
+   va_end (ap);
+
+   return ret;
+}
+
+char ***sqldb_matrix_exec (sqldb_t *db, const char *query, ...)
+{
+   va_list ap;
+   va_start (ap, query);
+   char ***ret = sqldb_matrix_execv (db, query, &ap);
+   va_end (ap);
+   return ret;
+}
+
+char ***sqldb_matrix_execv (sqldb_t *db, const char *query, va_list *ap)
+{
+   bool error = true;
+   char ***ret = NULL;
+   size_t retlen = 0;
+   char **colnames = NULL;
+   size_t nrows = 0;
+   size_t ncols = 0;
+   char **row = NULL;
+   size_t rowlen = 0;
+
+   sqldb_res_t *res = NULL;
+
+   if (!(res = sqldb_execv (db, query, ap)))
+      goto errorexit;
+
+   ncols = sqldb_res_num_columns (res);
+   if (!(colnames = sqldb_res_column_names (res)))
+      goto errorexit;
+
+   for (size_t i=0; colnames[i]; i++) {
+      if (!(row_append (&row, rowlen++, colnames[i])))
+         goto errorexit;
+   }
+   if (!(matrix_append (&ret, retlen++, row)))
+      goto errorexit;
+
+   int rc = -1;
+   while ((rc = sqldb_res_step (res)) == 1) {
+      if (!(row = row_get (res)))
+         goto errorexit;
+      if (!(matrix_append (&ret, retlen++, row)))
+         goto errorexit;
+   }
+
+   if (rc!=0)
+      goto errorexit;
+
+   error = false;
+errorexit:
+
+   sqldb_res_del (res);
+   sqldb_row_free (colnames);
+
+   if (error) {
+      sqldb_matrix_free (ret);
+      ret = NULL;
+   }
+   return ret;
+}
+
+void sqldb_matrix_free (char ***matrix)
+{
+   if (!matrix)
+      return;
+
+   size_t nrows = sqldb_matrix_num_rows (matrix);
+   size_t ncols = sqldb_matrix_num_cols (matrix[0]);
+   for (size_t i=0; i<nrows; i++) {
+      sqldb_row_free (matrix[i]);
+   }
+   free (matrix);
+}
+
+void sqldb_row_free (char **row)
+{
+   for (size_t i=0; row[i]; i++) {
+      free (row[i]);
+   }
+   free (row);
+}
+
+size_t sqldb_matrix_num_rows (char ***matrix)
+{
+   size_t nrows = 0;
+   if (!matrix)
+      return 0;
+
+   for (nrows=0; matrix[nrows]; nrows++)
+      ;
+
+   return nrows;
+}
+
+size_t sqldb_matrix_num_cols (char **row)
+{
+   size_t ncols = 0;
+   if (!row)
+      return 0;
+
+   for (ncols=0; row[ncols]; ncols++)
+      ;
+
+   return ncols;
+}
+
+
 
 uint64_t sqldb_exec_ignore (sqldb_t *db, const char *query, ...)
 {

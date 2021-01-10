@@ -70,7 +70,6 @@ extern "C" {
    // Return a description of the last error that occurred. The caller
    // must not free this string. NULL will be returned if no
    // error message is available.
-
    const char *sqldb_lasterr (sqldb_t *db);
    const char *sqldb_res_lasterr (sqldb_res_t *res);
 
@@ -94,6 +93,9 @@ extern "C" {
    // of strings (char pointers) terminated with a NULL pointer that the
    // caller must free. The caller must also free the array itself.
    //
+   // A convenience function _row_free() is provided to free the array
+   // as well as all the elements.
+   //
    // On error NULL is returned.
    char **sqldb_res_column_names (sqldb_res_t *res);
 
@@ -108,6 +110,30 @@ extern "C" {
    // results) on success or NULL on error.
    sqldb_res_t *sqldb_exec (sqldb_t *db, const char *query, ...);
    sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap);
+
+   // A quick and simple alternative to sqldb_exec(); all the results are
+   // returned immediately making it more convenient for the caller.
+   //
+   // Because all results are returned immediately in memory, this function
+   // is not suitable for large result-sets.
+   //
+   // Parameters in querystring are of the format "#n" where n is the
+   // number of the parameter.
+   //
+   // Returns a NULL-terminated array of NULL-terminated string arrays which
+   // must be freed by the caller. The returned matrix can be freed with
+   // sqldb_free_matrix ().
+   //
+   // The first row of the returned matrix contains the column names.
+   //
+   // In the case of any error NULL is returned and an errorcode is stored in
+   // the db handle.
+   char ***sqldb_matrix_exec (sqldb_t *db, const char *query, ...);
+   char ***sqldb_matrix_execv (sqldb_t *db, const char *query, va_list *ap);
+   void sqldb_matrix_free (char ***matrix);
+   void sqldb_row_free (char **row);
+   size_t sqldb_matrix_num_rows (char ***matrix);
+   size_t sqldb_matrix_num_cols (char **row);
 
    // Same as the exec functions above, with the difference being that
    // results are ignored and only a success or failure is indicated with
