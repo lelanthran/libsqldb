@@ -428,7 +428,6 @@ static char **pgdb_row_get (sqldb_res_t *res)
    char **ret = NULL;
 
    int numcols = PQnfields (res->pgr);
-   int index = 0;
 
    for (int i=0; i<numcols; i++) {
       const char *value = PQgetvalue (res->pgr, res->current_row, i);
@@ -1070,8 +1069,6 @@ char ***sqldb_matrix_execv (sqldb_t *db, const char *query, va_list *ap)
    char ***ret = NULL;
    size_t retlen = 0;
    char **colnames = NULL;
-   size_t nrows = 0;
-   size_t ncols = 0;
    char **row = NULL;
    size_t rowlen = 0;
 
@@ -1080,7 +1077,6 @@ char ***sqldb_matrix_execv (sqldb_t *db, const char *query, va_list *ap)
    if (!(res = sqldb_execv (db, query, ap)))
       goto errorexit;
 
-   ncols = sqldb_res_num_columns (res);
    if (!(colnames = sqldb_res_column_names (res)))
       goto errorexit;
 
@@ -1121,7 +1117,6 @@ void sqldb_matrix_free (char ***matrix)
       return;
 
    size_t nrows = sqldb_matrix_num_rows (matrix);
-   size_t ncols = sqldb_matrix_num_cols (matrix[0]);
    for (size_t i=0; i<nrows; i++) {
       sqldb_row_free (matrix[i]);
    }
@@ -1130,6 +1125,9 @@ void sqldb_matrix_free (char ***matrix)
 
 void sqldb_row_free (char **row)
 {
+   if (!row)
+      return;
+
    for (size_t i=0; row[i]; i++) {
       free (row[i]);
    }
