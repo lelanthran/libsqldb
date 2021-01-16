@@ -400,7 +400,6 @@ static char **sqlitedb_row_get (sqldb_res_t *res)
 {
    bool error = true;
    char **ret = NULL;
-   char *tmpstring = NULL;
 
    sqlite3_stmt *stmt = res->sqlite_stmt;
 
@@ -411,12 +410,8 @@ static char **sqlitedb_row_get (sqldb_res_t *res)
       if (!value) {
          value = "";
       }
-      if (!(tmpstring = lstr_dup (value))) {
+      if (!(row_append (&ret, i, value))) {
          LOG_ERR ("OOM: %s\n", value);
-         goto errorexit;
-      }
-      if (!(row_append (&ret, i, tmpstring))) {
-         LOG_ERR ("OOM: %s\n", tmpstring);
          goto errorexit;
       }
    }
