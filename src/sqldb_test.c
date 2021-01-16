@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -322,6 +321,19 @@ NULL,
       printf ("\n");
    }
    printf ("Matrix passed\n");
+   sqldb_matrix_free (matrix);
+   if (!(matrix = sqldb_matrix_exec (db, "select * from one where col_a=100010", sqldb_col_UNKNOWN))) {
+      fprintf (stderr, "Second matrix test failed.\n");
+      goto errorexit;
+   }
+   printf ("Results of 2nd matrix usage\n");
+   for (size_t i=0; matrix[i]; i++) {
+      for (size_t j=0; matrix[i][j]; j++) {
+         printf ("[%s] ", matrix[i][j]);
+      }
+      printf ("\n");
+   }
+   printf ("2nd Matrix passed\n");
 
    ret = EXIT_SUCCESS;
 errorexit:

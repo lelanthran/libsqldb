@@ -3,6 +3,9 @@ Feature additions
 1. Results can now be retrieved in a single exec call, returned as
    a matrix of strings with the first row of the matrix set to the
    names of the columns.
+2. The error logging in the main sqldb.c module now prints out the
+   filename and line number as well.
+3. Builtin sqlite updated to version 3.34.0
 
 Other
 1. Updated README.md with positional parameter information.

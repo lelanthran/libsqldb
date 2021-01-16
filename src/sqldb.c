@@ -16,7 +16,11 @@
 
 #include "sqldb.h"
 
-#define SQLDB_OOM(s)          fprintf (stderr, "OOM [%s]\n", s)
+#define LOG_ERR(...)      do {\
+      fprintf (stderr, ":%s:%d: ", __FILE__, __LINE__);\
+      fprintf (stderr, __VA_ARGS__);\
+} while (0)
+
 
 #ifdef DEBUG
 #define PROG_ERR(...)      do {\
@@ -404,11 +408,11 @@ static char **sqlitedb_row_get (sqldb_res_t *res)
 
    for (int i=0; i<numcols; i++) {
       if (!(tmpstring = ((char *)sqlite3_column_text (stmt, i)))) {
-         SQLDB_OOM (sqlite3_column_text (stmt, i));
+         LOG_ERR ("OOM: %s\n", sqlite3_column_text (stmt, i));
          goto errorexit;
       }
       if (!(row_append (&ret, i, tmpstring))) {
-         SQLDB_OOM (tmpstring);
+         LOG_ERR ("OOM: %s\n", tmpstring);
          goto errorexit;
       }
    }
@@ -432,7 +436,7 @@ static char **pgdb_row_get (sqldb_res_t *res)
    for (int i=0; i<numcols; i++) {
       const char *value = PQgetvalue (res->pgr, res->current_row, i);
       if (!(row_append (&ret, i, value))) {
-         SQLDB_OOM (value);
+         LOG_ERR ("OOM: %s\n", value);
          goto errorexit;
       }
    }
@@ -498,7 +502,7 @@ static sqldb_t *pgdb_open (sqldb_t *ret, const char *dbname)
    bool error = false;
 
    if (!(ret->pg_db = PQconnectdb (dbname))) {
-      SQLDB_OOM (dbname);
+      LOG_ERR ("OOM: %s\n", dbname);
       goto errorexit;
    }
 
@@ -524,7 +528,7 @@ sqldb_t *sqldb_open (const char *dbname, sqldb_dbtype_t type)
 {
    sqldb_t *ret = malloc (sizeof *ret);
    if (!ret) {
-      SQLDB_OOM (dbname);
+      LOG_ERR ("OOM: %s\n", dbname);
       goto errorexit;
    }
 
@@ -602,7 +606,7 @@ static char *fix_string (sqldb_dbtype_t type, const char *string)
 
    ret = lstr_dup (string);
    if (!ret) {
-      SQLDB_OOM (string);
+      LOG_ERR ("OOM: %s\n", string);
       return NULL;
    }
 
@@ -1013,7 +1017,7 @@ sqldb_res_t *sqldb_execv (sqldb_t *db, const char *query, va_list *ap)
 
    qstring = fix_string (db->type, query);
    if (!qstring) {
-      SQLDB_OOM (query);
+      LOG_ERR ("OOM: %s\n", query);
       goto errorexit;
    }
 
@@ -1465,7 +1469,7 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
             tmpstring = ((char *)sqlite3_column_text (stmt, ret));
             *(char **)dst = lstr_dup (tmpstring ? tmpstring : "");
             if (!(*(char **)dst)) {
-               SQLDB_OOM (sqlite3_column_text (stmt, ret));
+               LOG_ERR ("OOM: %s\n", sqlite3_column_text (stmt, ret));
                return (uint32_t)-1;
             }
             break;
@@ -1476,7 +1480,7 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
             *blen = sqlite3_column_bytes (stmt, ret);
             *(void **)dst = malloc ((*blen));
             if (!dst) {
-               SQLDB_OOM ("Blob type");
+               LOG_ERR ("OOM: %s\n", "Blob type");
                return (uint32_t)-1;
             }
             memcpy (*(void **)dst, tmp, *blen);
