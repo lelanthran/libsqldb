@@ -1,16 +1,25 @@
-1. Both user/group perms functions that set the perms must return
-   error if zero rows were affected.
+====================================================================
+Fix the DATETIME handling in the PostgreSQL driver.
 
-2. Write a README.md file, maybe a document with a few examples.
+====================================================================
+Both user/group perms functions that set the perms must return
+error if zero rows were affected.
 
-3. Create indices for the various searchable non-TEXT columns in the
-   schema for sqldb_auth.
+====================================================================
+Write a README.md file, maybe a document with a few examples.
 
-4. Provide a way to query the schema.
+====================================================================
+Create indices for the various searchable non-TEXT columns in the
+schema for sqldb_auth.
 
-5. Need to differentiate between returned columns that are NULL and
-   returned columns that are empty strings.
+====================================================================
+Provide a way to query the schema.
 
-6. Optimise the sqldb_query module to sort the queries array so that we
-   can do a binary search when searching for a query.
+====================================================================
+Need to differentiate between returned columns that are NULL and
+returned columns that are empty strings.
+
+====================================================================
+Optimise the sqldb_query module to sort the queries array so that we
+can do a binary search when searching for a query.
 
