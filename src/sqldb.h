@@ -32,7 +32,7 @@ typedef enum {
    sqldb_col_INT64,        // int64_t
    sqldb_col_UINT32,       // uint32_t
    sqldb_col_UINT64,       // uint64_t
-   sqldb_col_DATETIME,     // int64_t
+   sqldb_col_DATETIME,     // uint64_t
    sqldb_col_TEXT,         // char *
    sqldb_col_BLOB,
    sqldb_col_NULL

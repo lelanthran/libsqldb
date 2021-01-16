@@ -407,8 +407,12 @@ static char **sqlitedb_row_get (sqldb_res_t *res)
    int numcols = sqlite3_column_count (stmt);
 
    for (int i=0; i<numcols; i++) {
-      if (!(tmpstring = ((char *)sqlite3_column_text (stmt, i)))) {
-         LOG_ERR ("OOM: %s\n", sqlite3_column_text (stmt, i));
+      const char *value = (char *)sqlite3_column_text (stmt, i);
+      if (!value) {
+         value = "";
+      }
+      if (!(tmpstring = lstr_dup (value))) {
+         LOG_ERR ("OOM: %s\n", value);
          goto errorexit;
       }
       if (!(row_append (&ret, i, tmpstring))) {
@@ -1405,6 +1409,10 @@ static uint64_t convert_ISO8601_to_uint64 (const char *src)
 {
    struct tm tm;
 
+   if (!src || !*src) {
+      return 0;
+   }
+
    memset (&tm, 0, sizeof tm);
 
    if ((sscanf (src, "%4d-%2d-%2d %2d:%2d:%2d", &tm.tm_year,
@@ -1455,6 +1463,8 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
 
          case sqldb_col_DATETIME:
             tmp = sqlite3_column_text (stmt, ret);
+            if (!tmp)
+               tmp = "";
             *(uint64_t *)dst = convert_ISO8601_to_uint64 (tmp);
             if ((*(uint64_t *)dst) == (uint64_t)-1)
                return (uint32_t)-1;
@@ -1467,9 +1477,11 @@ uint32_t sqlite_scan (sqldb_res_t *res, va_list *ap)
 
          case sqldb_col_TEXT:
             tmpstring = ((char *)sqlite3_column_text (stmt, ret));
+            if (!tmpstring)
+               tmpstring = "";
             *(char **)dst = lstr_dup (tmpstring ? tmpstring : "");
             if (!(*(char **)dst)) {
-               LOG_ERR ("OOM: %s\n", sqlite3_column_text (stmt, ret));
+               LOG_ERR ("OOM: %s\n", tmpstring);
                return (uint32_t)-1;
             }
             break;

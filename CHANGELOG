@@ -1,4 +1,13 @@
 ## 1.0.0-rc2 - ???
+Bug fixes
+1. Columns that are NULL (not set in the database) are handled now as
+   follows:
+      TEXT     Empty string
+      INTEGER  0
+      FLOAT    0.0
+      DATE     0
+2. PostgreSQL handling of DATETIME is buggy (does not return uint64_t).
+
 Feature additions
 1. Results can now be retrieved in a single exec call, returned as
    a matrix of strings with the first row of the matrix set to the
