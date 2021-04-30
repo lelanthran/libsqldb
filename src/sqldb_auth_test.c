@@ -377,7 +377,7 @@ int main (int argc, char **argv)
 
    sqldb_t *db = NULL;
 
-   PROG_ERR ("Testing sqldb_auth version [%s]\n", SQLDB_VERSION);
+   PROG_ERR ("Testing sqldb_auth version [%s]\n", sqldb_version);
    if (argc <= 1) {
       PROG_ERR ("Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;

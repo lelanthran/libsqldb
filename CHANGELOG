@@ -6,7 +6,7 @@ Bug fixes
       INTEGER  0
       FLOAT    0.0
       DATE     0
-2. PostgreSQL handling of DATETIME is buggy (does not return uint64_t).
+2. PostgreSQL handling of DATETIME was buggy (did not return uint64_t).
 
 Feature additions
 1. Results can now be retrieved in a single exec call, returned as
@@ -15,6 +15,7 @@ Feature additions
 2. The error logging in the main sqldb.c module now prints out the
    filename and line number as well.
 3. Builtin sqlite updated to version 3.34.0
+4. New build process for better portability.
 
 Other
 1. Updated README.md with positional parameter information.

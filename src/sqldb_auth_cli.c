@@ -582,7 +582,7 @@ static sqldb_t *g_db = NULL;
 static void print_version (void)
 {
    printf ("sqldb_auth_cli\nversion %s\n"
-           "Copyright L. Manickum (2020)\n\n", SQLDB_VERSION);
+           "Copyright L. Manickum (2020)\n\n", sqldb_version);
 }
 
 static bool cmd_help (char **args)
@@ -1210,7 +1210,7 @@ int main (int argc, char **argv)
       printf ("sqldb_auth_cli program:\n"
               "   sqldb_auth version [%s]\n"
               "   sqlite version [%s]\n",
-              SQLDB_VERSION,
+              sqldb_version,
               SQLITE_VERSION);
    }
 

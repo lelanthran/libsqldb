@@ -44,7 +44,7 @@ NULL,
 
    char ***matrix = NULL;
 
-   printf ("Testing sqldb version [%s]\n", SQLDB_VERSION);
+   printf ("Testing sqldb version [%s]\n", sqldb_version);
    if (argc <= 1) {
       fprintf (stderr, "Failed to specify one of 'sqlite' or 'postgres'\n");
       return EXIT_FAILURE;

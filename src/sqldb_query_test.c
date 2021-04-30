@@ -32,7 +32,7 @@ int main (void)
 
    int ret = EXIT_FAILURE;
 
-   printf ("sqldb_query_test %s\nCopyright L. Manickum 2020\n", SQLDB_VERSION);
+   printf ("sqldb_query_test %s\nCopyright L. Manickum 2020\n", sqldb_version);
 
    sqldb_query_init (queries, nqueries);
 
