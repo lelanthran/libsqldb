@@ -498,7 +498,7 @@ errorexit:
 
 static sqldb_t *pgdb_open (sqldb_t *ret, const char *dbname)
 {
-   bool error = false;
+   bool error = true;
 
    if (!(ret->pg_db = PQconnectdb (dbname))) {
       LOG_ERR ("OOM: %s\n", dbname);
