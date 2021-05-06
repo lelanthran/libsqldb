@@ -1184,9 +1184,11 @@ uint64_t sqldb_exec_ignorev (sqldb_t *db, const char *query, va_list *ap)
       goto errorexit;
 
    if ((sqldb_res_step (res))==-1)
-      goto errorexit;
-
-   ret = sqldb_res_last_id (res);
+      ret = -1;
+   else if ((sqldb_res_step (res))==0)
+      ret = 0;
+   else
+      ret = sqldb_res_last_id (res);
 
 errorexit:
    if (res && res->lasterr) {

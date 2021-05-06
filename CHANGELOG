@@ -7,7 +7,8 @@ Bug fixes
       FLOAT    0.0
       DATE     0
 2. PostgreSQL handling of DATETIME was buggy (did not return uint64_t).
-3. PosteSQL was not correctly indicating error on connection failures.
+3. PostgreSQL was not correctly indicating error on connection failures.
+4. Incorrect return values for exec_ignore().
 
 Feature additions
 1. Results can now be retrieved in a single exec call, returned as
