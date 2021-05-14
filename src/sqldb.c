@@ -169,7 +169,6 @@ uint32_t sqldb_random_seed (void)
     * 3. Pointer to current stack position:
     * 4. Pointer to heap:
     * 5. Pointer to function (self):
-    * 6. Pointer to self():
     * 7. PID:
     * 8. mkstemp()
     */
@@ -178,7 +177,6 @@ uint32_t sqldb_random_seed (void)
    uint32_t proc_time = getclock (ret);
    uint32_t *ptr_stack = &ret;
    uint32_t (*ptr_self) (void) = sqldb_random_seed;
-   int (*ptr_self) (void) = sqldb_random_seed;
    void *(*ptr_malloc) (size_t) = malloc;
    pid_t pid = getpid ();
 
@@ -206,7 +204,6 @@ uint32_t sqldb_random_seed (void)
    ret = hash_buffer (ret, &proc_time, sizeof proc_time);
    ret = hash_buffer (ret, &ptr_stack, sizeof ptr_stack);
    ret = hash_buffer (ret, &ptr_self, sizeof ptr_self);
-   ret = hash_buffer (ret, &ptr_self, sizeof ptr_self);
    ret = hash_buffer (ret, &ptr_malloc, sizeof ptr_malloc);
    ret = hash_buffer (ret, &pid, sizeof pid);
    ret = hash_buffer (ret, &ptr_heap_small, sizeof ptr_heap_small);
@@ -216,7 +213,6 @@ uint32_t sqldb_random_seed (void)
 #if 0
    fprintf (stderr, "[%p][%p][%p][%p][%p][%p]\n",
                                           ptr_stack,
-                                          ptr_self,
                                           ptr_self,
                                           ptr_malloc,
                                           ptr_heap_small,
